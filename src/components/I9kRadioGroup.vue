@@ -188,7 +188,7 @@ const fieldsetAttrs = computed(() =>
     (var(--i9k-radio-font-size) * var(--i9k-radio-line-height) - var(--i9k-radio-mark-size)) / 2
   );
   place-items: center;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--control-border-color);
   border-radius: var(--radius-circle);
   transition: var(--transition);
 }
@@ -205,7 +205,7 @@ const fieldsetAttrs = computed(() =>
 
 .i9k-radio-group__input:checked + .i9k-radio-group__mark {
   border-color: var(--primary-text-color);
-  background: var(--primary-text-color);
+  background: var(--primary-color);
 }
 
 .i9k-radio-group__input:checked + .i9k-radio-group__mark::after {
@@ -213,7 +213,7 @@ const fieldsetAttrs = computed(() =>
 }
 
 .i9k-radio-group__input:focus-visible + .i9k-radio-group__mark {
-  outline: 3px solid var(--accent-color);
+  outline: 3px solid var(--focus-color);
   outline-offset: 3px;
 }
 
@@ -236,7 +236,7 @@ const fieldsetAttrs = computed(() =>
 }
 
 .i9k-radio-group__error {
-  color: var(--accent-color);
+  color: var(--error-color);
   font-weight: 600;
 }
 
@@ -252,9 +252,9 @@ const fieldsetAttrs = computed(() =>
   gap: var(--spacing-5);
   align-items: flex-start;
   padding: var(--i9k-radio-padding);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--control-border-color);
   border-radius: var(--radius-lg);
-  background: var(--glass-bg);
+  background: var(--surface-color);
   cursor: pointer;
   transition: var(--transition);
 }
@@ -274,18 +274,18 @@ const fieldsetAttrs = computed(() =>
 }
 
 .i9k-radio-group--card .i9k-radio-group__option:has(input:checked) {
-  border-color: var(--primary-color);
-  background: var(--primary-color-alpha-12);
+  border-color: var(--primary-text-color);
+  background: var(--selected-bg-color);
   box-shadow: inset 0 0 0 2px var(--primary-color-alpha-12);
 }
 
 .i9k-radio-group--card .i9k-radio-group__option:not(:has(input:disabled)):hover {
-  border-color: var(--primary-color);
+  border-color: var(--primary-text-color);
   transform: translateY(-2px);
 }
 
 .i9k-radio-group--card .i9k-radio-group__option:has(input:focus-visible) {
-  outline: 3px solid var(--accent-color);
+  outline: 3px solid var(--focus-color);
   outline-offset: 3px;
 }
 

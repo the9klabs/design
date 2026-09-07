@@ -3,8 +3,8 @@
 .surface {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
+  background: var(--surface-color);
+  backdrop-filter: none;
   transition: var(--transition);
 }
 
@@ -21,11 +21,8 @@
 .surface--feature {
   border-radius: var(--radius-lg);
   border-color: color-mix(in srgb, var(--accent-color) 46%, var(--border-color));
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--primary-color) 12%, transparent),
-    var(--glass-bg)
-  );
+  background: var(--surface-raised-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .surface--flat {
@@ -231,119 +228,139 @@
    remove this block only after the migration ledger reports zero .btn usage. */
 
 .btn {
+  --i9k-button-height: var(--control-height-md);
+  --i9k-button-padding: var(--spacing-8);
+  --i9k-button-font-size: var(--control-font-size-md);
+  --i9k-button-bg: var(--surface-color);
+  --i9k-button-hover-bg: var(--surface-hover-color);
+  --i9k-button-pressed-bg: var(--surface-sunken-color);
+  --i9k-button-border: var(--control-border-color);
+  --i9k-button-color: var(--theme-text-color);
+
   display: inline-flex;
+  min-height: var(--i9k-button-height);
   align-items: center;
   justify-content: center;
-  text-decoration: none;
-  cursor: pointer;
-  transition: var(--transition);
-  appearance: none;
-  border: none;
-}
-
-.btn--default {
-  gap: var(--spacing-5);
-  padding: var(--spacing-5) var(--spacing-8);
-  border: 1px solid currentColor;
+  gap: var(--spacing-4);
+  padding: 0 var(--i9k-button-padding);
+  border: 1px solid var(--i9k-button-border);
   border-radius: var(--radius-sm);
-  background: var(--white-color-alpha-20);
-  color: var(--theme-text-color);
-  font-size: 14px;
-  font-weight: 500;
+  appearance: none;
+  background: var(--i9k-button-bg);
+  color: var(--i9k-button-color);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--i9k-button-font-size);
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
-.btn--default:hover {
-  border-color: var(--accent-color);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
+.btn--sm {
+  --i9k-button-height: var(--control-height-sm);
+  --i9k-button-padding: var(--spacing-6);
+  --i9k-button-font-size: var(--control-font-size-sm);
+}
+
+.btn--lg {
+  --i9k-button-height: var(--control-height-lg);
+  --i9k-button-padding: var(--spacing-11);
+  --i9k-button-font-size: var(--control-font-size-lg);
+}
+
+.btn--default,
+.btn--pagination {
+  background: var(--i9k-button-bg);
 }
 
 .btn--primary {
-  padding: var(--spacing-5) var(--spacing-11);
-  border-radius: var(--radius-pill);
-  background: var(--primary-color);
-  color: var(--on-primary-color);
-  font-weight: 700;
-}
-
-.btn--primary:hover {
-  background: var(--accent-color);
-  transform: translateY(-1px);
+  --i9k-button-bg: var(--primary-color);
+  --i9k-button-hover-bg: var(--primary-hover-color);
+  --i9k-button-pressed-bg: var(--primary-pressed-color);
+  --i9k-button-border: transparent;
+  --i9k-button-color: var(--on-primary-color);
 }
 
 .btn--link {
-  padding: 0;
-  background: transparent;
-  color: var(--primary-text-color);
-  font-weight: 700;
-  text-decoration: none;
-  text-decoration-color: var(--accent-color);
-}
+  --i9k-button-bg: transparent;
+  --i9k-button-hover-bg: transparent;
+  --i9k-button-pressed-bg: transparent;
+  --i9k-button-border: transparent;
+  --i9k-button-color: var(--primary-text-color);
 
-.btn--link:hover {
-  text-decoration: underline;
+  min-height: auto;
+  padding: 0;
+  border: none;
   text-decoration-color: var(--accent-color);
 }
 
 .btn--filter {
-  padding: var(--spacing-5) var(--spacing-8);
-  border: 1px solid var(--dark-color-alpha-20);
   border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--theme-text-color);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.btn--pagination {
-  padding: var(--spacing-5) var(--spacing-10);
-  border: 1px solid var(--dark-color-alpha-20);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--theme-text-color);
-  font-size: 14px;
-  font-weight: 500;
 }
 
 .btn--page {
-  width: 40px;
-  height: 40px;
+  width: var(--i9k-button-height);
+  height: var(--i9k-button-height);
+  min-height: 0;
   padding: 0;
-  border: 1px solid var(--dark-color-alpha-20);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--theme-text-color);
-  font-size: 14px;
-  font-weight: 500;
 }
 
-.btn--filter:hover,
-.btn--pagination:hover:not(:disabled),
-.btn--page:hover {
-  border-color: var(--accent-color);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-}
-
-.btn--filter.is-active {
-  border-color: var(--primary-color);
-  background: var(--primary-color);
-  color: var(--on-primary-color);
-}
-
+.btn--filter.is-active,
 .btn--page.is-active {
-  border-color: var(--accent-color);
-  background: var(--accent-color);
-  color: var(--on-accent-color);
+  --i9k-button-bg: var(--selected-bg-color);
+  --i9k-button-hover-bg: var(--selected-hover-bg-color);
+  --i9k-button-pressed-bg: var(--selected-pressed-bg-color);
+  --i9k-button-border: var(--primary-text-color);
+  --i9k-button-color: var(--primary-text-color);
 }
 
-.btn:disabled {
-  opacity: 0.5;
+.btn:hover:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+  background: var(--i9k-button-hover-bg);
+}
+
+.btn--link:hover:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+  text-decoration: underline;
+  text-decoration-color: var(--accent-color);
+}
+
+.btn:active:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+  background: var(--i9k-button-pressed-bg);
+  transform: translateY(1px);
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 3px;
+}
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
   cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Consumers pair aria-busy with disabled on native buttons while an action runs. */
+.btn[aria-busy='true'] {
+  cursor: progress;
+  opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+
+  .btn:active:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+    transform: none;
+  }
 }
 
 .dark :is(.btn--filter, .btn--pagination, .btn--page) {
-  border-color: var(--white-color-alpha-20);
+  border-color: var(--i9k-button-border);
 }
 
 /* --------------------------------------------------------------- timeline */
@@ -425,8 +442,8 @@
 }
 
 .timeline__card--linked:hover {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
+  background: var(--surface-color);
+  backdrop-filter: none;
   box-shadow: var(--shadow-sm);
 }
 
@@ -479,8 +496,8 @@
   .timeline__time {
     top: var(--spacing-15);
     inset-inline-start: 0;
-    background-color: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
+    background-color: var(--surface-color);
+    backdrop-filter: none;
     position: absolute;
     transform: rotate(90deg);
     transform-origin: left;
@@ -527,9 +544,9 @@
 
 .field__input {
   padding: var(--spacing-5) var(--spacing-6);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--control-border-color);
   border-radius: var(--radius-sm);
-  background: var(--glass-bg);
+  background: var(--surface-color);
   color: var(--text-color);
   font-size: var(--text-size-2);
   font-family: inherit;
@@ -537,13 +554,13 @@
 }
 
 .field__input:focus-visible {
-  outline: 2px solid var(--accent-color);
+  outline: 2px solid var(--focus-color);
   outline-offset: 1px;
-  border-color: var(--accent-color);
+  border-color: var(--focus-color);
 }
 
 .field__input[aria-invalid='true'] {
-  border-color: var(--accent-color);
+  border-color: var(--error-color);
 }
 
 .field__hint {
@@ -553,7 +570,7 @@
 
 .field__error {
   font-size: var(--text-size-1);
-  color: var(--accent-color);
+  color: var(--error-color);
   font-weight: 600;
 }
 
@@ -562,14 +579,15 @@
 /* Temporary website compatibility. I9kToast owns its current appearance in scoped SFC styles;
    remove this block only after the migration ledger reports zero .toast usage. */
 .toast {
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-5);
   padding: var(--spacing-6) var(--spacing-8);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
+  background: var(--surface-raised-color);
+  backdrop-filter: none;
   font-size: var(--text-size-1);
 }
 
@@ -579,13 +597,15 @@
 }
 
 .toast--success {
-  border-color: var(--primary-color);
-  color: var(--primary-text-color);
+  border-color: var(--success-color);
+  background: var(--success-bg-color);
+  color: var(--success-color);
 }
 
 .toast--error {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
+  border-color: var(--error-color);
+  background: var(--error-bg-color);
+  color: var(--error-color);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -157,9 +157,9 @@ if (isDevelopment) {
   width: 100%;
   min-height: var(--control-height-md);
   padding: 0 var(--spacing-6);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--control-border-color);
   border-radius: var(--radius-sm);
-  background: var(--glass-bg);
+  background: var(--surface-color);
   color: var(--text-color);
   font-family: inherit;
   font-size: var(--control-font-size-md);
@@ -179,13 +179,13 @@ if (isDevelopment) {
 }
 
 .i9k-input:focus-visible {
-  border-color: var(--accent-color);
-  outline: 2px solid var(--accent-color);
+  border-color: var(--focus-color);
+  outline: 2px solid var(--focus-color);
   outline-offset: 1px;
 }
 
 .i9k-input[aria-invalid='true'] {
-  border-color: var(--accent-color);
+  border-color: var(--error-color);
 }
 
 .i9k-field__hint {
@@ -194,7 +194,7 @@ if (isDevelopment) {
 }
 
 .i9k-field__error {
-  color: var(--accent-color);
+  color: var(--error-color);
   font-size: var(--text-size-1);
   font-weight: 600;
 }

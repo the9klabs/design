@@ -153,7 +153,7 @@ if (isDevelopment) {
 }
 
 .i9k-field__error {
-  color: var(--accent-color);
+  color: var(--error-color);
   font-weight: 600;
 }
 </style>

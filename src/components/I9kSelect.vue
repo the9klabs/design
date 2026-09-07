@@ -134,9 +134,9 @@ if (isDevelopment) {
   width: 100%;
   min-height: var(--control-height-md);
   padding: 0 var(--spacing-8);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--control-border-color);
   border-radius: var(--radius-sm);
-  background-color: var(--glass-bg);
+  background-color: var(--surface-color);
   color: var(--text-color);
   font: inherit;
   font-size: var(--control-font-size-md);
@@ -156,13 +156,13 @@ if (isDevelopment) {
 }
 
 .i9k-select:focus-visible {
-  border-color: var(--accent-color);
-  outline: 2px solid var(--accent-color);
+  border-color: var(--focus-color);
+  outline: 2px solid var(--focus-color);
   outline-offset: 1px;
 }
 
 .i9k-select[aria-invalid='true'] {
-  border-color: var(--accent-color);
+  border-color: var(--error-color);
 }
 
 .i9k-select:disabled {

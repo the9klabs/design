@@ -142,9 +142,9 @@ const formattedDate = computed(() =>
 }
 
 .i9k-timeline-card__card--linked:hover {
-  background: var(--glass-bg);
+  background: var(--surface-color);
   box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: none;
 }
 
 .i9k-timeline-card__main {
@@ -201,11 +201,11 @@ const formattedDate = computed(() =>
     width: auto;
     margin: 0;
     padding: 0 var(--spacing-5);
-    background: var(--glass-bg);
+    background: var(--surface-color);
     color: var(--primary-text-color);
     transform: rotate(90deg);
     transform-origin: left;
-    backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: none;
   }
 
   .i9k-timeline-card__time:where([dir='rtl'] *) {

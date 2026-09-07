@@ -23,6 +23,6 @@ a:hover {
 }
 
 :where(a, button, input, select, textarea):focus-visible {
-  outline: 3px solid var(--accent-color);
+  outline: 3px solid var(--focus-color);
   outline-offset: 3px;
 }

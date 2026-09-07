@@ -31,8 +31,8 @@ withDefaults(
   padding: var(--i9k-panel-padding);
   border: 1px solid var(--border-color);
   border-radius: var(--i9k-panel-radius);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
+  background: var(--surface-color);
+  backdrop-filter: none;
   transition: var(--transition);
 }
 
@@ -49,11 +49,8 @@ withDefaults(
 .i9k-panel--feature {
   border-color: color-mix(in srgb, var(--accent-color) 46%, var(--border-color));
   border-radius: var(--radius-lg);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--primary-color) 12%, transparent),
-    var(--glass-bg)
-  );
+  background: var(--surface-raised-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .i9k-panel--flat {

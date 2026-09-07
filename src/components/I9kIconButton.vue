@@ -71,13 +71,17 @@ if (isDevelopment && !props.label.trim()) {
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid currentColor;
-  border-radius: var(--radius-circle);
+  border: 1px solid var(--control-border-color);
+  border-radius: var(--radius-sm);
   appearance: none;
   cursor: pointer;
   color: var(--theme-text-color);
   text-decoration: none;
-  transition: var(--transition);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .i9k-icon-button--sm {
@@ -91,7 +95,7 @@ if (isDevelopment && !props.label.trim()) {
 }
 
 .i9k-icon-button--secondary {
-  background: var(--white-color-alpha-20);
+  background: var(--surface-color);
 }
 
 .i9k-icon-button--primary {
@@ -105,25 +109,39 @@ if (isDevelopment && !props.label.trim()) {
   background: transparent;
 }
 
-.i9k-icon-button:hover {
-  border-color: var(--accent-color);
-  background: var(--glass-bg);
+.i9k-icon-button:hover:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+  background: var(--surface-hover-color);
 }
 
-.i9k-icon-button--primary:hover {
-  border-color: var(--accent-color);
-  background: var(--accent-color);
-  transform: translateY(-1px);
+.i9k-icon-button--primary:hover:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+  border-color: var(--primary-hover-color);
+  background: var(--primary-hover-color);
+}
+
+.i9k-icon-button:active:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+  background: var(--surface-sunken-color);
+  transform: translateY(1px);
+}
+
+.i9k-icon-button--primary:active:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+  border-color: var(--primary-pressed-color);
+  background: var(--primary-pressed-color);
 }
 
 .i9k-icon-button:focus-visible {
-  outline: 2px solid var(--accent-color);
-  outline-offset: 2px;
+  outline: 3px solid var(--focus-color);
+  outline-offset: 3px;
 }
 
-.i9k-icon-button:disabled {
+.i9k-icon-button:disabled,
+.i9k-icon-button[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.i9k-icon-button[aria-busy='true'] {
+  cursor: progress;
+  opacity: 0.75;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -131,7 +149,7 @@ if (isDevelopment && !props.label.trim()) {
     transition: none;
   }
 
-  .i9k-icon-button--primary:hover {
+  .i9k-icon-button:active:not(:disabled, [aria-disabled='true'], [aria-busy='true']) {
     transform: none;
   }
 }

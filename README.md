@@ -129,6 +129,38 @@ import {
 size preserves the branded 1000px page width and responsive desktop/mobile gutters; choose a
 semantic root with `as` when the surrounding layout does not already provide one.
 
+## Color and surface roles
+
+Green identifies primary actions and selection. Orange is a brand accent for details such as
+link underlines and featured panel borders. Errors use their own red palette, with foreground
+and background values tuned for each theme.
+
+| Role             | Tokens                                                                       | Usage                                                                                      |
+| ---------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Canvas           | `--theme-bg-color`                                                           | Page background                                                                            |
+| Surface          | `--surface-color`                                                            | Panels, cards, and fields                                                                  |
+| Raised surface   | `--surface-raised-color`                                                     | Featured panels and message banners; pair with `--shadow-sm`                               |
+| Interaction      | `--surface-hover-color`, `--surface-sunken-color`                            | Neutral hover and pressed states                                                           |
+| Selection        | `--selected-bg-color`, `--primary-text-color`                                | Selected filters, page numbers, and radio cards                                            |
+| Feedback         | `--error-color`, `--error-bg-color`, `--success-color`, `--success-bg-color` | Validation and status messages                                                             |
+| Control boundary | `--control-border-color`, `--focus-color`                                    | Input/button borders and keyboard focus; `--border-color` remains a subtle surface divider |
+
+Glass tokens remain available for overlays such as navigation. Ordinary content surfaces are
+opaque so their contrast stays predictable over images and decorative backgrounds.
+
+Primary and secondary actions share an 8px radius and the same size scale; filter buttons remain
+pills. Use `I9kCluster` or `I9kButtonGroup` to space adjacent actions. For a busy native action, pass
+`disabled` and `aria-busy="true"` and update its label, for example:
+
+```vue
+<I9kButton variant="primary" :disabled="saving" :aria-busy="saving">
+  {{ saving ? 'Saving…' : 'Save changes' }}
+</I9kButton>
+```
+
+`aria-busy` and `aria-disabled` provide styling and accessibility state, not event suppression.
+Consumers must manage interaction themselves for anchors and custom link components.
+
 ## Native actions and form fields
 
 Use the action and form components through the package entry point. Keep native attributes such as
