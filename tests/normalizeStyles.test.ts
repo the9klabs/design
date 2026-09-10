@@ -123,7 +123,7 @@ describe('normalized styles', () => {
     const primaryButton = findRule(
       stylesheet,
       '.btn--primary',
-      'background',
+      '--i9k-button-bg',
       'var(--primary-color)',
     );
     const layers = stylesheet.nodes
@@ -142,7 +142,7 @@ describe('normalized styles', () => {
       stylesheet,
       ':where(a,button,input,select,textarea):focus-visible',
       'outline',
-      '3px solid var(--accent-color)',
+      '3px solid var(--focus-color)',
     );
 
     expect(parentLayer(rootTypography)).toBe('base');

@@ -48,7 +48,7 @@ const icon = computed<I9kIconName>(() => (props.modelValue ? 'sun' : 'moon'));
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   appearance: none;
-  background: var(--glass-bg);
+  background: var(--surface-color);
   color: var(--theme-text-color);
   cursor: pointer;
   transition: var(--transition);
@@ -60,7 +60,7 @@ const icon = computed<I9kIconName>(() => (props.modelValue ? 'sun' : 'moon'));
 }
 
 .i9k-theme-switcher:focus-visible {
-  outline: 2px solid var(--primary-text-color);
+  outline: 2px solid var(--focus-color);
   outline-offset: 2px;
 }
 

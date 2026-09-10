@@ -56,8 +56,8 @@ withDefaults(
 
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
+  background: var(--surface-color);
+  backdrop-filter: none;
   transition: var(--transition);
 }
 

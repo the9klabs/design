@@ -35,66 +35,38 @@ async function buildButtonStylesheet(): Promise<Root> {
   return postcss.parse(stylesheet.source.toString());
 }
 
-function hasDarkModeBorder(rule: Rule) {
-  return rule.nodes.some(
-    (node) =>
-      node.type === 'decl' &&
-      node.prop === 'border-color' &&
-      node.value === 'var(--white-color-alpha-20)',
-  );
+function declarations(stylesheet: Root, selector: RegExp) {
+  const values: Record<string, string> = {};
+  stylesheet.walkRules((rule: Rule) => {
+    if (selector.test(rule.selector)) {
+      rule.walkDecls((declaration) => {
+        values[declaration.prop] = declaration.value;
+      });
+    }
+  });
+  return values;
 }
 
 describe('I9kButton compiled styles', () => {
-  it('preserves dark-mode borders on every scoped Button control selector', async () => {
+  it('keeps themed borders and shared action geometry on the scoped root', async () => {
     const stylesheet = await buildButtonStylesheet();
-    const darkBorderRules: Rule[] = [];
+    const root = declarations(stylesheet, /^\.i9k-button\[data-v-[^\]]+\]$/);
 
-    stylesheet.walkRules((rule) => {
-      if (hasDarkModeBorder(rule)) {
-        darkBorderRules.push(rule);
-      }
-    });
-
-    expect(darkBorderRules.map((rule) => rule.selector)).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('.dark .i9k-button--filter'),
-        expect.stringContaining('.dark .i9k-button--pagination'),
-        expect.stringContaining('.dark .i9k-button--page'),
-      ]),
-    );
-    expect(darkBorderRules.map((rule) => rule.selector).join('\n')).not.toMatch(
-      /\.dark\[data-v-[^\]]+\]/,
-    );
+    expect(root['--i9k-button-border']).toBe('var(--control-border-color)');
+    expect(root.border).toBe('1px solid var(--i9k-button-border)');
+    expect(root['border-radius']).toBe('var(--radius-sm)');
+    expect(root.background).toBe('var(--i9k-button-bg)');
   });
 
-  it('uses the on-accent foreground when a primary button adopts the accent background', async () => {
+  it('pairs all primary action backgrounds with the on-primary foreground', async () => {
     const stylesheet = await buildButtonStylesheet();
-    let primaryHoverRule: Rule | undefined;
+    const primary = declarations(stylesheet, /^\.i9k-button--primary\[data-v-[^\]]+\]$/);
 
-    stylesheet.walkRules((rule) => {
-      if (
-        rule.selector.includes('.i9k-button--primary') &&
-        rule.selector.includes(':hover') &&
-        rule.nodes.some(
-          (node) =>
-            node.type === 'decl' &&
-            node.prop === 'background' &&
-            node.value === 'var(--accent-color)',
-        )
-      ) {
-        primaryHoverRule = rule;
-      }
-    });
-
-    expect(primaryHoverRule).toBeDefined();
-    expect(primaryHoverRule?.nodes).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: 'decl',
-          prop: 'color',
-          value: 'var(--on-accent-color)',
-        }),
-      ]),
-    );
+    expect(primary['--i9k-button-bg']).toBe('var(--primary-color)');
+    expect(primary['--i9k-button-hover-bg']).toBe('var(--primary-hover-color)');
+    expect(primary['--i9k-button-pressed-bg']).toBe('var(--primary-pressed-color)');
+    expect(primary['--i9k-button-color']).toBe('var(--on-primary-color)');
+    // Primary and secondary actions inherit the same shape from the root.
+    expect(primary['border-radius']).toBeUndefined();
   });
 });

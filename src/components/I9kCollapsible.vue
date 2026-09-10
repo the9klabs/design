@@ -27,7 +27,7 @@ function onToggle(event: Event) {
 .i9k-collapsible {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  background: var(--glass-bg);
+  background: var(--surface-color);
   transition: var(--transition);
 }
 
@@ -58,7 +58,7 @@ function onToggle(event: Event) {
 }
 
 .i9k-collapsible__summary:focus-visible {
-  outline: 3px solid var(--accent-color);
+  outline: 3px solid var(--focus-color);
   outline-offset: 3px;
 }
 
@@ -87,8 +87,8 @@ function onToggle(event: Event) {
   transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[dir="rtl"] .i9k-collapsible__indicator::before,
-[dir="rtl"] .i9k-collapsible__indicator::after {
+[dir='rtl'] .i9k-collapsible__indicator::before,
+[dir='rtl'] .i9k-collapsible__indicator::after {
   inset-inline-start: auto;
   inset-inline-end: 50%;
 }

@@ -4,7 +4,7 @@ export const I9kPanelEntry: ShowcaseEntry = {
   name: 'I9kPanel',
   section: 'layout',
   summary:
-    'Bordered, blurred glass surface for grouping content. Use it as the standard card/surface wrapper wherever content needs visual separation from the page background.',
+    'Opaque, bordered surface for grouping content. Use it as the standard card/surface wrapper wherever content needs visual separation from the page background.',
   agentPrompt: `Use I9kPanel from @9klabs/design to wrap content in a bordered surface.
 
 import { I9kPanel } from '@9klabs/design';
@@ -18,7 +18,7 @@ Emits: none.
 
 Slots: default — the panel content.
 
-Behavior: 'default' renders a 1px border, glass background, and backdrop blur. 'feature' emphasizes the border and background with an accent-tinted gradient for content that should stand out (e.g. a highlighted pricing tier), and always renders with the large border radius, regardless of \`size\`. 'flat' removes the border, background, and backdrop-filter entirely, leaving only the size-driven padding — useful when you want the padding/radius rhythm without a visible surface, e.g. nested inside another panel.
+Behavior: 'default' renders a 1px border and an opaque surface. 'feature' uses a raised surface, subtle shadow, and orange-accented border for content that should stand out (e.g. a highlighted pricing tier), and always renders with the large border radius, regardless of \`size\`. 'flat' removes the border, background, and backdrop-filter entirely, leaving only the size-driven padding — useful when you want the padding/radius rhythm without a visible surface, e.g. nested inside another panel.
 
 IMPORTANT: \`variant="flat"\` strips the border and background — do not combine it with content that depends on the panel having a visible surface.
 
@@ -33,12 +33,24 @@ Usage:
   ],
   demos: [
     {
+      label: 'Surface and feedback in context',
+      code: `<I9kPanel>
+  <I9kSectionHeading title="Join the next workshop" description="Get the schedule and joining instructions by email." />
+  <I9kInput v-model="email" label="Email address" type="email" error="Enter a valid email address." />
+  <I9kCluster>
+    <I9kButton variant="primary">Join the workshop</I9kButton>
+    <I9kButton>Cancel</I9kButton>
+  </I9kCluster>
+</I9kPanel>`,
+      state: { email: 'ismail@' },
+    },
+    {
       label: 'Variants',
-      code: `<div style="display: grid; gap: var(--spacing-8); grid-template-columns: repeat(3, minmax(0, 1fr))">
+      code: `<I9kGrid :columns="3">
   <I9kPanel variant="default">Default panel</I9kPanel>
   <I9kPanel variant="feature">Feature panel</I9kPanel>
   <I9kPanel variant="flat">Flat panel</I9kPanel>
-</div>`,
+</I9kGrid>`,
     },
     {
       label: 'Sizes',

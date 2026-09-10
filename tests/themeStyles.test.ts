@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { resolveColor } from '../showcase/extract/tokens';
+
 const themeStyles = readFileSync(resolve('src/styles/theme.css'), 'utf8');
 const tokenStyles = readFileSync(resolve('src/styles/tokens.css'), 'utf8');
 
@@ -52,8 +54,8 @@ describe('theme styles', () => {
     expect(bodyStyles.color).toBe('var(--theme-text-color)');
     expect(rootStyles.backgroundColor).toBe('var(--theme-bg-color)');
     expect(rootStyles.color).toBe('var(--theme-text-color)');
-    expect(rootStyles.getPropertyValue('--theme-bg-color')).toBe('hsl(0 0% 0%)');
-    expect(rootStyles.getPropertyValue('--theme-text-color')).toBe('hsl(0 0% 100%)');
+    expect(rootStyles.getPropertyValue('--theme-bg-color')).toBe('hsl(0 0% 6%)');
+    expect(rootStyles.getPropertyValue('--theme-text-color')).toBe('hsl(0 0% 96%)');
   });
 
   it('applies the active theme background to the document root', () => {
@@ -73,6 +75,52 @@ describe('theme styles', () => {
 
     expect(lightness).toBeGreaterThan(0);
     expect(contrastRatio(hslLightnessToRgb(lightness), [1, 1, 1])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(['light', 'dark'])('keeps semantic text and controls legible in %s mode', (theme) => {
+    document.documentElement.className = theme;
+    const styles = getComputedStyle(document.documentElement);
+    const color = (name: string) => {
+      const resolved = resolveColor(styles.getPropertyValue(name));
+      if (!resolved) throw new Error(`Unresolved color token: ${name}`);
+      return [1, 3, 5].map(
+        (offset) => Number.parseInt(resolved.hex.slice(offset, offset + 2), 16) / 255,
+      );
+    };
+    const contrast = (foreground: string, background: string) =>
+      contrastRatio(color(foreground), color(background));
+
+    for (const background of ['--theme-bg-color', '--surface-color', '--surface-raised-color']) {
+      for (const foreground of [
+        '--theme-text-color',
+        '--text-color-light',
+        '--error-color',
+        '--success-color',
+      ]) {
+        expect(
+          contrast(foreground, background),
+          `${foreground} on ${background}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+      expect(contrast('--focus-color', background)).toBeGreaterThanOrEqual(3);
+      expect(contrast('--control-border-color', background)).toBeGreaterThanOrEqual(3);
+    }
+    expect(contrast('--error-color', '--error-bg-color')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast('--success-color', '--success-bg-color')).toBeGreaterThanOrEqual(4.5);
+    for (const background of [
+      '--selected-bg-color',
+      '--selected-hover-bg-color',
+      '--selected-pressed-bg-color',
+    ]) {
+      expect(contrast('--primary-text-color', background), background).toBeGreaterThanOrEqual(4.5);
+    }
+    for (const background of [
+      '--primary-color',
+      '--primary-hover-color',
+      '--primary-pressed-color',
+    ]) {
+      expect(contrast('--on-primary-color', background)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it('uses the dark color scheme for native controls', () => {

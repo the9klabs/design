@@ -63,7 +63,7 @@ const displayCode = computed(() => props.code?.toUpperCase() ?? null);
   gap: var(--spacing-2);
   padding: 0 var(--spacing-4);
   border-radius: var(--radius-md);
-  background: var(--glass-bg);
+  background: var(--surface-color);
 }
 
 .i9k-language-switcher__code {
@@ -78,7 +78,7 @@ const displayCode = computed(() => props.code?.toUpperCase() ?? null);
 }
 
 .i9k-language-switcher:focus-visible {
-  outline: 2px solid var(--primary-text-color);
+  outline: 2px solid var(--focus-color);
   outline-offset: 2px;
 }
 </style>

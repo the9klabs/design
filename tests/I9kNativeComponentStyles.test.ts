@@ -73,7 +73,7 @@ describe('native component compiled styles', () => {
       findRule(
         stylesheet,
         'background',
-        'var(--primary-text-color)',
+        'var(--primary-color)',
         ':checked+.i9k-checkbox-group__mark',
       ),
     ).toBeDefined();
@@ -81,7 +81,7 @@ describe('native component compiled styles', () => {
       findRule(
         stylesheet,
         'outline',
-        '3px solid var(--accent-color)',
+        '3px solid var(--focus-color)',
         ':focus-visible+.i9k-checkbox-group__mark',
       ),
     ).toBeDefined();
@@ -105,7 +105,7 @@ describe('native component compiled styles', () => {
       findRule(
         stylesheet,
         'outline',
-        '3px solid var(--accent-color)',
+        '3px solid var(--focus-color)',
         ':focus-visible+.i9k-radio-group__mark',
       ),
     ).toBeDefined();

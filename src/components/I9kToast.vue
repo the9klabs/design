@@ -33,8 +33,9 @@ const props = withDefaults(defineProps<{ variant?: Variant; size?: I9kComponentS
   padding: var(--spacing-6) var(--spacing-8);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
+  background: var(--surface-raised-color);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
   font-size: var(--text-size-1);
 }
 
@@ -56,12 +57,14 @@ const props = withDefaults(defineProps<{ variant?: Variant; size?: I9kComponentS
 }
 
 .i9k-toast--success {
-  border-color: var(--primary-color);
-  color: var(--primary-text-color);
+  border-color: var(--success-color);
+  background: var(--success-bg-color);
+  color: var(--success-color);
 }
 
 .i9k-toast--error {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
+  border-color: var(--error-color);
+  background: var(--error-bg-color);
+  color: var(--error-color);
 }
 </style>

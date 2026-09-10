@@ -210,7 +210,7 @@ function updateOption(value: string, checked: boolean) {
       2
   );
   place-items: center;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--control-border-color);
   border-radius: var(--radius-sm);
   color: transparent;
   font-size: calc(var(--i9k-checkbox-mark-size) * 0.6);
@@ -220,12 +220,12 @@ function updateOption(value: string, checked: boolean) {
 
 .i9k-checkbox-group__input:checked + .i9k-checkbox-group__mark {
   border-color: var(--primary-text-color);
-  background: var(--primary-text-color);
+  background: var(--primary-color);
   color: var(--on-primary-color);
 }
 
 .i9k-checkbox-group__input:focus-visible + .i9k-checkbox-group__mark {
-  outline: 3px solid var(--accent-color);
+  outline: 3px solid var(--focus-color);
   outline-offset: 3px;
 }
 
@@ -242,7 +242,7 @@ function updateOption(value: string, checked: boolean) {
 }
 
 .i9k-checkbox-group__error {
-  color: var(--accent-color);
+  color: var(--error-color);
   font-weight: 600;
 }
 
