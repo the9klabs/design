@@ -4,7 +4,9 @@
   "description": "Reusable Vue 3 components and tokens from the Ismail9k design system.",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "src/styles/font-faces.css",
+    "src/assets/fonts"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -14,7 +16,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./style.css": "./dist/index.css"
+    "./style.css": "./dist/index.css",
+    "./font-faces.css": "./src/styles/font-faces.css"
   },
   "peerDependencies": {
     "vue": "^3.5.0"

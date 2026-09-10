@@ -1,0 +1,25 @@
+/* Opt-in bundled brand fonts. Consumers that cannot provide IBM Plex and
+   Thmanyah themselves may import '@9klabs/design/font-faces.css'.
+   Not part of the main stylesheet: bundling these inlines ~1.18MB of base64
+   font data into index.css, because Vite library mode inlines CSS assets. */
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans/700.css';
+@import '@fontsource/ibm-plex-serif/400.css';
+@import '@fontsource/ibm-plex-serif/700.css';
+
+@font-face {
+  font-family: 'Thmanyah Sans';
+  src: url('../assets/fonts/thmanyah/thmanyahsans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display';
+  src: url('../assets/fonts/thmanyah/thmanyahserifdisplay-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
