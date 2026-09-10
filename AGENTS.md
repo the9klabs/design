@@ -105,10 +105,13 @@ list here that would go stale.
 The showcase deploys to Cloudflare Pages via `.github/workflows/showcase.yml`, this repository's
 first CI workflow: the `build` job (test, format, lint, typecheck, library build, Storybook build,
 showcase build) runs on every push and pull request, and the `deploy` job additionally runs on
-pushes to `main` and publishes `showcase-dist/` with `wrangler.jsonc`. Deploying requires a
-Cloudflare Pages project named `9k-design-system` and two repository secrets,
-`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Until both exist, the `deploy` job fails while
-the `build` job still passes.
+pushes to `main` and publishes `showcase-dist/` with `wrangler.jsonc` — the deploy command is a
+bare `pages deploy`, because the project name and the output directory both come from that config
+file. Deploying requires a Cloudflare Pages project named `9k-design-system` and two repository
+secrets, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. When either secret is missing the
+`deploy` job skips the upload with a workflow warning instead of failing, so an unconfigured
+repository still gets a green pipeline — check that warning before assuming the showcase went
+live.
 
 ## Build, Test, and Development Commands
 
