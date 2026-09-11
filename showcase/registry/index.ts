@@ -20,6 +20,7 @@ import { I9kLanguageSwitcherEntry } from './I9kLanguageSwitcher';
 import { I9kLinkCardEntry } from './I9kLinkCard';
 import { I9kNavigationEntry } from './I9kNavigation';
 import { I9kNavMenuEntry } from './I9kNavMenu';
+import { I9kNinoEntry } from './I9kNino';
 import { I9kPageContainerEntry } from './I9kPageContainer';
 import { I9kPageHeaderEntry } from './I9kPageHeader';
 import { I9kPanelEntry } from './I9kPanel';
@@ -55,6 +56,7 @@ export const entries: ShowcaseEntry[] = [
   I9kGithubEmbedEntry,
   I9kIconEntry,
   I9kAsciiEmojiEntry,
+  I9kNinoEntry,
   I9kFieldEntry,
   I9kCheckboxGroupEntry,
   I9kInputEntry,
