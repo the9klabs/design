@@ -9,6 +9,7 @@ export type { I9kNinoExpression, I9kNinoLook, I9kNinoSize } from './types/compon
 export { I9K_NINO_EXPRESSIONS } from './types/components';
 export type { I9kCheckboxOption, I9kRadioOption } from './types/forms';
 export type { I9kIconName } from './types/icons';
+export { I9K_COUNTRY_DIAL_CODES } from './data/countries';
 
 export { default as I9kArticleHeader } from './components/I9kArticleHeader.vue';
 export { default as I9kAsciiEmoji } from './components/I9kAsciiEmoji.vue';
@@ -40,6 +41,7 @@ export { default as I9kLinkCard } from './components/I9kLinkCard.vue';
 export { default as I9kPageContainer } from './components/I9kPageContainer.vue';
 export { default as I9kPageHeader } from './components/I9kPageHeader.vue';
 export { default as I9kPanel } from './components/I9kPanel.vue';
+export { default as I9kPhoneInput } from './components/I9kPhoneInput.vue';
 export { default as I9kRadioGroup } from './components/I9kRadioGroup.vue';
 export { default as I9kSectionHeading } from './components/I9kSectionHeading.vue';
 export { default as I9kSelect } from './components/I9kSelect.vue';
