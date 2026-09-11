@@ -213,8 +213,12 @@ if (isDevelopment) {
   font-size: max(1rem, var(--i9k-phone-input-font-size));
 }
 
+/* width as well as flex: an input left at width: auto keeps its default
+   ~20-character intrinsic size as its minimum, which forces a narrow parent
+   (a grid track on a phone) wider than the screen. */
 .i9k-phone-input__number {
   flex: 1;
+  width: 100%;
   min-width: 0;
   padding: 0 var(--i9k-phone-input-padding);
 }
