@@ -5,6 +5,8 @@ export type { I9kBadgeVariant } from './types/components';
 export type { I9kGridColumns } from './types/components';
 export type { I9kPanelVariant } from './types/components';
 export type { I9kTextVariant } from './types/components';
+export type { I9kNinoExpression, I9kNinoLook, I9kNinoSize } from './types/components';
+export { I9K_NINO_EXPRESSIONS } from './types/components';
 export type { I9kCheckboxOption, I9kRadioOption } from './types/forms';
 export type { I9kIconName } from './types/icons';
 
@@ -21,6 +23,7 @@ export { default as I9kIconButton } from './components/I9kIconButton.vue';
 export { default as I9kLanguageSwitcher } from './components/I9kLanguageSwitcher.vue';
 export { default as I9kNavigation } from './components/I9kNavigation.vue';
 export { default as I9kNavMenu } from './components/I9kNavMenu.vue';
+export { default as I9kNino } from './components/I9kNino.vue';
 export { default as I9kProfileCard } from './components/I9kProfileCard.vue';
 export { default as I9kSocialLinks } from './components/I9kSocialLinks.vue';
 export { default as I9kThemeSwitcher } from './components/I9kThemeSwitcher.vue';
