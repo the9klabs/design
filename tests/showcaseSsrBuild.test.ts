@@ -43,12 +43,15 @@ describe('showcase SSR build', () => {
       [
         '--input-type=module',
         '--eval',
-        'const server = await import(process.argv[1]); process.stdout.write(await server.render());',
+        'const server = await import(process.argv[1]); process.stdout.write(JSON.stringify(await server.render()));',
         entryUrl,
       ],
       { maxBuffer: 10 * 1024 * 1024 },
     );
+    const { html, teleports } = JSON.parse(stdout);
 
-    expect(stdout).toContain('showcase-demo-stage');
+    expect(html).toContain('showcase-demo-stage');
+    // The live I9kNavMenu demo teleports its panel to <body>; losing it breaks hydration.
+    expect(teleports.body).toContain('<!--teleport start anchor-->');
   });
 });

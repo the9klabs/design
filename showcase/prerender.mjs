@@ -27,15 +27,11 @@ const lastmod = (() => {
 
 const server = await import(pathToFileURL(resolve('showcase/.ssr/entry-server.js')).href);
 
-const html = await server.render();
+const rendered = await server.render();
 const { manifest, llmsTxt, sitemap } = server.artifacts(version, lastmod);
 
 const shell = readFileSync(resolve(dist, 'index.html'), 'utf8');
-if (!shell.includes('<!--app-html-->')) {
-  throw new Error('showcase-dist/index.html lost its <!--app-html--> marker');
-}
-
-writeFileSync(resolve(dist, 'index.html'), shell.replace('<!--app-html-->', html));
+writeFileSync(resolve(dist, 'index.html'), server.buildPage(shell, rendered));
 writeFileSync(resolve(dist, 'components.json'), JSON.stringify(manifest, null, 2));
 writeFileSync(resolve(dist, 'llms.txt'), llmsTxt);
 writeFileSync(resolve(dist, 'sitemap.xml'), sitemap);
