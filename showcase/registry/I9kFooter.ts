@@ -11,7 +11,7 @@ import { I9kFooter, type I9kFooterColumn } from '@9klabs/design';
 
 It has two layouts, chosen by what you pass:
 - Centred (default): social links, then the tagline, then the utilities slot, stacked and centred. Suits a narrow page such as a link-in-bio.
-- Multi-column: used as soon as \`columns\` is non-empty or the \`brand\` slot is filled. A brand block (brand, tagline, copyright) sits beside the link columns; social links and the utilities slot share a bottom bar under a divider. Columns stack under the brand at 768px and below.
+- Multi-column: used as soon as \`columns\` is non-empty or the \`brand\` slot is filled. A brand block (brand, tagline, copyright) sits beside the link columns; social links and the utilities slot share a bottom bar under a divider. The grid has one track per column, up to four across; more wrap onto another row. Columns stack under the brand, two across, at 768px and below.
 
 Props:
 - tagline?: string | null (default null) — plain text; replaced by the default slot when that is used.
@@ -34,7 +34,7 @@ Slots:
 - utilities — end of the bottom bar (or after the tagline when centred): a language switcher, a theme switcher, a markdown link.
 - social-icon — forwarded to I9kSocialLinks' icon slot; receives item.
 
-IMPORTANT: only hrefs starting with "/" go through linkComponent. https:, mailto: and tel: links always render a plain <a>, so a router never tries to resolve them.
+IMPORTANT: only site-relative hrefs (a single leading "/") go through linkComponent. https:, mailto:, tel: and protocol-relative "//host" links always render a plain <a>, so a router never tries to resolve them.
 
 IMPORTANT: external: true opens the link in a new tab with rel="noopener" and adds a decorative arrow that mirrors in RTL. Leave it off for mailto: links.
 
@@ -57,7 +57,7 @@ Usage:
 </I9kFooter>`,
   gotchas: [
     'The layout switches on `columns.length` or a filled `brand` slot — pass neither and you get the centred stack, even if you set `copyright` (which only renders in the multi-column brand block).',
-    'Only site-relative hrefs (starting with "/") are handed to `linkComponent`; `https:`, `mailto:` and `tel:` links always render plain anchors.',
+    'Only site-relative hrefs (a single leading "/") are handed to `linkComponent`; `https:`, `mailto:`, `tel:` and protocol-relative `//host` links always render plain anchors.',
     '`external: true` adds `target="_blank"`, `rel="noopener"` and an aria-hidden arrow. Do not set it on `mailto:` links.',
     'The default slot fully replaces the tagline paragraph rather than appending to it.',
     'The social row only renders when `socialLinks` is non-empty. I9kSocialLink is not exported — inline its shape.',

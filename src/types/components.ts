@@ -49,7 +49,8 @@ export interface I9kFooterLink {
   label: string;
   /**
    * Site-relative (`/talks`) hrefs go through the footer's `linkComponent`;
-   * anything else (`https:`, `mailto:`) always renders a plain anchor.
+   * anything else (`https:`, `mailto:`, protocol-relative `//host`) always
+   * renders a plain anchor.
    */
   href: string;
   /** Opens in a new tab and shows a direction-aware arrow. */

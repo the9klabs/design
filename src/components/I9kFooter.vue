@@ -38,18 +38,27 @@ defineEmits<{
 const slots = useSlots();
 // Columns or a brand switch to the multi-column layout. Without either the
 // footer keeps its original centred stack, so existing consumers render as
-// they always have.
-const structured = computed(() => props.columns.length > 0 || Boolean(slots.brand));
+// they always have. A function, not a computed: slots are not reactive, so a
+// computed would miss a brand slot added after mount.
+const structured = () => props.columns.length > 0 || Boolean(slots.brand);
 const tag = computed(() => props.linkComponent ?? 'a');
 
-// A router link component cannot resolve `https:` or `mailto:` targets, so only
-// site-relative hrefs are handed to it.
+// The grid gets one track per column up to this many; further columns wrap onto
+// another row. Four still leaves each track readable inside the 1000px measure.
+const MAX_COLUMNS_PER_ROW = 4;
+const columnCount = computed(() => Math.min(props.columns.length, MAX_COLUMNS_PER_ROW));
+
+// A router link component cannot resolve `https:`, `mailto:` or protocol-relative
+// `//host` targets, so only site-relative hrefs are handed to it.
 const routed = (link: I9kFooterLink) =>
-  Boolean(props.linkComponent) && !link.external && link.href.startsWith('/');
+  Boolean(props.linkComponent) &&
+  !link.external &&
+  link.href.startsWith('/') &&
+  !link.href.startsWith('//');
 </script>
 <template>
-  <footer class="footer i9k-footer" :class="{ 'i9k-footer--structured': structured }">
-    <template v-if="structured">
+  <footer class="footer i9k-footer" :class="{ 'i9k-footer--structured': structured() }">
+    <template v-if="structured()">
       <div class="i9k-footer__top">
         <div class="i9k-footer__brand">
           <component
@@ -66,7 +75,12 @@ const routed = (link: I9kFooterLink) =>
           >
           <p v-if="copyright" class="i9k-footer__copyright">{{ copyright }}</p>
         </div>
-        <nav v-if="columns.length" class="i9k-footer__columns" :aria-label="navLabel">
+        <nav
+          v-if="columns.length"
+          class="i9k-footer__columns"
+          :style="{ '--i9k-footer-column-count': columnCount }"
+          :aria-label="navLabel"
+        >
           <div v-for="column in columns" :key="column.id" class="i9k-footer__column">
             <h2 class="i9k-footer__heading">{{ column.title }}</h2>
             <ul class="i9k-footer__list">
@@ -189,7 +203,7 @@ const routed = (link: I9kFooterLink) =>
 }
 .i9k-footer__columns {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--i9k-footer-column-count, 3), minmax(0, 1fr));
   gap: var(--spacing-10);
 }
 .i9k-footer__heading {

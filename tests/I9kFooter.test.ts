@@ -1,4 +1,4 @@
-import { defineComponent } from 'vue';
+import { defineComponent, nextTick, ref } from 'vue';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
@@ -69,6 +69,26 @@ describe('I9kFooter', () => {
 
       expect(wrapper.get('.i9k-footer__utilities .util').text()).toBe('Markdown');
     });
+
+    it('switches to the multi-column layout when a brand slot is added after mount', async () => {
+      const showBrand = ref(false);
+      const wrapper = mount(
+        defineComponent({
+          components: { I9kFooter },
+          setup: () => ({ showBrand }),
+          template: `<I9kFooter tagline="Built with care."
+            ><template v-if="showBrand" #brand><b>Ismail9k_</b></template></I9kFooter
+          >`,
+        }),
+      );
+      expect(wrapper.get('footer').classes()).not.toContain('i9k-footer--structured');
+
+      showBrand.value = true;
+      await nextTick();
+
+      expect(wrapper.get('footer').classes()).toContain('i9k-footer--structured');
+      expect(wrapper.get('.i9k-footer__brand-link').text()).toBe('Ismail9k_');
+    });
   });
 
   describe('with columns', () => {
@@ -117,6 +137,40 @@ describe('I9kFooter', () => {
       expect(school.attributes('href')).toBe('https://9k.school');
       expect(email.attributes('href')).toBe('mailto:hello@ismail9k.com');
       expect(email.attributes('target')).toBeUndefined();
+    });
+
+    it('renders a protocol-relative href as a plain anchor, not a routed link', () => {
+      const wrapper = mount(I9kFooter, {
+        props: {
+          columns: [
+            {
+              id: 'files',
+              title: 'Files',
+              links: [{ id: 'guide', label: 'Guide', href: '//cdn.example.com/guide.pdf' }],
+            },
+          ],
+          linkComponent: RouterLinkStub,
+        },
+      });
+
+      expect(wrapper.findAllComponents(RouterLinkStub)).toHaveLength(0);
+      expect(wrapper.get('.i9k-footer__link').attributes('href')).toBe(
+        '//cdn.example.com/guide.pdf',
+      );
+    });
+
+    it('sizes the grid to the column count, at most four across', () => {
+      const column = (id: string): I9kFooterColumn => ({ id, title: id, links: [] });
+      const count = (length: number) =>
+        mount(I9kFooter, {
+          props: { columns: Array.from({ length }, (_, index) => column(`c${index}`)) },
+        })
+          .get('nav')
+          .element.style.getPropertyValue('--i9k-footer-column-count');
+
+      expect(count(1)).toBe('1');
+      expect(count(3)).toBe('3');
+      expect(count(6)).toBe('4');
     });
 
     it('emits navigate with the clicked link', async () => {
