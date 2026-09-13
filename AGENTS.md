@@ -7,7 +7,7 @@ Canonical instruction file for this repository, shared by all coding agents
 
 ## Project Structure & Module Organization
 
-This package provides Vue 3 design-system components and shared CSS. Component source lives in `src/components/`; public exports are collected in `src/index.ts`. Keep design tokens and reusable primitives in `src/styles/`, icon data in `src/icons/`, and other static files in `src/assets/`. Storybook examples belong in `stories/`, with configuration under `.storybook/`. Vitest unit tests live in `tests/`. `dist/` and `storybook-static/` are generated outputs—do not edit or commit them.
+This package provides Vue 3 design-system components and shared CSS. Component source lives in `src/components/`; public exports are collected in `src/index.ts`. Keep design tokens and reusable primitives in `src/styles/`, icon data in `src/icons/`, reference data such as country calling codes in `src/data/`, and other static files in `src/assets/`. Storybook examples belong in `stories/`, with configuration under `.storybook/`. Vitest unit tests live in `tests/`. `dist/` and `storybook-static/` are generated outputs—do not edit or commit them.
 
 The current projects using this design system are `9k.school` and `ismail9k.com`.
 
