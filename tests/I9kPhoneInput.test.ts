@@ -115,6 +115,25 @@ describe('I9kPhoneInput', () => {
     expect(wrapper.get('select').attributes('name')).toBe('whatsappCountry');
   });
 
+  it('disables the country select along with the number', () => {
+    const wrapper = mountStandalone({}, { disabled: true });
+
+    expect(wrapper.get('input').element.disabled).toBe(true);
+    expect(wrapper.get('select').element.disabled).toBe(true);
+  });
+
+  it.each(['ar_EG', ''])(
+    'falls back to the default locale for the invalid tag %j',
+    async (locale) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const wrapper = mountStandalone({ locale });
+      await nextTick();
+
+      expect(wrapper.findAll('option')).toHaveLength(Object.keys(I9K_COUNTRY_DIAL_CODES).length);
+      expect(warn).not.toHaveBeenCalled();
+    },
+  );
+
   it('keeps the calling code before the number on right-to-left pages', () => {
     const wrapper = mountStandalone();
 

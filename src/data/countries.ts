@@ -278,8 +278,16 @@ export function i9kCountryFlag(code: string): string {
  * data, and a server's does not match a browser's.
  */
 export function i9kListCountries(locale: string): I9kPhoneCountry[] {
-  const names = new Intl.DisplayNames([locale], { type: 'region' });
-  const collator = new Intl.Collator(locale);
+  // An invalid tag (`ar_EG`, an empty string) makes Intl throw, and this runs
+  // during render; fall back to the runtime's default locale instead.
+  let locales: string[] | undefined;
+  try {
+    locales = Intl.getCanonicalLocales(locale);
+  } catch {
+    locales = undefined;
+  }
+  const names = new Intl.DisplayNames(locales, { type: 'region' });
+  const collator = new Intl.Collator(locales);
 
   return Object.entries(I9K_COUNTRY_DIAL_CODES)
     .map(([code, dialCode]) => ({ code, name: names.of(code) ?? code, dialCode }))

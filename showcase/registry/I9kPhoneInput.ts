@@ -24,11 +24,13 @@ Behavior: inside an I9kField, only the number registers with the field, so the f
 IMPORTANT: the named country list is rendered only after mount — the server renders just the selected code — because server and browser ICU name and sort countries differently and would otherwise hydrate out of step. Do not rely on the full option list in server-rendered HTML.
 
 Usage:
-<I9kField label="WhatsApp number"><I9kPhoneInput v-model="phone" v-model:country="country" country-label="Country code" name="phone" autocomplete="tel" /></I9kField>`,
+<I9kField label="WhatsApp number"><I9kPhoneInput v-model="phone" v-model:country="country" country-label="Country code" name="phone" autocomplete="tel-national" /></I9kField>`,
   gotchas: [
     'The component only collects the country and the typed number; it does not validate or normalise them.',
     'The server renders only the selected country; the named list appears after hydration.',
     'Inside an I9kField, do not pass id, aria-invalid, or aria-describedby — the field supplies them to the number.',
+    'Use autocomplete="tel-national", not "tel": "tel" autofills the number with its country code, which the picker already shows.',
+    'disabled freezes both the number and the country; readonly has no <select> equivalent and freezes only the number.',
   ],
   demos: [
     {

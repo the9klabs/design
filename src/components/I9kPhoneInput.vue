@@ -115,6 +115,7 @@ if (isDevelopment) {
         class="i9k-phone-input__select"
         :name="countryName"
         :aria-label="countryLabel"
+        :disabled="hasI9kBooleanAttr(attrs.disabled)"
       >
         <!-- :selected as well as v-model: Vue's SSR does not mark the
              selected option inside a v-if or v-for. -->
@@ -233,6 +234,18 @@ if (isDevelopment) {
 
 .i9k-phone-input__number[aria-invalid='true'] {
   border-color: var(--error-color);
+}
+
+/* Dimmed like I9kSelect and I9kTextarea. The select covers the face, so its
+   cursor is the one the visitor sees. */
+.i9k-phone-input__number:disabled,
+.i9k-phone-input__country:has(.i9k-phone-input__select:disabled) {
+  opacity: 0.5;
+}
+
+.i9k-phone-input__number:disabled,
+.i9k-phone-input__select:disabled {
+  cursor: not-allowed;
 }
 
 @media (prefers-reduced-motion: reduce) {
