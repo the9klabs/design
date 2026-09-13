@@ -42,3 +42,28 @@ export type I9kNinoLook = 'center' | 'up' | 'down' | 'start' | 'end';
  * and its value guard can both read the full set of literals.
  */
 export type I9kNinoSize = 'sm' | 'md' | 'lg' | 'auto';
+
+/** One destination in an I9kFooter column. */
+export interface I9kFooterLink {
+  id: string;
+  label: string;
+  /**
+   * Site-relative (`/talks`) hrefs go through the footer's `linkComponent`;
+   * anything else (`https:`, `mailto:`, protocol-relative `//host`) always
+   * renders a plain anchor.
+   */
+  href: string;
+  /** Opens in a new tab and shows a direction-aware arrow. */
+  external?: boolean;
+  /** Emphasised, for the one destination a column should lead with. */
+  featured?: boolean;
+  /** Decorative prefix such as an emoji; hidden from assistive technology. */
+  emoji?: string;
+}
+
+/** A titled group of links in I9kFooter. */
+export interface I9kFooterColumn {
+  id: string;
+  title: string;
+  links: I9kFooterLink[];
+}

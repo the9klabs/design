@@ -126,7 +126,8 @@ const readSlots = (root: RootNode | undefined): string[] => {
   };
 
   root.children.forEach(visit);
-  return names;
+  // A slot rendered in both branches of a v-if would otherwise be listed twice.
+  return [...new Set(names)];
 };
 
 export const extractComponent = (filePath: string): ExtractedComponent => {

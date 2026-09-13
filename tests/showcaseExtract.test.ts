@@ -101,6 +101,10 @@ describe('showcase emit and slot extraction', () => {
     expect(component('I9kNavigation').slots).toEqual(['brand', 'actions']);
   });
 
+  it('lists a slot rendered in both branches of a v-if once', () => {
+    expect(component('I9kFooter').slots).toEqual(['brand', 'default', 'social-icon', 'utilities']);
+  });
+
   it('reports an unnamed slot as default', () => {
     expect(component('I9kGrid').slots).toEqual(['default']);
   });

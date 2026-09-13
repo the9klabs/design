@@ -51,6 +51,41 @@ export const Footer: Story = {
       '<I9kFooter :social-links="socialItems" social-labels tagline="AI changes the tools. Engineering judgment still matters." />',
   }),
 };
+export const FooterWithColumns: Story = {
+  render: () => ({
+    components: { I9kFooter, I9kBrandWordmark, I9kLanguageSwitcher },
+    setup: () => ({
+      socialItems,
+      columns: [
+        {
+          id: 'explore',
+          title: 'Explore',
+          links: [
+            { id: 'blog', label: 'Blog', href: '#blog' },
+            { id: 'talks', label: 'Talks', href: '#talks' },
+          ],
+        },
+        {
+          id: 'more',
+          title: 'More from me',
+          links: [
+            {
+              id: 'school',
+              label: '9k School',
+              href: 'https://9k.school',
+              external: true,
+              featured: true,
+              emoji: '🎓',
+            },
+            { id: 'email', label: 'Email me', href: 'mailto:hello@ismail9k.com' },
+          ],
+        },
+      ],
+    }),
+    template:
+      '<I9kFooter :columns="columns" :social-links="socialItems" tagline="AI changes the tools. Engineering judgment still matters." copyright="© 2026 Ismail9k" brand-label="Ismail9k"><template #brand><I9kBrandWordmark /></template><template #utilities><I9kLanguageSwitcher label="العربية" code="ar" href="#ar" /></template></I9kFooter>',
+  }),
+};
 export const Navigation: Story = {
   render: () => ({
     components: { I9kNavigation, I9kBrandWordmark, I9kThemeSwitcher },
