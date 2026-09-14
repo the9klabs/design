@@ -20,6 +20,17 @@ export const I9K_ICON_NAMES = [
   'sun',
   'moon',
   'translate',
+  'add',
+  'edit',
+  'delete',
+  'close',
+  'arrowUp',
+  'arrowDown',
+  'archive',
+  'unarchive',
+  'eye',
+  'eyeOff',
+  'warning',
 ] as const;
 
 export type I9kIconName = (typeof I9K_ICON_NAMES)[number];
