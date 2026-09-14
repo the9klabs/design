@@ -36,10 +36,12 @@ IMPORTANT: the body and footer render only while the modal is open, so a form in
 Usage:
 <I9kButton @click="open = true">Edit module</I9kButton>
 <I9kModal v-model:open="open" title="Edit module" description="Both languages are required." close-label="Close">
-  <I9kInput v-model="title" label="Title" autofocus />
+  <form id="edit-module-form" @submit.prevent="save">
+    <I9kInput v-model="title" label="Title" autofocus />
+  </form>
   <template #footer>
     <I9kButton @click="open = false">Cancel</I9kButton>
-    <I9kButton variant="primary" type="submit">Save</I9kButton>
+    <I9kButton variant="primary" type="submit" form="edit-module-form">Save</I9kButton>
   </template>
 </I9kModal>`,
   gotchas: [
@@ -47,6 +49,7 @@ Usage:
     'Backdrop clicks never close the modal.',
     'Set `dismissible` to false while saving; Escape is then ignored and the close button is disabled.',
     'The body and footer render only while open, so a form inside remounts on every opening; put `autofocus` on its first field.',
+    'The footer renders outside the body, so a submit button there needs `form="<id>"` pointing at the form in the body.',
   ],
   demos: [
     {
