@@ -14,7 +14,7 @@ Props:
 - open?: boolean (default undefined) — bind with v-model:open to control the open state from the parent, e.g. an expand-all / collapse-all button. Leave it unbound for the browser-managed, uncontrolled behavior.
 
 Emits:
-- toggle(open: boolean) — reports the current native details.open value after a user toggle.
+- toggle(open: boolean) — reports the current native details.open value after every native toggle, including one caused by changing a bound \`open\`.
 - update:open(open: boolean) — emitted only when \`open\` is bound and a user toggle makes the native state differ from it.
 
 Slots:
