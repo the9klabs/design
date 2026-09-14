@@ -18,6 +18,7 @@ import { I9kIconButtonEntry } from './I9kIconButton';
 import { I9kInputEntry } from './I9kInput';
 import { I9kLanguageSwitcherEntry } from './I9kLanguageSwitcher';
 import { I9kLinkCardEntry } from './I9kLinkCard';
+import { I9kModalEntry } from './I9kModal';
 import { I9kNavigationEntry } from './I9kNavigation';
 import { I9kNavMenuEntry } from './I9kNavMenu';
 import { I9kNinoEntry } from './I9kNino';
@@ -69,6 +70,7 @@ export const entries: ShowcaseEntry[] = [
   I9kButtonGroupEntry,
   I9kIconButtonEntry,
   I9kToastEntry,
+  I9kModalEntry,
   I9kNavigationEntry,
   I9kNavMenuEntry,
   I9kFooterEntry,
