@@ -30,7 +30,11 @@ function isShown(element: HTMLDialogElement) {
 function show() {
   const element = dialog.value;
   if (!element || isShown(element)) return;
-  returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  // Kept when the dialog is shown again after the browser closed it, so focus
+  // still returns to the element that opened it, not to where focus landed.
+  if (!returnFocus) {
+    returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }
   if (typeof element.showModal === 'function') element.showModal();
   else element.setAttribute('open', '');
 }
@@ -51,21 +55,37 @@ function dismiss() {
 }
 
 // Escape raises `cancel`. The parent owns `open`, so the native close is
-// always prevented and the request is forwarded instead.
+// prevented and the request is forwarded instead. A non-cancelable `cancel`
+// (a repeated Escape with no user activation in between) is always followed
+// by a native close, so that request is forwarded once, from onNativeClose.
 function onCancel(event: Event) {
   event.preventDefault();
-  dismiss();
+  if (event.cancelable) dismiss();
 }
 
-// A browser may still close the dialog on a repeated Escape without a
-// cancelable `cancel`. Keep the element in step with the prop.
+// Skip a close the parent already asked for, and a stale `close` queued by
+// hide() that arrives after the dialog was shown again. Otherwise the browser
+// closed the dialog on its own: forward the request, then show the dialog
+// again if the parent kept `open` true (not dismissible, or declined).
 function onNativeClose() {
-  if (!props.open) return;
-  if (props.dismissible) dismiss();
-  else show();
+  const element = dialog.value;
+  if (!element || isShown(element) || !props.open) return;
+  dismiss();
+  void nextTick(() => {
+    if (props.open) show();
+  });
+}
+
+// While not dismissible, cancel Escape before the browser turns it into a
+// close request, so a repeated Escape during a save cannot close the dialog
+// and reopen it with focus moved. Listening on the document catches the key
+// even when the focused control was disabled and focus fell to <body>.
+function onDocumentKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && props.open && !props.dismissible) event.preventDefault();
 }
 
 onMounted(() => {
+  document.addEventListener('keydown', onDocumentKeydown, true);
   if (props.open) show();
 });
 
@@ -78,7 +98,10 @@ watch(
   },
 );
 
-onBeforeUnmount(hide);
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onDocumentKeydown, true);
+  hide();
+});
 </script>
 
 <template>
