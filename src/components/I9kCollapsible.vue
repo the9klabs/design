@@ -1,20 +1,37 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{ defaultOpen?: boolean }>(), {
+import { ref, watch } from 'vue';
+
+const props = withDefaults(defineProps<{ defaultOpen?: boolean; open?: boolean }>(), {
   defaultOpen: false,
+  // Explicitly undefined: Vue would otherwise cast an absent boolean prop to
+  // false and every instance would become controlled.
+  open: undefined,
 });
 
-const emit = defineEmits<{ toggle: [open: boolean] }>();
-const initialOpen = props.defaultOpen;
+const emit = defineEmits<{ toggle: [open: boolean]; 'update:open': [open: boolean] }>();
+const details = ref<HTMLDetailsElement | null>(null);
+const initialOpen = props.open ?? props.defaultOpen;
+
+watch(
+  () => props.open,
+  (open) => {
+    if (open === undefined || !details.value || details.value.open === open) return;
+    details.value.open = open;
+  },
+);
 
 function onToggle(event: Event) {
-  const details = event.currentTarget;
-  if (!(details instanceof HTMLDetailsElement)) return;
-  emit('toggle', details.open);
+  const element = event.currentTarget;
+  if (!(element instanceof HTMLDetailsElement)) return;
+  emit('toggle', element.open);
+  if (props.open !== undefined && props.open !== element.open) {
+    emit('update:open', element.open);
+  }
 }
 </script>
 
 <template>
-  <details class="i9k-collapsible" :open="initialOpen" @toggle="onToggle">
+  <details ref="details" class="i9k-collapsible" :open="initialOpen" @toggle="onToggle">
     <summary class="i9k-collapsible__summary">
       <span class="i9k-collapsible__summary-content"><slot name="summary" /></span>
       <span class="i9k-collapsible__indicator" aria-hidden="true" />

@@ -59,4 +59,33 @@ describe('I9kCollapsible', () => {
 
     expect(details.map((item) => item.element.open)).toEqual([true, true]);
   });
+
+  it('follows a bound open prop', async () => {
+    const wrapper = mount(I9kCollapsible, { props: { open: false } });
+    const details = wrapper.get('details').element as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    await wrapper.setProps({ open: true });
+    expect(details.open).toBe(true);
+    await wrapper.setProps({ open: false });
+    expect(details.open).toBe(false);
+  });
+
+  it('reports a user toggle through update:open when controlled', async () => {
+    const wrapper = mount(I9kCollapsible, { props: { open: false } });
+    const details = wrapper.get('details');
+    details.element.open = true;
+    await details.trigger('toggle');
+    expect(wrapper.emitted('update:open')).toEqual([[true]]);
+    expect(wrapper.emitted('toggle')).toEqual([[true]]);
+  });
+
+  it('stays uncontrolled when open is not bound', async () => {
+    const wrapper = mount(I9kCollapsible, { props: { defaultOpen: true } });
+    const details = wrapper.get('details');
+    expect(details.element.open).toBe(true);
+    details.element.open = false;
+    await details.trigger('toggle');
+    expect(wrapper.emitted('update:open')).toBeUndefined();
+    expect(details.element.open).toBe(false);
+  });
 });
