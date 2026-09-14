@@ -143,6 +143,8 @@ onBeforeUnmount(() => {
 
   width: min(100% - 2 * var(--spacing-8), var(--i9k-modal-width));
   max-height: calc(100dvh - 2 * var(--spacing-8));
+  /* Borders sit outside max-height, so .i9k-modal__surface can inherit it and still fit. */
+  box-sizing: content-box;
   padding: 0;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
