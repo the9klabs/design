@@ -10,7 +10,7 @@ export const I9kToastEntry: ShowcaseEntry = {
 import { I9kToast } from '@9klabs/design';
 
 Props:
-- variant?: 'info' | 'success' | 'error' (default 'info') — also sets the ARIA role: 'error' renders \`role="alert"\`, 'info' and 'success' render \`role="status"\`.
+- variant?: 'info' | 'success' | 'warning' | 'error' (default 'info') — also sets the ARIA role: 'warning' and 'error' render \`role="alert"\`, 'info' and 'success' render \`role="status"\`.
 - size?: 'sm' | 'md' | 'lg' (default 'md')
 
 Emits: none.
@@ -23,7 +23,7 @@ Usage:
 <I9kToast variant="success">Changes saved.</I9kToast>`,
   gotchas: [
     'I9kToast renders no dismiss control and sets no timer — show, hide, and stack it yourself; it is a static banner until you remove it from the DOM.',
-    '`variant="error"` renders `role="alert"` (assertive); `info` and `success` render `role="status"` (polite) — pick `error` only for genuine failures so screen readers don\'t interrupt for routine status text.',
+    '`variant="warning"` and `variant="error"` render `role="alert"` (assertive); `info` and `success` render `role="status"` (polite) — pick `warning` or `error` only for something the user must act on, so screen readers don\'t interrupt for routine status text.',
     'It has no positioning of its own — wrap it in a container with your own `position: fixed` styling if you want it to float above the page.',
   ],
   demos: [
@@ -31,7 +31,12 @@ Usage:
       label: 'Variants',
       code: `<I9kToast variant="info">Your changes are syncing.</I9kToast>
 <I9kToast variant="success">Changes saved.</I9kToast>
+<I9kToast variant="warning">You have unsaved changes.</I9kToast>
 <I9kToast variant="error">Could not save changes.</I9kToast>`,
+    },
+    {
+      label: 'Warning',
+      code: `<I9kToast variant="warning">You have unsaved changes.</I9kToast>`,
     },
     {
       label: 'Sizes',

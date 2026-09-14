@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import type { I9kComponentSize } from '../types/components';
 
-type Variant = 'info' | 'success' | 'error';
+type Variant = 'info' | 'success' | 'warning' | 'error';
 
 const props = withDefaults(defineProps<{ variant?: Variant; size?: I9kComponentSize }>(), {
   variant: 'info',
@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<{ variant?: Variant; size?: I9kComponentS
       `i9k-toast--${props.variant}`,
       `i9k-toast--${props.size}`,
     ]"
-    :role="props.variant === 'error' ? 'alert' : 'status'"
+    :role="props.variant === 'error' || props.variant === 'warning' ? 'alert' : 'status'"
   >
     <slot />
   </div>
@@ -60,6 +60,12 @@ const props = withDefaults(defineProps<{ variant?: Variant; size?: I9kComponentS
   border-color: var(--success-color);
   background: var(--success-bg-color);
   color: var(--success-color);
+}
+
+.i9k-toast--warning {
+  border-color: var(--warning-color);
+  background: var(--warning-bg-color);
+  color: var(--warning-color);
 }
 
 .i9k-toast--error {
