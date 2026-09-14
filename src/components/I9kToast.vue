@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<{ variant?: Variant; size?: I9kComponentS
       `i9k-toast--${props.variant}`,
       `i9k-toast--${props.size}`,
     ]"
-    :role="props.variant === 'error' || props.variant === 'warning' ? 'alert' : 'status'"
+    :role="props.variant === 'error' ? 'alert' : 'status'"
   >
     <slot />
   </div>
