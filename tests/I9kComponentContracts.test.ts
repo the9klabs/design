@@ -36,6 +36,8 @@ const collapsibleExports = [
   "export { default as I9kCollapsible } from './components/I9kCollapsible.vue';",
 ] as const;
 
+const modalExports = ["export { default as I9kModal } from './components/I9kModal.vue';"] as const;
+
 describe('shared component contracts', () => {
   it('exports the common component types', () => {
     expect(indexSource).toContain(
@@ -52,6 +54,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(collapsibleExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(modalExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 

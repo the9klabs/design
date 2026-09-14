@@ -10,18 +10,20 @@ export const I9kCollapsibleEntry: ShowcaseEntry = {
 import { I9kCollapsible } from '@9klabs/design';
 
 Props:
-- defaultOpen?: boolean (default false) — sets only the initial native open state.
+- defaultOpen?: boolean (default false) — sets only the initial native open state when \`open\` is not bound.
+- open?: boolean (default undefined) — bind with v-model:open to control the open state from the parent, e.g. an expand-all / collapse-all button. Leave it unbound for the browser-managed, uncontrolled behavior.
 
 Emits:
-- toggle(open: boolean) — reports the current native details.open value after a user toggle.
+- toggle(open: boolean) — reports the current native details.open value after every native toggle, including one caused by changing a bound \`open\`.
+- update:open(open: boolean) — emitted only when \`open\` is bound and a user toggle makes the native state differ from it.
 
 Slots:
 - summary — content rendered inside the native <summary>.
 - default — content rendered in the disclosure body.
 
-Behavior: the component renders native <details>/<summary>. Each instance owns its browser-managed state, so siblings expand independently and any number may stay open.
+Behavior: the component renders native <details>/<summary>. Unless \`open\` is bound, each instance owns its browser-managed state, so siblings expand independently and any number may stay open. When \`open\` is bound, changing it opens or closes the disclosure, and a user toggle is reported through update:open.
 
-IMPORTANT: defaultOpen is an initial-state option, not a controlled prop. Listen to @toggle when a parent needs to observe changes.
+IMPORTANT: \`defaultOpen\` is only an initial-state option; bind \`open\` (v-model:open) when the parent must set the state, such as expand-all. A bound \`open\` without a listener for update:open does not follow user toggles back into the parent — use v-model:open, not a one-way :open.
 
 Usage:
 <I9kCollapsible :default-open="true" @toggle="(open) => console.log(open)">
@@ -29,8 +31,9 @@ Usage:
   <ol><li>What is coding?</li><li>Engineering judgment</li></ol>
 </I9kCollapsible>`,
   gotchas: [
-    '`defaultOpen` controls only the initial state; it is not a v-model or controlled-state API.',
-    'Sibling instances expand independently; use a different component if only one section may be open.',
+    '`defaultOpen` controls only the initial state; bind `v-model:open` for a controlled disclosure such as expand-all.',
+    'A one-way `:open` binding does not learn about user toggles; use `v-model:open` so the parent value stays in step.',
+    'Uncontrolled sibling instances expand independently; control them with `v-model:open` if only one section may be open.',
     'Provide visible summary content because the summary slot is the disclosure control label.',
   ],
   demos: [
@@ -61,6 +64,15 @@ Usage:
   <I9kCollapsible :default-open="true"><template #summary>First</template><p>Open together.</p></I9kCollapsible>
   <I9kCollapsible :default-open="true"><template #summary>Second</template><p>Also open.</p></I9kCollapsible>
 </div>`,
+    },
+    {
+      label: 'Controlled',
+      code: `<button type="button" @click="open = !open">{{ open ? 'Collapse' : 'Expand' }}</button>
+<I9kCollapsible v-model:open="open">
+  <template #summary>Course module</template>
+  <p>The parent owns whether this body is visible.</p>
+</I9kCollapsible>`,
+      state: { open: true },
     },
     {
       label: 'Arabic RTL',

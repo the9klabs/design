@@ -10,7 +10,7 @@ export const I9kIconEntry: ShowcaseEntry = {
 import { I9kIcon } from '@9klabs/design';
 
 Props:
-- name: I9kIconName (required) — one of the names in src/icons/paths.json: 'facebook', 'twitter', 'medium', 'linkedin', 'behance', 'github', 'menu', 'mail', 'dev', 'phone', 'landMark', 'home', 'instagram', 'youtube', 'tiktok', 'x', '9klabs', 'linktree'.
+- name: I9kIconName (required) — one of the names in src/icons/paths.json: 'facebook', 'twitter', 'medium', 'linkedin', 'behance', 'github', 'menu', 'mail', 'dev', 'phone', 'landMark', 'home', 'instagram', 'youtube', 'tiktok', 'x', '9klabs', 'linktree', 'sun', 'moon', 'translate', 'add', 'edit', 'delete', 'close', 'arrowUp', 'arrowDown', 'archive', 'unarchive', 'eye', 'eyeOff', 'warning'.
 - title?: string (default '') — an accessible name for the icon; setting this (or \`desc\`) makes the icon exposed to assistive tech as role="img" instead of hidden.
 - desc?: string (default '') — a longer accessible description; same effect as \`title\` on hiddenness.
 - size?: string | number (default '1.2em') — sets both width and height, e.g. '24px', '2em', 32.
@@ -40,6 +40,22 @@ Usage:
   <I9kIcon name="x" title="X" size="1.5em" />
   <I9kIcon name="mail" title="Email" size="1.5em" />
   <I9kIcon name="dev" title="DEV Community" size="1.5em" />
+</div>`,
+    },
+    {
+      label: 'Editor actions',
+      code: `<div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--component-gap-md)">
+  <I9kIcon name="add" title="Add" size="1.5em" />
+  <I9kIcon name="edit" title="Edit" size="1.5em" />
+  <I9kIcon name="delete" title="Delete" size="1.5em" />
+  <I9kIcon name="close" title="Close" size="1.5em" />
+  <I9kIcon name="arrowUp" title="Move up" size="1.5em" />
+  <I9kIcon name="arrowDown" title="Move down" size="1.5em" />
+  <I9kIcon name="archive" title="Archive" size="1.5em" />
+  <I9kIcon name="unarchive" title="Unarchive" size="1.5em" />
+  <I9kIcon name="eye" title="Show" size="1.5em" />
+  <I9kIcon name="eyeOff" title="Hide" size="1.5em" />
+  <I9kIcon name="warning" title="Warning" size="1.5em" />
 </div>`,
     },
     {

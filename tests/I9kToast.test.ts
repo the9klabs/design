@@ -7,6 +7,7 @@ describe('I9kToast', () => {
   it.each([
     ['info', 'status'],
     ['success', 'status'],
+    ['warning', 'status'],
     ['error', 'alert'],
   ] as const)('renders %s with the %s role', (variant, role) => {
     const wrapper = mount(I9kToast, {

@@ -6,7 +6,7 @@ const meta = {
   component: I9kToast,
   args: { variant: 'info' },
   argTypes: {
-    variant: { control: 'select', options: ['info', 'success', 'error'] },
+    variant: { control: 'select', options: ['info', 'success', 'warning', 'error'] },
     size: { control: 'select', options: ['sm', 'md', 'lg'] },
   },
 } satisfies Meta<typeof I9kToast>;
@@ -19,6 +19,15 @@ export const Default: Story = {
     components: { I9kToast },
     setup: () => ({ args }),
     template: '<I9kToast v-bind="args">تم الحفظ بنجاح</I9kToast>',
+  }),
+};
+
+export const Warning: Story = {
+  args: { variant: 'warning' },
+  render: (args) => ({
+    components: { I9kToast },
+    setup: () => ({ args }),
+    template: '<I9kToast v-bind="args">لم تُحفظ التغييرات بعد</I9kToast>',
   }),
 };
 

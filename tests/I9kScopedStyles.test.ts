@@ -14,6 +14,7 @@ const migratedComponents = [
   ['I9kPhoneInput.vue', 'i9k-phone-input'],
   ['I9kTextarea.vue', 'i9k-textarea'],
   ['I9kToast.vue', 'i9k-toast'],
+  ['I9kModal.vue', 'i9k-modal'],
   ['I9kAsciiEmoji.vue', 'i9k-ascii-emoji'],
   ['I9kLinkCard.vue', 'i9k-link-card'],
   ['I9kProfileCard.vue', 'i9k-profile-card'],
