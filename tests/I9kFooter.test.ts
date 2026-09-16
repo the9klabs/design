@@ -166,11 +166,18 @@ describe('I9kFooter', () => {
           props: { columns: Array.from({ length }, (_, index) => column(`c${index}`)) },
         })
           .get('nav')
-          .element.style.getPropertyValue('--i9k-footer-column-count');
+          .attributes('data-columns');
 
       expect(count(1)).toBe('1');
       expect(count(3)).toBe('3');
       expect(count(6)).toBe('4');
+    });
+
+    it('carries the column count without an inline style, so a style-src CSP allows it', () => {
+      const wrapper = mount(I9kFooter, { props: { columns } });
+
+      expect(wrapper.get('nav').attributes('style')).toBeUndefined();
+      expect(wrapper.html()).not.toContain('style=');
     });
 
     it('emits navigate with the clicked link', async () => {

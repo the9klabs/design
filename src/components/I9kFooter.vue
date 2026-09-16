@@ -45,6 +45,10 @@ const tag = computed(() => props.linkComponent ?? 'a');
 
 // The grid gets one track per column up to this many; further columns wrap onto
 // another row. Four still leaves each track readable inside the 1000px measure.
+// The count reaches the stylesheet as a data attribute, not an inline style: a
+// consumer with a `style-src 'self'` Content Security Policy blocks inline
+// style attributes on server-rendered HTML, which would silently fall back to
+// the default track count.
 const MAX_COLUMNS_PER_ROW = 4;
 const columnCount = computed(() => Math.min(props.columns.length, MAX_COLUMNS_PER_ROW));
 
@@ -78,7 +82,7 @@ const routed = (link: I9kFooterLink) =>
         <nav
           v-if="columns.length"
           class="i9k-footer__columns"
-          :style="{ '--i9k-footer-column-count': columnCount }"
+          :data-columns="columnCount"
           :aria-label="navLabel"
         >
           <div v-for="column in columns" :key="column.id" class="i9k-footer__column">
@@ -203,8 +207,17 @@ const routed = (link: I9kFooterLink) =>
 }
 .i9k-footer__columns {
   display: grid;
-  grid-template-columns: repeat(var(--i9k-footer-column-count, 3), minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--spacing-10);
+}
+.i9k-footer__columns[data-columns='1'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.i9k-footer__columns[data-columns='2'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.i9k-footer__columns[data-columns='4'] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .i9k-footer__heading {
   margin: 0 0 var(--spacing-7);
@@ -267,7 +280,8 @@ const routed = (link: I9kFooterLink) =>
     grid-template-columns: minmax(0, 1fr);
     gap: var(--spacing-11);
   }
-  .i9k-footer__columns {
+  /* The attribute selector keeps this rule ahead of the per-count ones above. */
+  .i9k-footer__columns[data-columns] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
