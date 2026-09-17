@@ -9,7 +9,7 @@
  * sit beside it, so both stay operable and the tab order is button, then
  * actions.
  */
-import { computed, ref, useId } from 'vue';
+import { computed, ref, useId, watch } from 'vue';
 
 import I9kIcon from './I9kIcon.vue';
 
@@ -40,7 +40,15 @@ const baseId = computed(() => props.id || generatedId);
 const headingId = computed(() => `${baseId.value}-heading`);
 const bodyId = computed(() => `${baseId.value}-body`);
 
-const localOpen = ref(props.defaultOpen);
+// Seeded and synced from `open`, so a section whose `open` goes back to
+// undefined keeps its last state instead of jumping to `defaultOpen`.
+const localOpen = ref(props.open ?? props.defaultOpen);
+watch(
+  () => props.open,
+  (open) => {
+    if (open !== undefined) localOpen.value = open;
+  },
+);
 const isControlled = computed(() => props.open !== undefined);
 const isCollapsible = computed(() => props.collapsible || isControlled.value);
 const isOpen = computed(() => {

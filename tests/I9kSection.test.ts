@@ -169,6 +169,20 @@ describe('I9kSection', () => {
     expect(wrapper.emitted('update:open')).toEqual([[false], [true]]);
   });
 
+  it('keeps its last controlled state when a collapsible section stops being controlled', async () => {
+    const wrapper = mountSection({ collapsible: true, open: false });
+    const toggle = wrapper.get('[data-i9k-section-toggle]');
+    const body = wrapper.get('[data-i9k-section-body]');
+
+    await wrapper.setProps({ open: undefined });
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    expect(body.isVisible()).toBe(false);
+
+    await toggle.trigger('click');
+    expect(toggle.attributes('aria-expanded')).toBe('true');
+    expect(body.isVisible()).toBe(true);
+  });
+
   it('starts an uncontrolled section closed when defaultOpen is false', () => {
     const wrapper = mountSection({ collapsible: true, defaultOpen: false });
     expect(wrapper.get('[data-i9k-section-toggle]').attributes('aria-expanded')).toBe('false');
