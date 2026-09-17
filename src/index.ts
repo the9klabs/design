@@ -44,6 +44,7 @@ export { default as I9kPageHeader } from './components/I9kPageHeader.vue';
 export { default as I9kPanel } from './components/I9kPanel.vue';
 export { default as I9kPhoneInput } from './components/I9kPhoneInput.vue';
 export { default as I9kRadioGroup } from './components/I9kRadioGroup.vue';
+export { default as I9kSection } from './components/I9kSection.vue';
 export { default as I9kSectionHeading } from './components/I9kSectionHeading.vue';
 export { default as I9kSelect } from './components/I9kSelect.vue';
 export { default as I9kStat } from './components/I9kStat.vue';
