@@ -106,14 +106,16 @@ function toggle() {
 }
 
 .i9k-section__header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-4) var(--spacing-8);
   align-items: center;
 }
 
+/* A zero basis over its min-content floor: the title wraps beside the actions
+   while its longest word fits, and the actions drop to their own row after. */
 .i9k-section__heading {
-  min-width: 0;
+  flex: 1 1 0;
   margin: 0;
   font-size: var(--i9k-section-heading-font-size);
   font-weight: 700;
@@ -169,10 +171,11 @@ function toggle() {
   gap: var(--spacing-4);
   align-items: center;
   justify-content: flex-end;
+  margin-inline-start: auto;
 }
 
 .i9k-section__toolbar {
-  grid-column: 1 / -1;
+  flex-basis: 100%;
 }
 
 .i9k-section__body {
