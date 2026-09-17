@@ -49,6 +49,7 @@ Usage:
     'Actions and toolbar stay visible while the section is closed, so a result an action reports inside the body is hidden until the section opens; open it from the action.',
     'Every instance is a named `<section>`, which is a region landmark; do not use it for small groups.',
     'The body is hidden with the `hidden` attribute, not an inline style, so it stays closed under a `style-src` Content Security Policy.',
+    'The disclosure button sits 0.5rem past the section inline-start edge so its title lines up with the body, and its focus ring reaches about 0.8rem out; inside a scroll container or `overflow: hidden`, leave that much room or both are clipped.',
   ],
   demos: [
     {
