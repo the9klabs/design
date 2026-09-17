@@ -155,7 +155,7 @@ function toggle() {
   transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[dir='rtl'] .i9k-section__indicator {
+.i9k-section__indicator:dir(rtl) {
   transform: rotate(90deg);
 }
 
