@@ -14,7 +14,7 @@ Props:
 - id?: string — set on the <section>; the heading gets "<id>-heading" and the body "<id>-body". Omit it and unique ids are generated.
 - level?: 2 | 3 | 4 | 5 | 6 (default 2) — the rendered heading level (<h{level}>).
 - collapsible?: boolean (default false) — puts a disclosure button in the heading and lets the section manage its own open state.
-- open?: boolean (default undefined) — bind with v-model:open to control the open state from the parent, e.g. for expand-all. Binding it makes the section collapsible.
+- open?: boolean (default undefined) — bind with v-model:open to control the open state from the parent, e.g. for expand-all. Binding a boolean makes the section collapsible; also set \`collapsible\` when the bound value can be undefined, or the section has no disclosure button while it is.
 - defaultOpen?: boolean (default true) — the initial state of a collapsible section whose \`open\` is not bound.
 
 Emits:
