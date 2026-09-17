@@ -36,7 +36,7 @@ const props = withDefaults(
 const emit = defineEmits<{ 'update:open': [open: boolean] }>();
 
 const generatedId = useId();
-const baseId = computed(() => props.id ?? generatedId);
+const baseId = computed(() => props.id || generatedId);
 const headingId = computed(() => `${baseId.value}-heading`);
 const bodyId = computed(() => `${baseId.value}-body`);
 
@@ -58,7 +58,7 @@ function toggle() {
 </script>
 
 <template>
-  <section :id="id" class="i9k-section" :aria-labelledby="headingId">
+  <section :id="id || undefined" class="i9k-section" :aria-labelledby="headingId">
     <div class="i9k-section__header">
       <component :is="`h${level}`" :id="headingId" class="i9k-section__heading">
         <button

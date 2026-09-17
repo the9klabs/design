@@ -56,6 +56,17 @@ describe('I9kSection', () => {
     expect(wrapper.get('#team-body').text()).toBe('Body');
   });
 
+  it('generates its ids when the given id is empty', () => {
+    const wrapper = mountSection({ id: '', open: true });
+    const section = wrapper.get('section');
+    const labelledBy = section.attributes('aria-labelledby');
+
+    expect(section.attributes('id')).toBeUndefined();
+    expect(labelledBy).not.toBe('-heading');
+    expect(wrapper.get(`[id="${labelledBy}"]`).text()).toBe('Team');
+    expect(wrapper.get('[data-i9k-section-toggle]').attributes('aria-controls')).not.toBe('-body');
+  });
+
   it('generates distinct, wired ids for sibling sections when no id is given', () => {
     // useId() is unique within one app, so the siblings share a host.
     const host = mount(
