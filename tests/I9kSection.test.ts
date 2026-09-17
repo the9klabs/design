@@ -43,7 +43,7 @@ describe('I9kSection', () => {
 
   it('renders the requested heading level', () => {
     expect(mountSection({ level: 3 }).get('h3').text()).toBe('Team');
-    expect(mountSection({ level: 4 }).find('h2').exists()).toBe(false);
+    expect(mountSection({ level: 4 }).get('h4').text()).toBe('Team');
   });
 
   it('derives its heading and body ids from a given id', () => {
