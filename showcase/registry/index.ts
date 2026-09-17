@@ -28,6 +28,7 @@ import { I9kPanelEntry } from './I9kPanel';
 import { I9kPhoneInputEntry } from './I9kPhoneInput';
 import { I9kProfileCardEntry } from './I9kProfileCard';
 import { I9kRadioGroupEntry } from './I9kRadioGroup';
+import { I9kSectionEntry } from './I9kSection';
 import { I9kSectionHeadingEntry } from './I9kSectionHeading';
 import { I9kSelectEntry } from './I9kSelect';
 import { I9kSocialLinksEntry } from './I9kSocialLinks';
@@ -54,6 +55,7 @@ export const entries: ShowcaseEntry[] = [
   I9kTimelineCardEntry,
   I9kProfileCardEntry,
   I9kCollapsibleEntry,
+  I9kSectionEntry,
   I9kFaqListEntry,
   I9kGithubEmbedEntry,
   I9kIconEntry,
