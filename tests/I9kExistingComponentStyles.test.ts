@@ -201,4 +201,66 @@ describe('scoped existing component compiled styles', () => {
 
     expect(cardRule?.selector).toMatch(/^\.i9k-timeline-card__card\[data-v-[^\]]+\]$/);
   });
+
+  it('bleeds the full-width primary I9kSection with a border-image outset, not a 100vw box', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kSection');
+    let bandRule: Rule | undefined;
+    const viewportSizedBoxes: string[] = [];
+
+    stylesheet.walkDecls((decl) => {
+      if (decl.prop === 'border-image-outset' && decl.value.includes('100vw')) {
+        bandRule = decl.parent as Rule;
+      }
+      if (/^(width|min-width|margin|margin-inline|margin-left|margin-right)$/.test(decl.prop)) {
+        if (decl.value.includes('vw')) viewportSizedBoxes.push(`${decl.prop}: ${decl.value}`);
+      }
+    });
+    const bandValue = (prop: string) =>
+      bandRule?.nodes.find((node) => node.type === 'decl' && node.prop === prop)?.toString() ?? '';
+
+    // Border-image outset is ink overflow: the band reaches the viewport edges
+    // without widening the page, so no horizontal scrollbar appears.
+    expect(bandRule?.selector).toContain('.i9k-section--primary');
+    expect(bandRule?.selector).toContain('.i9k-section--full-width');
+    expect(bandValue('border-image-source')).toContain('var(--i9k-section-bg)');
+    // Without `fill` the image paints only the (zero-width) border, not the band.
+    expect(bandValue('border-image-slice')).toContain('fill');
+    expect(viewportSizedBoxes).toEqual([]);
+  });
+
+  it('re-themes the primary I9kSection content, not its root, so the band stays green', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kSection');
+    const rootRule = findRule(
+      stylesheet,
+      '--i9k-section-bg',
+      'var(--primary-color)',
+      '.i9k-section--primary',
+    );
+    const contentRule = findRule(
+      stylesheet,
+      '--focus-color',
+      'var(--white-color)',
+      '.i9k-section--primary',
+    );
+
+    // The root resolves the brand green before anything is remapped; remapping
+    // --primary-color there would turn its own background white.
+    expect(rootRule?.selector).toMatch(/^\.i9k-section--primary\[data-v-[^\]]+\]$/);
+    expect(
+      rootRule?.nodes.some((node) => node.type === 'decl' && node.prop === '--primary-color'),
+    ).toBe(false);
+
+    // Its header and body invert the tokens nested buttons, links and focus rings read.
+    expect(contentRule?.selector).toContain('.i9k-section__header');
+    expect(contentRule?.selector).toContain('.i9k-section__body');
+    expect(
+      contentRule && hasDeclaration(contentRule, '--primary-color', 'var(--white-color)'),
+    ).toBe(true);
+    expect(
+      contentRule && hasDeclaration(contentRule, '--on-primary-color', 'var(--i9k-section-bg)'),
+    ).toBe(true);
+    expect(
+      contentRule && hasDeclaration(contentRule, '--theme-text-color', 'var(--white-color)'),
+    ).toBe(true);
+  });
 });

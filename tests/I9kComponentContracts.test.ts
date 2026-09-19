@@ -39,6 +39,7 @@ const collapsibleExports = [
 const modalExports = ["export { default as I9kModal } from './components/I9kModal.vue';"] as const;
 
 const sectionExports = [
+  "export type { I9kSectionVariant } from './types/components';",
   "export { default as I9kSection } from './components/I9kSection.vue';",
 ] as const;
 
