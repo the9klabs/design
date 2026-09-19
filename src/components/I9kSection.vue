@@ -134,17 +134,23 @@ function toggle() {
   border-radius: var(--radius-lg);
   background-color: var(--i9k-section-bg);
   color: var(--white-color);
+  /* A dark surface in either theme, so browser-drawn parts of controls (a
+     select's option list, placeholders) must follow it, not the page. */
+  color-scheme: dark;
 }
 
 /* The content keeps its column and the fill bleeds past it. Border-image outset
    is ink overflow, so unlike a 100vw box with negative margins it never widens
    the page into a horizontal scrollbar, and unlike a box-shadow clipped with
-   clip-path it does not clip menus or focus rings inside the band. Longhands,
-   because Prettier reads the `//` in the border-image shorthand as a comment. */
+   clip-path it does not clip menus or focus rings inside the band. The fill is
+   the border-image alone: a background under the column too would antialias a
+   fractional edge differently and leave a hairline. Longhands, because
+   Prettier reads the `//` in the border-image shorthand as a comment. */
 .i9k-section--primary.i9k-section--full-width {
   padding-block: var(--spacing-18);
   padding-inline: 0;
   border-radius: 0;
+  background-color: transparent;
   border-image-source: conic-gradient(var(--i9k-section-bg) 0 0);
   border-image-slice: 0 fill;
   border-image-outset: 0 100vw;
@@ -153,11 +159,13 @@ function toggle() {
 /* Nested components read these tokens, and several of them are the brand green
    itself: a primary button, a link, and the light theme's focus ring would all
    vanish on the fill. Primary actions invert to white on green, and surfaces
-   and lines become translucent white so a nested panel keeps white text. */
+   and lines become translucent white so a nested panel keeps white text. The
+   alphas keep muted text on resting surfaces, and white text on hover and
+   pressed ones, at 4.5:1 or more. */
 .i9k-section--primary > :is(.i9k-section__header, .i9k-section__body) {
   --theme-text-color: var(--white-color);
   --text-color: var(--white-color);
-  --text-color-light: color-mix(in srgb, var(--white-color) 80%, transparent);
+  --text-color-light: color-mix(in srgb, var(--white-color) 85%, transparent);
   --primary-text-color: var(--white-color);
   --focus-color: var(--white-color);
   --primary-color: var(--white-color);
@@ -168,12 +176,26 @@ function toggle() {
   --border-color: color-mix(in srgb, var(--white-color) 30%, transparent);
   --control-border-color: color-mix(in srgb, var(--white-color) 70%, transparent);
   --surface-color: var(--white-color-alpha-05);
-  --surface-raised-color: var(--white-color-alpha-15);
+  --surface-raised-color: color-mix(in srgb, var(--white-color) 10%, transparent);
   --surface-hover-color: var(--white-color-alpha-15);
-  --surface-sunken-color: var(--white-color-alpha-20);
-  --selected-bg-color: var(--white-color-alpha-15);
-  --selected-hover-bg-color: var(--white-color-alpha-20);
-  --selected-pressed-bg-color: var(--white-color-alpha-20);
+  --surface-sunken-color: color-mix(in srgb, var(--white-color) 18%, transparent);
+  --selected-bg-color: color-mix(in srgb, var(--white-color) 10%, transparent);
+  --selected-hover-bg-color: var(--white-color-alpha-15);
+  --selected-pressed-bg-color: color-mix(in srgb, var(--white-color) 18%, transparent);
+}
+
+/* Forced colors drops the background fill but keeps the border-image: the
+   contained section needs a system-colored edge, and the band drops its green
+   rather than leave it behind system-colored text. */
+@media (forced-colors: active) {
+  .i9k-section--primary {
+    border: 1px solid CanvasText;
+  }
+
+  .i9k-section--primary.i9k-section--full-width {
+    border-inline: 0;
+    border-image-source: none;
+  }
 }
 
 .i9k-section__header {

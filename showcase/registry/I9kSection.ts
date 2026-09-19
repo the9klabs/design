@@ -39,7 +39,7 @@ With fullWidth, place the section where the page column is (inside the page cont
 
 IMPORTANT: bind \`v-model:open\`, not a one-way \`:open\`, or clicking the button never opens or closes the section.
 
-IMPORTANT: on variant 'primary', keep content to text, buttons, links, badges and panels. Error, warning and success colors are not re-mapped, so validation messages and toasts are not designed for the green.
+IMPORTANT: on variant 'primary', keep content to text, buttons, links, badges and panels. Error, warning and success colors are not re-mapped, so an error message or invalid border is invisible on the green: keep any field that can show an error, and toasts, off it. Render I9kModal outside the section too, or its dialog inherits the white-on-green tokens and turns translucent.
 
 IMPORTANT: use it for the major sections of a page. Every instance is a named landmark, so do not use it for small groups inside a form or a card.
 
@@ -65,10 +65,11 @@ Usage:
     'Every instance is a named `<section>`, which is a region landmark; do not use it for small groups.',
     'The body is hidden with the `hidden` attribute, not an inline style, so it stays closed under a `style-src` Content Security Policy.',
     '`fullWidth` only extends the fill, so it has no visible effect on `variant="default"`.',
+    'Render I9kModal outside a `variant="primary"` section, not next to its trigger in `#actions` or the body: its native `<dialog>` inherits the white-on-green tokens while it paints off the green, so its surface turns translucent and the page shows through.',
     'The full-width band paints past the section with a border-image outset. An ancestor with `overflow: hidden`, `clip` or `auto` cuts it off at that ancestor edge, and it paints over the background of a non-positioned side column beside the page column.',
     'On `variant="primary"`, a primary I9kButton inverts to white with green text, and focus rings turn white; do not override those colors back to green.',
-    'Error, warning and success colors are not re-mapped on `variant="primary"`, so keep validation-heavy forms and feedback off the green.',
-    'The disclosure button sits 0.5rem past the section inline-start edge so its title lines up with the body, and its focus ring reaches about 0.8rem out; inside a scroll container or `overflow: hidden`, leave that much room or both are clipped.',
+    'Error, warning and success colors are not re-mapped on `variant="primary"`: in the light theme the error color is 1.06:1 on the green and the success color is the green itself, so an error message or invalid border is invisible. Keep any field that can show an error, and any feedback, off the green.',
+    'On the default and full-width variants the disclosure button sits 0.5rem past the section inline-start edge so its title lines up with the body, and its focus ring reaches about 0.8rem out; inside a scroll container or `overflow: hidden`, leave that much room or both are clipped. The contained primary variant keeps both inside its padding.',
   ],
   demos: [
     {

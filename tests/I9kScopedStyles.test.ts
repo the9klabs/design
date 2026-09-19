@@ -28,7 +28,6 @@ const migratedComponents = [
   ['I9kText.vue', 'i9k-text'],
   ['I9kCollapsible.vue', 'i9k-collapsible'],
   ['I9kSection.vue', 'i9k-section'],
-  ['I9kSection.vue', 'i9k-section'],
 ] as const;
 
 describe('migrated component styles', () => {

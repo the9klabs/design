@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import postcss, { type AtRule, type Root, type Rule } from 'postcss';
@@ -51,6 +52,93 @@ function findRule(stylesheet: Root, property: string, value: string, selectorPar
   });
 
   return match;
+}
+
+function declarations(rule: Rule | undefined) {
+  const values = new Map<string, string>();
+
+  rule?.walkDecls((decl) => {
+    values.set(decl.prop, decl.value);
+  });
+
+  return values;
+}
+
+function isMediaRule(rule: Rule, query: string) {
+  const parent = rule.parent;
+
+  return parent?.type === 'atrule' && (parent as AtRule).params.includes(query);
+}
+
+type Rgba = [number, number, number, number];
+
+const tokenSource = readFileSync(resolve('src/styles/tokens.css'), 'utf8');
+
+function tokenValue(name: string) {
+  const match = tokenSource.match(new RegExp(`${name}:\\s*([^;]+);`));
+
+  if (!match) throw new Error(`tokens.css defines no ${name}`);
+  return match[1].trim();
+}
+
+function parseHsl(value: string): Rgba {
+  const match = value.match(/^hsl\(([\d.]+) ([\d.]+)% ([\d.]+)%(?: \/ ([\d.]+))?\)$/);
+
+  if (!match) throw new Error(`Cannot parse ${value}`);
+  const [hue, saturation, lightness] = [
+    Number(match[1]),
+    Number(match[2]) / 100,
+    Number(match[3]) / 100,
+  ];
+  const chroma = saturation * Math.min(lightness, 1 - lightness);
+  const channel = (offset: number) => {
+    const k = (offset + hue / 30) % 12;
+    return 255 * (lightness - chroma * Math.max(-1, Math.min(k - 3, 9 - k, 1)));
+  };
+
+  return [channel(0), channel(8), channel(4), match[4] === undefined ? 1 : Number(match[4])];
+}
+
+// Resolves a custom property value the way the browser does on the element
+// that declares `scope`: a var() reads that element's own declarations first.
+function resolveColor(value: string, scope: Map<string, string>, brand: Rgba): Rgba {
+  const variable = value.match(/^var\((--[\w-]+)\)$/);
+
+  if (variable) {
+    const name = variable[1];
+    if (name === '--i9k-section-bg') return brand;
+    const declared = scope.get(name);
+    return declared ? resolveColor(declared, scope, brand) : parseHsl(tokenValue(name));
+  }
+
+  const mix = value.match(/^color-mix\(in srgb,\s*(.+?)\s+([\d.]+)%,\s*(.+)\)$/);
+
+  if (mix) {
+    const first = resolveColor(mix[1], scope, brand);
+    const share = Number(mix[2]) / 100;
+    if (mix[3] === 'transparent') return [first[0], first[1], first[2], first[3] * share];
+    const second = resolveColor(mix[3], scope, brand);
+    return [0, 1, 2, 3].map((index) => first[index] * share + second[index] * (1 - share)) as Rgba;
+  }
+
+  return parseHsl(value);
+}
+
+function over(top: Rgba, bottom: Rgba): Rgba {
+  return [0, 1, 2]
+    .map((index) => top[index] * top[3] + bottom[index] * (1 - top[3]))
+    .concat(1) as Rgba;
+}
+
+function contrast(first: Rgba, second: Rgba) {
+  const luminance = ([red, green, blue]: Rgba) =>
+    [red, green, blue]
+      .map((channel) => channel / 255)
+      .map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4))
+      .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+  const [lighter, darker] = [luminance(first), luminance(second)].sort((a, b) => b - a);
+
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 function isReducedMotionRule(rule: Rule) {
@@ -225,6 +313,9 @@ describe('scoped existing component compiled styles', () => {
     expect(bandValue('border-image-source')).toContain('var(--i9k-section-bg)');
     // Without `fill` the image paints only the (zero-width) border, not the band.
     expect(bandValue('border-image-slice')).toContain('fill');
+    // A second, background layer under the column would antialias a fractional
+    // edge differently from the bleed and show a hairline where they meet.
+    expect(bandValue('background-color')).toMatch(/:(transparent|#0000)$/);
     expect(viewportSizedBoxes).toEqual([]);
   });
 
@@ -262,5 +353,79 @@ describe('scoped existing component compiled styles', () => {
     expect(
       contentRule && hasDeclaration(contentRule, '--theme-text-color', 'var(--white-color)'),
     ).toBe(true);
+  });
+
+  it('keeps the text on every primary I9kSection surface at WCAG AA contrast', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kSection');
+    const scope = declarations(
+      findRule(stylesheet, '--focus-color', 'var(--white-color)', '.i9k-section--primary'),
+    );
+    const brand = parseHsl(tokenValue('--primary-color'));
+    // [foreground, surface under it (none = the bare green), minimum ratio]
+    const pairs: [string, string | null, number][] = [
+      ['--text-color-light', null, 4.5],
+      ['--text-color-light', '--surface-color', 4.5],
+      ['--text-color-light', '--surface-raised-color', 4.5],
+      ['--text-color-light', '--selected-bg-color', 4.5],
+      ['--theme-text-color', '--surface-hover-color', 4.5],
+      ['--theme-text-color', '--surface-sunken-color', 4.5],
+      ['--theme-text-color', '--selected-hover-bg-color', 4.5],
+      ['--theme-text-color', '--selected-pressed-bg-color', 4.5],
+      ['--on-primary-color', '--primary-color', 4.5],
+      ['--on-primary-color', '--primary-hover-color', 4.5],
+      ['--on-primary-color', '--primary-pressed-color', 4.5],
+      // Non-text UI: focus rings and control borders need 3:1.
+      ['--focus-color', null, 3],
+      ['--control-border-color', null, 3],
+    ];
+    const failures = pairs.flatMap(([foreground, surface, minimum]) => {
+      const background = surface
+        ? over(resolveColor(`var(${surface})`, scope, brand), brand)
+        : brand;
+      const ratio = contrast(
+        over(resolveColor(`var(${foreground})`, scope, brand), background),
+        background,
+      );
+      return ratio >= minimum
+        ? []
+        : [`${foreground} on ${surface ?? 'the green'}: ${ratio.toFixed(2)}:1`];
+    });
+
+    expect(failures).toEqual([]);
+  });
+
+  it('gives native controls on a primary I9kSection a dark color scheme', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kSection');
+    const rootRule = findRule(
+      stylesheet,
+      '--i9k-section-bg',
+      'var(--primary-color)',
+      '.i9k-section--primary',
+    );
+
+    // In the light theme the green is still a dark surface: without this, a
+    // select's option list draws the white option text on a light popup.
+    expect(declarations(rootRule).get('color-scheme')).toBe('dark');
+  });
+
+  it('keeps the primary I9kSection delineated in forced colors', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kSection');
+    const forcedRules: Rule[] = [];
+
+    stylesheet.walkRules((rule) => {
+      if (isMediaRule(rule, 'forced-colors')) forcedRules.push(rule);
+    });
+    const contained = forcedRules.find(
+      (rule) =>
+        rule.selector.includes('.i9k-section--primary') &&
+        !rule.selector.includes('.i9k-section--full-width'),
+    );
+    const band = forcedRules.find((rule) => rule.selector.includes('.i9k-section--full-width'));
+
+    // Forced colors drops the background fill but not the border-image, so the
+    // contained section needs a system-colored edge and the band must drop its
+    // green instead of leaving it behind system-colored text.
+    expect(declarations(contained).get('border')?.toLowerCase()).toContain('canvastext');
+    expect(declarations(band).get('border-image-source')).toBe('none');
   });
 });
