@@ -109,7 +109,6 @@ export const I9K_COUNTRY_DIAL_CODES: Readonly<Record<string, string>> = {
   HU: '36',
   ID: '62',
   IE: '353',
-  IL: '972',
   IM: '44',
   IN: '91',
   IO: '246',

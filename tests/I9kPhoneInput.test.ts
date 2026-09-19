@@ -36,6 +36,15 @@ describe('I9kPhoneInput', () => {
     expect(wrapper.get('.i9k-phone-input__face').text()).toBe('🇦🇪 +971');
   });
 
+  it('offers Palestine flag for the +970 calling code', async () => {
+    const wrapper = mountStandalone({ country: 'PS' });
+    await nextTick();
+
+    expect(wrapper.get('.i9k-phone-input__face').text()).toBe('🇵🇸 +970');
+    const codes = wrapper.findAll('option').map((option) => option.attributes('value'));
+    expect(codes).toContain('PS');
+  });
+
   it('offers every country by name in the given locale once mounted', async () => {
     const wrapper = mountStandalone({ locale: 'ar' });
     await nextTick();
