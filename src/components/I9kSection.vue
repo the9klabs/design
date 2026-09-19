@@ -8,9 +8,13 @@
  * content. Here the disclosure button sits inside the heading and the actions
  * sit beside it, so both stay operable and the tab order is button, then
  * actions.
+ *
+ * `variant="primary"` fills the section with the brand green, and `fullWidth`
+ * lets that fill reach the viewport edges while the content keeps its column.
  */
 import { computed, ref, useId, watch } from 'vue';
 
+import type { I9kSectionVariant } from '../types/components';
 import I9kIcon from './I9kIcon.vue';
 
 const props = withDefaults(
@@ -21,6 +25,8 @@ const props = withDefaults(
     collapsible?: boolean;
     open?: boolean;
     defaultOpen?: boolean;
+    variant?: I9kSectionVariant;
+    fullWidth?: boolean;
   }>(),
   {
     id: undefined,
@@ -30,6 +36,8 @@ const props = withDefaults(
     // false and every section would become a controlled, closed one.
     open: undefined,
     defaultOpen: true,
+    variant: 'default',
+    fullWidth: false,
   },
 );
 
@@ -66,7 +74,17 @@ function toggle() {
 </script>
 
 <template>
-  <section :id="id || undefined" class="i9k-section" :aria-labelledby="headingId">
+  <section
+    :id="id || undefined"
+    :class="[
+      'i9k-section',
+      {
+        'i9k-section--primary': variant === 'primary',
+        'i9k-section--full-width': fullWidth,
+      },
+    ]"
+    :aria-labelledby="headingId"
+  >
     <div class="i9k-section__header">
       <component :is="`h${level}`" :id="headingId" class="i9k-section__heading">
         <button
@@ -103,6 +121,81 @@ function toggle() {
   display: grid;
   gap: var(--i9k-section-gap);
   min-width: 0;
+}
+
+/* The brand green is resolved here, on the root, and re-theming happens on the
+   header and body below: remapping --primary-color on this element would turn
+   its own background white. Children inherit --i9k-section-bg already resolved,
+   so they can still reach the green after --primary-color changes for them. */
+.i9k-section--primary {
+  --i9k-section-bg: var(--primary-color);
+
+  padding: var(--spacing-13);
+  border-radius: var(--radius-lg);
+  background-color: var(--i9k-section-bg);
+  color: var(--white-color);
+  /* A dark surface in either theme, so browser-drawn parts of controls (a
+     select's option list, placeholders) must follow it, not the page. */
+  color-scheme: dark;
+}
+
+/* The content keeps its column and the fill bleeds past it. Border-image outset
+   is ink overflow, so unlike a 100vw box with negative margins it never widens
+   the page into a horizontal scrollbar, and unlike a box-shadow clipped with
+   clip-path it does not clip menus or focus rings inside the band. The fill is
+   the border-image alone: a background under the column too would antialias a
+   fractional edge differently and leave a hairline. Longhands, because
+   Prettier reads the `//` in the border-image shorthand as a comment. */
+.i9k-section--primary.i9k-section--full-width {
+  padding-block: var(--spacing-18);
+  padding-inline: 0;
+  border-radius: 0;
+  background-color: transparent;
+  border-image-source: conic-gradient(var(--i9k-section-bg) 0 0);
+  border-image-slice: 0 fill;
+  border-image-outset: 0 100vw;
+}
+
+/* Nested components read these tokens, and several of them are the brand green
+   itself: a primary button, a link, and the light theme's focus ring would all
+   vanish on the fill. Primary actions invert to white on green, and surfaces
+   and lines become translucent white so a nested panel keeps white text. The
+   alphas keep muted text on resting surfaces, and white text on hover and
+   pressed ones, at 4.5:1 or more. */
+.i9k-section--primary > :is(.i9k-section__header, .i9k-section__body) {
+  --theme-text-color: var(--white-color);
+  --text-color: var(--white-color);
+  --text-color-light: color-mix(in srgb, var(--white-color) 85%, transparent);
+  --primary-text-color: var(--white-color);
+  --focus-color: var(--white-color);
+  --primary-color: var(--white-color);
+  --on-primary-color: var(--i9k-section-bg);
+  --primary-hover-color: color-mix(in srgb, var(--white-color) 88%, var(--i9k-section-bg));
+  --primary-pressed-color: color-mix(in srgb, var(--white-color) 76%, var(--i9k-section-bg));
+  --primary-color-alpha-12: var(--white-color-alpha-15);
+  --border-color: color-mix(in srgb, var(--white-color) 30%, transparent);
+  --control-border-color: color-mix(in srgb, var(--white-color) 70%, transparent);
+  --surface-color: var(--white-color-alpha-05);
+  --surface-raised-color: color-mix(in srgb, var(--white-color) 10%, transparent);
+  --surface-hover-color: var(--white-color-alpha-15);
+  --surface-sunken-color: color-mix(in srgb, var(--white-color) 18%, transparent);
+  --selected-bg-color: color-mix(in srgb, var(--white-color) 10%, transparent);
+  --selected-hover-bg-color: var(--white-color-alpha-15);
+  --selected-pressed-bg-color: color-mix(in srgb, var(--white-color) 18%, transparent);
+}
+
+/* Forced colors drops the background fill but keeps the border-image: the
+   contained section needs a system-colored edge, and the band drops its green
+   rather than leave it behind system-colored text. */
+@media (forced-colors: active) {
+  .i9k-section--primary {
+    border: 1px solid CanvasText;
+  }
+
+  .i9k-section--primary.i9k-section--full-width {
+    border-inline: 0;
+    border-image-source: none;
+  }
 }
 
 .i9k-section__header {

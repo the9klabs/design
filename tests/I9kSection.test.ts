@@ -221,6 +221,39 @@ describe('I9kSection', () => {
     expect(wrapper.emitted('update:open')).toBeUndefined();
   });
 
+  // The admin pages render the default section, so the new surface options must
+  // not add anything to its root.
+  it('renders no surface modifiers by default', () => {
+    expect(mountSection().get('section').classes()).toEqual(['i9k-section']);
+  });
+
+  it.each([
+    [{ variant: 'primary' }, ['i9k-section', 'i9k-section--primary']],
+    [{ fullWidth: true }, ['i9k-section', 'i9k-section--full-width']],
+    [
+      { variant: 'primary', fullWidth: true },
+      ['i9k-section', 'i9k-section--primary', 'i9k-section--full-width'],
+    ],
+  ])('marks the root for %o', (props, classes) => {
+    const section = mountSection(props).get('section');
+
+    expect(section.classes()).toEqual(classes);
+    expect(section.attributes('variant')).toBeUndefined();
+    expect(section.attributes('fullwidth')).toBeUndefined();
+  });
+
+  it('server-renders a full-width primary band without an inline style', async () => {
+    const html = await renderToString(
+      createSSRApp({
+        components: { I9kSection },
+        template: '<I9kSection variant="primary" full-width title="Join">Body</I9kSection>',
+      }),
+    );
+
+    expect(html).toContain('class="i9k-section i9k-section--primary i9k-section--full-width"');
+    expect(html).not.toContain('style=');
+  });
+
   it('server-renders a closed body with the hidden attribute and no inline style', async () => {
     const html = await renderToString(
       createSSRApp({

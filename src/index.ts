@@ -4,6 +4,7 @@ export type { I9kComponentSize, I9kIconButtonVariant, I9kTone } from './types/co
 export type { I9kBadgeVariant } from './types/components';
 export type { I9kGridColumns } from './types/components';
 export type { I9kPanelVariant } from './types/components';
+export type { I9kSectionVariant } from './types/components';
 export type { I9kTextVariant } from './types/components';
 export type { I9kFooterColumn, I9kFooterLink } from './types/components';
 export type { I9kNinoExpression, I9kNinoLook, I9kNinoSize } from './types/components';

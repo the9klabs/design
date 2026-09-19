@@ -84,6 +84,16 @@ plans behind this work live in `docs/superpowers/`.
 - `I9kIcon` renders from the local `src/icons/paths.json` set; entries are either a path string or
   `{ viewBox, path }`. It is `aria-hidden` unless given a `title` or `desc`. Add icons to that JSON
   rather than inlining SVG in components.
+- `I9kSection variant="primary"` fills the section with the brand green and re-maps the theme
+  tokens its header and body read (`--primary-color` becomes white, `--on-primary-color` green,
+  and so on), so nested components stay visible without props of their own. It re-maps them on
+  those children, not on the root, because the root still reads the green for its fill. When a
+  new component reads a theme token, check how it renders inside that section;
+  `tests/I9kExistingComponentStyles.test.ts` checks the remapped pairs for WCAG AA contrast.
+  Status colors (error, warning, success) are not remapped and are invisible on the green, and an
+  `I9kModal` placed inside the section inherits the remap and turns translucent, so keep both out
+  of it. `fullWidth` paints the fill past the column with a `border-image` outset rather than a
+  `100vw` box, so it never adds a horizontal scrollbar.
 
 ## Component showcase
 

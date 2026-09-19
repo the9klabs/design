@@ -8,6 +8,8 @@ export type I9kIconButtonVariant = 'secondary' | 'primary' | 'ghost';
 
 export type I9kPanelVariant = 'default' | 'feature' | 'flat';
 
+export type I9kSectionVariant = 'default' | 'primary';
+
 export type I9kTextVariant = 'body' | 'lede';
 
 export type I9kTone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';
