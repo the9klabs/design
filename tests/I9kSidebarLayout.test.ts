@@ -68,6 +68,25 @@ function mountLayout(
 const toggle = (wrapper: VueWrapper) => wrapper.get('button[aria-label="Course contents"]');
 const sidebar = (wrapper: VueWrapper) => wrapper.get('.i9k-sidebar-layout__sidebar');
 
+// jsdom has no layout: give the scrolling region a 100px box and the current
+// item a 20px one at `currentTop`, and watch what the region is scrolled to.
+function stubLayout(currentTop: number) {
+  const box = (top: number, height: number) =>
+    ({ top, bottom: top + height, height, left: 0, right: 0, width: 0, x: 0, y: top }) as DOMRect;
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+    this: HTMLElement,
+  ) {
+    if (this.classList.contains('i9k-sidebar-layout__scroll')) return box(0, 100);
+    if (this.getAttribute('aria-current') === 'page') return box(currentTop, 20);
+    return box(0, 0);
+  });
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100);
+  // A no-op setter: jsdom would keep the offset while these boxes never move
+  // with it, so each reveal starts unscrolled, as a region leaving
+  // `display: none` does.
+  return vi.spyOn(Element.prototype, 'scrollTop', 'set').mockImplementation(() => {});
+}
+
 async function resize(toWide: boolean) {
   wide = toWide;
   listeners.forEach((listener) => listener());
@@ -128,6 +147,38 @@ describe('I9kSidebarLayout', () => {
 
       expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
       expect(document.body.style.overflow).toBe('');
+    });
+
+    it('scrolls the current item back into view whenever the column is shown', async () => {
+      const scrollTop = stubLayout(300);
+      const wrapper = mountLayout({ props: { sidebarHidden: true } });
+      await nextTick();
+      await nextTick();
+      scrollTop.mockClear();
+
+      // Hidden at mount, then shown.
+      await toggle(wrapper).trigger('click');
+      await nextTick();
+      expect(scrollTop).toHaveBeenCalledWith(260);
+
+      // Hidden again, then shown again.
+      await toggle(wrapper).trigger('click');
+      scrollTop.mockClear();
+      await toggle(wrapper).trigger('click');
+      await nextTick();
+      expect(scrollTop).toHaveBeenCalledWith(260);
+    });
+
+    it('refuses a bound drawerOpen, so a later narrowing does not open the drawer', async () => {
+      const wrapper = mountLayout();
+      await nextTick();
+
+      await wrapper.setProps({ drawerOpen: true });
+      expect(wrapper.emitted('update:drawerOpen')).toEqual([[false]]);
+
+      await resize(false);
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+      expect(toggle(wrapper).attributes('aria-expanded')).toBe('false');
     });
   });
 
@@ -199,6 +250,19 @@ describe('I9kSidebarLayout', () => {
       expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
     });
 
+    it('gives focus back to the toggle after the close button and after the backdrop', async () => {
+      const wrapper = mountLayout();
+      await openDrawer(wrapper);
+      await wrapper.get('button[aria-label="Close course contents"]').trigger('click');
+      await nextTick();
+      expect(document.activeElement).toBe(toggle(wrapper).element);
+
+      await openDrawer(wrapper);
+      await wrapper.get('.i9k-sidebar-layout__backdrop').trigger('click');
+      await nextTick();
+      expect(document.activeElement).toBe(toggle(wrapper).element);
+    });
+
     it('closes when a link inside it is followed', async () => {
       const wrapper = mountLayout();
       await openDrawer(wrapper);
@@ -209,15 +273,80 @@ describe('I9kSidebarLayout', () => {
       expect(wrapper.emitted('update:drawerOpen')?.at(-1)).toEqual([false]);
     });
 
+    it('leaves focus with the navigation, not the toggle, after a followed link', async () => {
+      const wrapper = mountLayout();
+      await openDrawer(wrapper);
+      const link = wrapper.get('aside a');
+      (link.element as HTMLElement).focus();
+
+      await link.trigger('click');
+      await nextTick();
+
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+      expect(document.activeElement).not.toBe(toggle(wrapper).element);
+    });
+
+    it('stays open for a link opened in another tab or window, where the page stays', async () => {
+      const wrapper = mountLayout({
+        slots: {
+          ...slots,
+          sidebar:
+            '<a href="#one" aria-current="page">One</a><a href="#two" target="_blank">Two</a>',
+        },
+      });
+      await openDrawer(wrapper);
+      const [sameTab, newTab] = wrapper.findAll('aside a');
+
+      for (const modifier of ['metaKey', 'ctrlKey', 'shiftKey', 'altKey'] as const) {
+        await sameTab.trigger('click', { [modifier]: true });
+      }
+      await sameTab.trigger('click', { button: 1 });
+      await newTab.trigger('click');
+
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+      expect(wrapper.emitted('update:drawerOpen')).toEqual([[true]]);
+    });
+
+    it('still closes when the link handles its own navigation, as a router link does', async () => {
+      // RouterLink and NuxtLink call preventDefault() on the very click they
+      // navigate on, before it bubbles to the sidebar.
+      const wrapper = mountLayout({
+        slots: { ...slots, sidebar: '<a href="#one" aria-current="page" @click.prevent>One</a>' },
+      });
+      await openDrawer(wrapper);
+
+      await wrapper.get('aside a').trigger('click');
+
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    });
+
+    it('opens and closes from a bound drawerOpen, then gives focus back to the toggle', async () => {
+      const wrapper = mountLayout();
+      await nextTick();
+
+      await wrapper.setProps({ drawerOpen: true });
+      await nextTick();
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+      expect(document.activeElement?.getAttribute('aria-label')).toBe('Close course contents');
+
+      await wrapper.setProps({ drawerOpen: false });
+      await nextTick();
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+      expect(document.body.style.overflow).toBe('');
+      expect(document.activeElement).toBe(toggle(wrapper).element);
+    });
+
     it('closes when the viewport widens', async () => {
       const wrapper = mountLayout();
       await openDrawer(wrapper);
 
       await resize(true);
+      await nextTick();
 
       expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
       expect(sidebar(wrapper).attributes('hidden')).toBeUndefined();
       expect(document.body.style.overflow).toBe('');
+      expect(document.activeElement).toBe(toggle(wrapper).element);
     });
 
     it('releases the scroll lock and stops listening when unmounted open', async () => {
@@ -230,21 +359,38 @@ describe('I9kSidebarLayout', () => {
       expect(document.body.style.overflow).toBe('');
       expect(listeners).toEqual([]);
     });
+
+    it('stops listening for Escape when unmounted open', async () => {
+      const add = vi.spyOn(document, 'addEventListener');
+      const remove = vi.spyOn(document, 'removeEventListener');
+      const wrapper = mountLayout();
+      await openDrawer(wrapper);
+      const onKeydown = add.mock.calls.find(([type]) => type === 'keydown')?.[1];
+      expect(onKeydown).toBeTypeOf('function');
+      remove.mockClear();
+
+      mounted.splice(mounted.indexOf(wrapper), 1);
+      wrapper.unmount();
+
+      expect(remove).toHaveBeenCalledWith('keydown', onKeydown);
+    });
+
+    it('scrolls the current item into view when the drawer opens', async () => {
+      const scrollTop = stubLayout(300);
+      const wrapper = mountLayout();
+      await nextTick();
+      await nextTick();
+      scrollTop.mockClear();
+
+      await openDrawer(wrapper);
+      await nextTick();
+
+      expect(scrollTop).toHaveBeenCalledWith(260);
+    });
   });
 
   it('scrolls the sidebar itself, not the page, to the current item', async () => {
-    // jsdom has no layout: give the scrolling region and the current item boxes.
-    const box = (top: number, height: number) =>
-      ({ top, bottom: top + height, height, left: 0, right: 0, width: 0, x: 0, y: top }) as DOMRect;
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
-      this: HTMLElement,
-    ) {
-      if (this.classList.contains('i9k-sidebar-layout__scroll')) return box(0, 100);
-      if (this.getAttribute('aria-current') === 'page') return box(300, 20);
-      return box(0, 0);
-    });
-    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100);
-    const scrollTop = vi.spyOn(Element.prototype, 'scrollTop', 'set');
+    const scrollTop = stubLayout(300);
 
     mountLayout();
     await nextTick();
@@ -252,6 +398,16 @@ describe('I9kSidebarLayout', () => {
 
     // Centred: 300 (item top) - 0 (region top) - (100 - 20) / 2.
     expect(scrollTop).toHaveBeenCalledWith(260);
+  });
+
+  it('leaves the sidebar where it is when the current item is already in view', async () => {
+    const scrollTop = stubLayout(40);
+
+    mountLayout();
+    await nextTick();
+    await nextTick();
+
+    expect(scrollTop).not.toHaveBeenCalled();
   });
 
   it('server-renders without inline styles, leaving the narrow drawer to the stylesheet', async () => {

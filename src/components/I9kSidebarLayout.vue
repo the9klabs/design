@@ -24,27 +24,22 @@ const emit = defineEmits<{
   'update:drawerOpen': [open: boolean];
 }>();
 
-// Must match the max-width query in the stylesheet below, which hides the
-// drawer before hydration; a media query cannot read a prop, so this is not
-// one. I9kNavigation and I9kNavMenu switch at the same width.
+// The stylesheet's narrow query below is written as this one's exact
+// complement, `not all and (min-width: 769px)`: with `(max-width: 768px)` a
+// fractional width (browser zoom) would match neither. That query hides the
+// drawer before hydration, and a media query cannot read a prop, so this is
+// not one. I9kNavigation and I9kNavMenu switch at the same width.
 const DESKTOP_QUERY = '(min-width: 769px)';
+
+// The server cannot know the viewport, so the first render assumes the wide
+// one; the stylesheet alone keeps the sidebar out of view on a narrow screen
+// until mount reads the real width.
+const isDesktop = ref(true);
 
 // Both models drive themselves, so a consumer that binds neither still gets a
 // working layout; binding mirrors the state back, as I9kNavMenu's open does.
 const hidden = ref(props.sidebarHidden);
-watch(
-  () => props.sidebarHidden,
-  (value) => {
-    hidden.value = value;
-  },
-);
 const open = ref(props.drawerOpen);
-watch(
-  () => props.drawerOpen,
-  (value) => {
-    open.value = value;
-  },
-);
 
 const setHidden = (value: boolean) => {
   hidden.value = value;
@@ -55,10 +50,22 @@ const setOpen = (value: boolean) => {
   emit('update:drawerOpen', value);
 };
 
-// The server cannot know the viewport, so the first render assumes the wide
-// one; the stylesheet alone keeps the sidebar out of view on a narrow screen
-// until mount reads the real width.
-const isDesktop = ref(true);
+watch(
+  () => props.sidebarHidden,
+  (value) => {
+    hidden.value = value;
+  },
+);
+// The drawer exists only on a narrow screen. A request to open it on a wide
+// one is refused, not stored, or the next narrowing would open it unprompted.
+watch(
+  () => props.drawerOpen,
+  (value) => {
+    if (value && isDesktop.value) setOpen(false);
+    else open.value = value;
+  },
+);
+
 const isDrawer = computed(() => !isDesktop.value && open.value);
 // What the toggle reports and what the sidebar shows are the same fact.
 const expanded = computed(() => (isDesktop.value ? !hidden.value : open.value));
@@ -74,19 +81,33 @@ function onToggle() {
   else setOpen(!open.value);
 }
 
+// Whether the next close hands focus back to the toggle. Every close path
+// does, except a followed link.
+let focusToggleOnClose = true;
+
 function closeDrawer(returnFocus = true) {
   if (!open.value) return;
+  focusToggleOnClose = returnFocus;
   setOpen(false);
-  // After the re-render that lifts `inert` from the bar: an inert toggle
-  // cannot take focus.
-  if (returnFocus) void nextTick(() => toggleButton.value?.$el.focus());
 }
 
-// A followed link leaves the page, so focus stays with the navigation rather
-// than jumping back to the toggle.
+// A followed link leaves the page, so the drawer closes and focus stays with
+// the navigation rather than jumping back to the toggle. A link opened in
+// another tab or window leaves the page where it is, so the drawer stays open.
+// `defaultPrevented` is no sign of that: RouterLink and NuxtLink prevent the
+// default on the very click they navigate on, before it bubbles up to here.
 function onSidebarClick(event: MouseEvent) {
-  if (!isDrawer.value) return;
-  if (event.target instanceof Element && event.target.closest('a')) closeDrawer(false);
+  if (!isDrawer.value || !(event.target instanceof Element)) return;
+  const link = event.target.closest('a');
+  if (!link) return;
+  const opensElsewhere =
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey ||
+    link.target === '_blank';
+  if (!opensElsewhere) closeDrawer(false);
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -116,14 +137,32 @@ function lockScroll(lock: boolean) {
 
 watch(isDrawer, async (drawer) => {
   lockScroll(drawer);
-  if (!drawer) {
-    document.removeEventListener('keydown', onKeydown);
+  if (drawer) {
+    focusToggleOnClose = true;
+    document.addEventListener('keydown', onKeydown);
+    await nextTick();
+    sidebar.value?.querySelector<HTMLElement>('.i9k-sidebar-layout__close')?.focus();
+    revealCurrent();
     return;
   }
-  document.addEventListener('keydown', onKeydown);
+  document.removeEventListener('keydown', onKeydown);
+  if (!focusToggleOnClose) return;
+  // After the re-render that lifts `inert` from the bar: an inert toggle
+  // cannot take focus. Only when focus went down with the drawer (it is on
+  // <body> or still inside the sidebar), so a close from outside never pulls
+  // focus away from wherever the reader has since put it.
   await nextTick();
-  sidebar.value?.querySelector<HTMLElement>('.i9k-sidebar-layout__close')?.focus();
-  revealCurrent();
+  const active = document.activeElement;
+  if (!active || active === document.body || sidebar.value?.contains(active)) {
+    toggleButton.value?.$el.focus();
+  }
+});
+
+// A region under `display: none` loses its scroll offset, so a column shown
+// again on a wide screen would come back scrolled to the top. The drawer
+// reveals its own current item as it opens, above.
+watch(expanded, (visible) => {
+  if (visible && isDesktop.value) void nextTick(revealCurrent);
 });
 
 let desktopMedia: MediaQueryList | undefined;
@@ -163,7 +202,7 @@ onUnmounted(() => {
         v-if="$slots.sidebar"
         ref="toggleButton"
         class="i9k-sidebar-layout__toggle"
-        icon="menu"
+        icon="bars"
         variant="ghost"
         :label="toggleLabel"
         :aria-expanded="expanded ? 'true' : 'false'"
@@ -230,7 +269,7 @@ onUnmounted(() => {
   --i9k-sidebar-layout-bar-height: 3.5rem;
   --i9k-sidebar-layout-sidebar-width: 20rem;
 
-  min-height: var(--i9k-sidebar-layout-height, 100dvh);
+  min-block-size: var(--i9k-sidebar-layout-height, 100dvh);
   background: var(--theme-bg-color);
   color: var(--text-color);
 }
@@ -253,7 +292,7 @@ onUnmounted(() => {
   flex: 1 1 auto;
   align-items: center;
   gap: var(--component-gap-md);
-  min-width: 0;
+  min-inline-size: 0;
 }
 
 .i9k-sidebar-layout__bar-end {
@@ -316,7 +355,7 @@ onUnmounted(() => {
 .i9k-sidebar-layout__column {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  min-inline-size: 0;
   min-block-size: calc(
     var(--i9k-sidebar-layout-height, 100dvh) - var(--i9k-sidebar-layout-bar-height)
   );
@@ -324,14 +363,15 @@ onUnmounted(() => {
 
 .i9k-sidebar-layout__main {
   flex: 1 0 auto;
-  min-width: 0;
+  min-inline-size: 0;
 }
 
 .i9k-sidebar-layout__footer {
   flex: none;
 }
 
-@media (max-width: 768px) {
+/* The exact complement of DESKTOP_QUERY in the script; see the note there. */
+@media not all and (min-width: 769px) {
   .i9k-sidebar-layout.has-sidebar:not(.is-sidebar-hidden) .i9k-sidebar-layout__body {
     grid-template-columns: minmax(0, 1fr);
   }
