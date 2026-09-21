@@ -225,6 +225,16 @@ describe('I9kSidebarLayout', () => {
       expect(wrapper.emitted('update:drawerOpen')).toEqual([[true]]);
     });
 
+    it('names the open drawer once: the dialog, not a landmark inside it', async () => {
+      const wrapper = mountLayout();
+      await openDrawer(wrapper);
+      const aside = wrapper.get('aside');
+
+      expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toBe('Course contents');
+      expect(aside.attributes('role')).toBe('none');
+      expect(aside.attributes('aria-label')).toBeUndefined();
+    });
+
     it('makes the rest of the page inert and stops it scrolling while open', async () => {
       const wrapper = mountLayout();
       await openDrawer(wrapper);

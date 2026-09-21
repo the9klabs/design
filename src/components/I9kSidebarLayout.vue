@@ -250,7 +250,13 @@ onUnmounted(() => {
             @click="closeDrawer()"
           />
         </div>
-        <aside class="i9k-sidebar-layout__aside" :aria-label="sidebarLabel">
+        <!-- Inside the open drawer the dialog carries the name; a landmark
+             with the same name inside it would only announce it twice. -->
+        <aside
+          class="i9k-sidebar-layout__aside"
+          :role="isDrawer ? 'none' : undefined"
+          :aria-label="isDrawer ? undefined : sidebarLabel"
+        >
           <div ref="scroller" class="i9k-sidebar-layout__scroll"><slot name="sidebar" /></div>
           <div v-if="$slots['sidebar-footer']" class="i9k-sidebar-layout__sidebar-footer">
             <slot name="sidebar-footer" />
