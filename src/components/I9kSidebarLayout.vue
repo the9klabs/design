@@ -35,6 +35,11 @@ const DESKTOP_QUERY = '(min-width: 769px)';
 // one; the stylesheet alone keeps the sidebar out of view on a narrow screen
 // until mount reads the real width.
 const isDesktop = ref(true);
+// Until mount the toggle has no aria-expanded at all: on a phone the
+// stylesheet already hides the sidebar, so the wide assumption's "expanded"
+// would be untrue there. The server render and the hydration render both see
+// `mounted` false, so they still match.
+const mounted = ref(false);
 
 // Both models drive themselves, so a consumer that binds neither still gets a
 // working layout; binding mirrors the state back, as I9kNavMenu's open does.
@@ -182,6 +187,7 @@ onMounted(() => {
     desktopMedia.addEventListener('change', syncViewport);
   }
   syncViewport();
+  mounted.value = true;
   void nextTick(revealCurrent);
 });
 
@@ -209,7 +215,7 @@ onUnmounted(() => {
         icon="bars"
         variant="ghost"
         :label="toggleLabel"
-        :aria-expanded="expanded ? 'true' : 'false'"
+        :aria-expanded="mounted ? (expanded ? 'true' : 'false') : undefined"
         :aria-controls="sidebarId"
         @click="onToggle"
       />

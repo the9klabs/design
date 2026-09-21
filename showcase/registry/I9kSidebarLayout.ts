@@ -42,7 +42,7 @@ Usage:
     'The breakpoint is fixed at 769px and is not a prop: the stylesheet has to hide the drawer before hydration, and a media query cannot read a prop.',
     'It renders its own `<header>`, `<aside>`, `<main>` and `<footer>`; use it as the whole page, not inside another shell.',
     'The sidebar follows the main content in the DOM, so keyboard and screen-reader users reach the page first; do not reorder it with CSS order in a wrapper.',
-    'Before mount it assumes a wide screen, so the toggle reports expanded on the server; the stylesheet keeps the drawer hidden on a narrow screen until the client corrects the state.',
+    'Before mount it assumes a wide screen for layout, and the toggle carries no aria-expanded until the client has read the real width; the stylesheet keeps the drawer hidden on a narrow screen meanwhile.',
     'Set `--i9k-sidebar-layout-height` on a parent to bound the frame (for a demo); it defaults to `100dvh`.',
   ],
   demos: [

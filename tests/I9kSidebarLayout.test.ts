@@ -459,7 +459,37 @@ describe('I9kSidebarLayout', () => {
     );
 
     expect(html).not.toMatch(/\sstyle="/);
-    expect(html).toContain('aria-expanded="true"');
+    // The server cannot know the width, so the toggle states nothing yet
+    // rather than "expanded" for a sidebar a phone's stylesheet hides.
+    expect(html).toContain('aria-controls=');
+    expect(html).not.toContain('aria-expanded');
     expect(html).not.toMatch(/i9k-sidebar-layout__sidebar"[^>]*\shidden/);
+  });
+
+  it('hydrates the server markup without a mismatch, then reports the real state', async () => {
+    wide = false;
+    const render = () =>
+      h(
+        I9kSidebarLayout,
+        { sidebarLabel: 'Course contents', toggleLabel: 'Course contents' },
+        { sidebar: () => h('p', 'Outline'), default: () => h('p', 'Lesson') },
+      );
+    const container = document.createElement('div');
+    container.innerHTML = await renderToString(createSSRApp({ render }));
+    document.body.appendChild(container);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const app = createSSRApp({ render });
+    app.mount(container);
+    await nextTick();
+
+    expect(warn.mock.calls.filter((call) => String(call[0]).includes('Hydration'))).toEqual([]);
+    expect(
+      container
+        .querySelector('button[aria-label="Course contents"]')
+        ?.getAttribute('aria-expanded'),
+    ).toBe('false');
+    app.unmount();
+    container.remove();
   });
 });
