@@ -13,6 +13,7 @@ import { I9kFaqListEntry } from './I9kFaqList';
 import { I9kFieldEntry } from './I9kField';
 import { I9kFooterEntry } from './I9kFooter';
 import { I9kGithubEmbedEntry } from './I9kGithubEmbed';
+import { I9kGlowEntry } from './I9kGlow';
 import { I9kGridEntry } from './I9kGrid';
 import { I9kIconEntry } from './I9kIcon';
 import { I9kIconButtonEntry } from './I9kIconButton';
@@ -85,4 +86,5 @@ export const entries: ShowcaseEntry[] = [
   I9kThemeSwitcherEntry,
   I9kLanguageSwitcherEntry,
   I9kBlurredCirclesEntry,
+  I9kGlowEntry,
 ];

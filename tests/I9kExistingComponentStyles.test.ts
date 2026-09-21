@@ -428,4 +428,40 @@ describe('scoped existing component compiled styles', () => {
     expect(declarations(contained).get('border')?.toLowerCase()).toContain('canvastext');
     expect(declarations(band).get('border-image-source')).toBe('none');
   });
+
+  it('stops the I9kGlow drift for reduced motion', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kGlow');
+    let animatedRule: Rule | undefined;
+    let reducedMotionRule: Rule | undefined;
+
+    stylesheet.walkRules((rule) => {
+      if (!rule.selector.includes('.i9k-glow__light')) return;
+      const animation = declarations(rule).get('animation');
+      if (isReducedMotionRule(rule) && animation === 'none') reducedMotionRule = rule;
+      else if (!isReducedMotionRule(rule) && animation) animatedRule = rule;
+    });
+
+    expect(animatedRule).toBeDefined();
+    expect(reducedMotionRule?.selector).toMatch(/^\.i9k-glow__light\[data-v-[^\]]+\]$/);
+  });
+
+  it('places I9kGlow with logical properties only, so start and end mirror in RTL', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kGlow');
+    const physical: string[] = [];
+
+    stylesheet.walkDecls((decl) => {
+      if (/^(left|right|(margin|padding|inset)-(left|right))$/.test(decl.prop)) {
+        physical.push(`${(decl.parent as Rule).selector} { ${decl.prop} }`);
+      }
+    });
+    const endRule = findRule(
+      stylesheet,
+      'inset-inline-end',
+      'calc(var(--i9k-glow-size) / -2)',
+      '.i9k-glow--end',
+    );
+
+    expect(physical).toEqual([]);
+    expect(endRule).toBeDefined();
+  });
 });
