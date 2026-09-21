@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-const props = withDefaults(defineProps<{ defaultOpen?: boolean; open?: boolean }>(), {
-  defaultOpen: false,
-  // Explicitly undefined: Vue would otherwise cast an absent boolean prop to
-  // false and every instance would become controlled.
-  open: undefined,
-});
+import type { I9kCollapsibleVariant } from '../types/components';
+
+const props = withDefaults(
+  defineProps<{ defaultOpen?: boolean; open?: boolean; variant?: I9kCollapsibleVariant }>(),
+  {
+    defaultOpen: false,
+    // Explicitly undefined: Vue would otherwise cast an absent boolean prop to
+    // false and every instance would become controlled.
+    open: undefined,
+    variant: 'card',
+  },
+);
 
 const emit = defineEmits<{ toggle: [open: boolean]; 'update:open': [open: boolean] }>();
 const details = ref<HTMLDetailsElement | null>(null);
@@ -31,7 +37,12 @@ function onToggle(event: Event) {
 </script>
 
 <template>
-  <details ref="details" class="i9k-collapsible" :open="initialOpen" @toggle="onToggle">
+  <details
+    ref="details"
+    :class="['i9k-collapsible', `i9k-collapsible--${variant}`]"
+    :open="initialOpen"
+    @toggle="onToggle"
+  >
     <summary class="i9k-collapsible__summary">
       <span class="i9k-collapsible__summary-content"><slot name="summary" /></span>
       <span class="i9k-collapsible__indicator" aria-hidden="true" />
@@ -122,6 +133,29 @@ function onToggle(event: Event) {
   padding: 0 var(--spacing-10) var(--spacing-10);
   color: var(--text-color-light);
   line-height: 1.6;
+}
+
+/* A disclosure in a list inside a panel: no card of its own, and tighter
+   padding so a narrow sidebar keeps its width for the content. */
+.i9k-collapsible--flush {
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.i9k-collapsible--flush .i9k-collapsible__summary {
+  gap: var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-2);
+  border-radius: var(--radius-sm);
+}
+
+.i9k-collapsible--flush .i9k-collapsible__indicator {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.i9k-collapsible--flush .i9k-collapsible__body {
+  padding: 0 0 var(--spacing-4);
 }
 
 @media (prefers-reduced-motion: reduce) {
