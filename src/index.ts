@@ -2,6 +2,7 @@ import './styles/index.css';
 
 export type { I9kComponentSize, I9kIconButtonVariant, I9kTone } from './types/components';
 export type { I9kBadgeVariant } from './types/components';
+export type { I9kGlowPosition } from './types/components';
 export type { I9kGridColumns } from './types/components';
 export type { I9kPanelVariant } from './types/components';
 export type { I9kSectionVariant } from './types/components';
@@ -23,6 +24,7 @@ export { default as I9kCollapsible } from './components/I9kCollapsible.vue';
 export { default as I9kFaqList } from './components/I9kFaqList.vue';
 export { default as I9kFooter } from './components/I9kFooter.vue';
 export { default as I9kGithubEmbed } from './components/I9kGithubEmbed.vue';
+export { default as I9kGlow } from './components/I9kGlow.vue';
 export { default as I9kIcon } from './components/I9kIcon.vue';
 export { default as I9kIconButton } from './components/I9kIconButton.vue';
 export { default as I9kLanguageSwitcher } from './components/I9kLanguageSwitcher.vue';

@@ -2,6 +2,12 @@ export type I9kBadgeVariant = 'solid' | 'outline' | 'tag';
 
 export type I9kComponentSize = 'sm' | 'md' | 'lg';
 
+/**
+ * Where I9kGlow sits. Logical like I9kNinoLook: `start` and `end` follow the
+ * reading direction, so the glow mirrors in Arabic.
+ */
+export type I9kGlowPosition = 'top' | 'top-start' | 'top-end' | 'start' | 'end' | 'center';
+
 export type I9kGridColumns = 1 | 2 | 3 | 'auto';
 
 export type I9kIconButtonVariant = 'secondary' | 'primary' | 'ghost';
