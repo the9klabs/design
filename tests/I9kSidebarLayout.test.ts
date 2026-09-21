@@ -242,6 +242,8 @@ describe('I9kSidebarLayout', () => {
       expect(wrapper.get('header').attributes('inert')).toBeDefined();
       expect(wrapper.get('main').element.closest('[inert]')).not.toBeNull();
       expect(document.body.style.overflow).toBe('hidden');
+      // jsdom does not enforce inert, so check the drawer itself is outside it.
+      expect(sidebar(wrapper).element.closest('[inert]')).toBeNull();
     });
 
     it('closes on Escape and gives focus back to the toggle', async () => {
