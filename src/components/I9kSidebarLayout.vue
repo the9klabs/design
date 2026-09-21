@@ -96,6 +96,9 @@ function closeDrawer(returnFocus = true) {
 // another tab or window leaves the page where it is, so the drawer stays open.
 // `defaultPrevented` is no sign of that: RouterLink and NuxtLink prevent the
 // default on the very click they navigate on, before it bubbles up to here.
+// A link to the page already shown (`aria-current="page"`, the same signal
+// revealCurrent reads) goes nowhere, so focus goes back to the toggle instead
+// of staying on a link inside the hidden sidebar.
 function onSidebarClick(event: MouseEvent) {
   if (!isDrawer.value || !(event.target instanceof Element)) return;
   const link = event.target.closest('a');
@@ -107,7 +110,8 @@ function onSidebarClick(event: MouseEvent) {
     event.shiftKey ||
     event.altKey ||
     link.target === '_blank';
-  if (!opensElsewhere) closeDrawer(false);
+  if (opensElsewhere) return;
+  closeDrawer(link.getAttribute('aria-current') === 'page');
 }
 
 function onKeydown(event: KeyboardEvent) {

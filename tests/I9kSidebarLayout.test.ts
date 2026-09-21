@@ -306,6 +306,22 @@ describe('I9kSidebarLayout', () => {
       expect(document.activeElement).not.toBe(toggle(wrapper).element);
     });
 
+    it('gives focus back to the toggle after a link to the page already shown', async () => {
+      // Such a link goes nowhere, so focus would otherwise stay on it inside
+      // the hidden sidebar and fall to <body>.
+      const wrapper = mountLayout();
+      await openDrawer(wrapper);
+      const current = wrapper.get('aside a[aria-current="page"]');
+      (current.element as HTMLElement).focus();
+
+      await current.trigger('click');
+      await nextTick();
+      await nextTick();
+
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+      expect(document.activeElement).toBe(toggle(wrapper).element);
+    });
+
     it('stays open for a link opened in another tab or window, where the page stays', async () => {
       const wrapper = mountLayout({
         slots: {
