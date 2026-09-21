@@ -112,6 +112,16 @@ describe('I9kSidebarLayout', () => {
     expect(wrapper.find('footer').exists()).toBe(false);
   });
 
+  it('puts the page content before the sidebar in reading order', () => {
+    const wrapper = mountLayout();
+    const main = wrapper.get('main').element;
+    const aside = wrapper.get('aside').element;
+
+    // A keyboard or screen-reader user reaches the content first; the grid
+    // shows the sidebar at the inline start on a wide screen.
+    expect(main.compareDocumentPosition(aside) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   describe('on a wide viewport', () => {
     it('hides and shows the sidebar column from the toggle', async () => {
       const wrapper = mountLayout();

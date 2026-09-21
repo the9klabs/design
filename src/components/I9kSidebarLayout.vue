@@ -222,6 +222,13 @@ onUnmounted(() => {
         aria-hidden="true"
         @click="closeDrawer()"
       />
+      <div class="i9k-sidebar-layout__column" :inert="isDrawer || undefined">
+        <main class="i9k-sidebar-layout__main"><slot /></main>
+        <footer v-if="$slots.footer" class="i9k-sidebar-layout__footer">
+          <slot name="footer" />
+        </footer>
+      </div>
+
       <div
         v-if="$slots.sidebar"
         :id="sidebarId"
@@ -249,13 +256,6 @@ onUnmounted(() => {
             <slot name="sidebar-footer" />
           </div>
         </aside>
-      </div>
-
-      <div class="i9k-sidebar-layout__column" :inert="isDrawer || undefined">
-        <main class="i9k-sidebar-layout__main"><slot /></main>
-        <footer v-if="$slots.footer" class="i9k-sidebar-layout__footer">
-          <slot name="footer" />
-        </footer>
       </div>
     </div>
   </div>
@@ -368,6 +368,20 @@ onUnmounted(() => {
 
 .i9k-sidebar-layout__footer {
   flex: none;
+}
+
+/* The content comes first in the reading order; the grid places the sidebar
+   at the inline start. */
+@media (min-width: 769px) {
+  .i9k-sidebar-layout.has-sidebar:not(.is-sidebar-hidden) .i9k-sidebar-layout__sidebar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .i9k-sidebar-layout.has-sidebar:not(.is-sidebar-hidden) .i9k-sidebar-layout__column {
+    grid-column: 2;
+    grid-row: 1;
+  }
 }
 
 /* The exact complement of DESKTOP_QUERY in the script; see the note there. */

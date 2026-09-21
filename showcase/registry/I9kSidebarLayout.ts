@@ -28,7 +28,7 @@ Slots:
 - default — the page content, inside <main>.
 - footer — optional <footer> after main, e.g. legal links.
 
-Behavior: the breakpoint is fixed at 769px (the same as I9kNavigation). Wide: the toggle hides or shows the sidebar column, which is sticky and exactly as tall as the viewport below the bar. Narrow: the toggle opens a modal drawer (role=dialog, aria-modal) with a close button that takes focus; the bar and main area become inert and the page stops scrolling; Escape, the close button, the backdrop and following a link inside close it, and focus returns to the toggle (except after a link). On mount and whenever the drawer opens, an element with aria-current="page" inside the sidebar is scrolled into the middle of the sidebar (the sidebar scrolls, never the window). The layout renders <header>, <aside>, <main> and <footer> itself, so do not wrap it in another <main>.
+Behavior: the breakpoint is fixed at 769px (the same as I9kNavigation). Wide: the toggle hides or shows the sidebar column, which is sticky and exactly as tall as the viewport below the bar. The page content comes before the sidebar in reading order, so keyboard and screen-reader users reach it first; on a wide screen the grid shows the sidebar at the inline start. Narrow: the toggle opens a modal drawer (role=dialog, aria-modal) with a close button that takes focus; the bar and main area become inert and the page stops scrolling; Escape, the close button, the backdrop and following a link inside close it, and focus returns to the toggle (except after a link). On mount and whenever the drawer opens, an element with aria-current="page" inside the sidebar is scrolled into the middle of the sidebar (the sidebar scrolls, never the window). The layout renders <header>, <aside>, <main> and <footer> itself, so do not wrap it in another <main>.
 
 Usage:
 <I9kSidebarLayout sidebar-label="Course contents" toggle-label="Course contents" close-label="Close course contents">
@@ -41,6 +41,7 @@ Usage:
   gotchas: [
     'The breakpoint is fixed at 769px and is not a prop: the stylesheet has to hide the drawer before hydration, and a media query cannot read a prop.',
     'It renders its own `<header>`, `<aside>`, `<main>` and `<footer>`; use it as the whole page, not inside another shell.',
+    'The sidebar follows the main content in the DOM, so keyboard and screen-reader users reach the page first; do not reorder it with CSS order in a wrapper.',
     'Before mount it assumes a wide screen, so the toggle reports expanded on the server; the stylesheet keeps the drawer hidden on a narrow screen until the client corrects the state.',
     'Set `--i9k-sidebar-layout-height` on a parent to bound the frame (for a demo); it defaults to `100dvh`.',
   ],
