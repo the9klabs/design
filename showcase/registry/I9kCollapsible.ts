@@ -12,6 +12,7 @@ import { I9kCollapsible } from '@9klabs/design';
 Props:
 - defaultOpen?: boolean (default false) — sets only the initial native open state when \`open\` is not bound.
 - open?: boolean (default undefined) — bind with v-model:open to control the open state from the parent, e.g. an expand-all / collapse-all button. Leave it unbound for the browser-managed, uncontrolled behavior.
+- variant?: 'card' | 'flush' (default 'card') — \`flush\` drops the border and background, for a list of disclosures inside a panel or a sidebar.
 
 Emits:
 - toggle(open: boolean) — reports the current native details.open value after every native toggle, including one caused by changing a bound \`open\`.
@@ -35,6 +36,7 @@ Usage:
     'A one-way `:open` binding does not learn about user toggles; use `v-model:open` so the parent value stays in step.',
     'Uncontrolled sibling instances expand independently; control them with `v-model:open` if only one section may be open.',
     'Provide visible summary content because the summary slot is the disclosure control label.',
+    'Use `variant="flush"` for disclosures listed inside a panel or sidebar; the default card is meant to stand on the page.',
   ],
   demos: [
     {
@@ -57,6 +59,19 @@ Usage:
   <template #summary><span><strong>Module 03</strong> · 9 topics</span></template>
   <ol><li>Plan</li><li>Design</li><li>Build</li></ol>
 </I9kCollapsible>`,
+    },
+    {
+      label: 'Flush, in a list',
+      code: `<div style="display: grid; gap: var(--spacing-2); max-width: 20rem">
+  <I9kCollapsible variant="flush" :default-open="true">
+    <template #summary>01 · Getting started</template>
+    <ol><li>Welcome</li><li>Setup</li></ol>
+  </I9kCollapsible>
+  <I9kCollapsible variant="flush">
+    <template #summary>02 · Prompting</template>
+    <ol><li>Context</li></ol>
+  </I9kCollapsible>
+</div>`,
     },
     {
       label: 'Independent instances',

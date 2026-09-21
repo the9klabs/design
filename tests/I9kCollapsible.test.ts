@@ -88,4 +88,26 @@ describe('I9kCollapsible', () => {
     expect(wrapper.emitted('update:open')).toBeUndefined();
     expect(details.element.open).toBe(false);
   });
+
+  it('renders the card variant by default', () => {
+    expect(mount(I9kCollapsible).classes()).toContain('i9k-collapsible--card');
+  });
+
+  it('renders a flush variant for disclosures listed inside a panel', () => {
+    const wrapper = mount(I9kCollapsible, { props: { variant: 'flush' } });
+
+    expect(wrapper.classes()).toContain('i9k-collapsible--flush');
+    expect(wrapper.classes()).not.toContain('i9k-collapsible--card');
+  });
+
+  it('keeps the controlled open contract in the flush variant', async () => {
+    const wrapper = mount(I9kCollapsible, { props: { variant: 'flush', open: true } });
+    const details = wrapper.get('details');
+
+    expect(details.element.open).toBe(true);
+    details.element.open = false;
+    await details.trigger('toggle');
+
+    expect(wrapper.emitted('update:open')).toEqual([[false]]);
+  });
 });

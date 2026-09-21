@@ -10,7 +10,7 @@ export const I9kIconEntry: ShowcaseEntry = {
 import { I9kIcon } from '@9klabs/design';
 
 Props:
-- name: I9kIconName (required) — one of the names in src/icons/paths.json: 'facebook', 'twitter', 'medium', 'linkedin', 'behance', 'github', 'menu', 'mail', 'dev', 'phone', 'landMark', 'home', 'instagram', 'youtube', 'tiktok', 'x', '9klabs', 'linktree', 'sun', 'moon', 'translate', 'add', 'edit', 'delete', 'close', 'arrowUp', 'arrowDown', 'archive', 'unarchive', 'eye', 'eyeOff', 'warning'.
+- name: I9kIconName (required) — one of the names in src/icons/paths.json: 'facebook', 'twitter', 'medium', 'linkedin', 'behance', 'github', 'menu', 'mail', 'dev', 'phone', 'landMark', 'home', 'instagram', 'youtube', 'tiktok', 'x', '9klabs', 'linktree', 'sun', 'moon', 'translate', 'add', 'edit', 'delete', 'close', 'arrowUp', 'arrowDown', 'archive', 'unarchive', 'eye', 'eyeOff', 'warning', 'bars'.
 - title?: string (default '') — an accessible name for the icon; setting this (or \`desc\`) makes the icon exposed to assistive tech as role="img" instead of hidden.
 - desc?: string (default '') — a longer accessible description; same effect as \`title\` on hiddenness.
 - size?: string | number (default '1.2em') — sets both width and height, e.g. '24px', '2em', 32.

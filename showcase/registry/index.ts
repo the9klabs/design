@@ -3,6 +3,7 @@ import { I9kAsciiEmojiEntry } from './I9kAsciiEmoji';
 import { I9kBadgeEntry } from './I9kBadge';
 import { I9kBlurredCirclesEntry } from './I9kBlurredCircles';
 import { I9kBrandWordmarkEntry } from './I9kBrandWordmark';
+import { I9kBreadcrumbEntry } from './I9kBreadcrumb';
 import { I9kButtonEntry } from './I9kButton';
 import { I9kButtonGroupEntry } from './I9kButtonGroup';
 import { I9kCheckboxGroupEntry } from './I9kCheckboxGroup';
@@ -31,6 +32,7 @@ import { I9kRadioGroupEntry } from './I9kRadioGroup';
 import { I9kSectionEntry } from './I9kSection';
 import { I9kSectionHeadingEntry } from './I9kSectionHeading';
 import { I9kSelectEntry } from './I9kSelect';
+import { I9kSidebarLayoutEntry } from './I9kSidebarLayout';
 import { I9kSocialLinksEntry } from './I9kSocialLinks';
 import { I9kStatEntry } from './I9kStat';
 import { I9kTextEntry } from './I9kText';
@@ -75,6 +77,8 @@ export const entries: ShowcaseEntry[] = [
   I9kModalEntry,
   I9kNavigationEntry,
   I9kNavMenuEntry,
+  I9kBreadcrumbEntry,
+  I9kSidebarLayoutEntry,
   I9kFooterEntry,
   I9kBrandWordmarkEntry,
   I9kSocialLinksEntry,

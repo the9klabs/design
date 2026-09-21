@@ -42,6 +42,16 @@ export const RichSummary: Story = {
   }),
 };
 
+export const Flush: Story = {
+  render: () => ({
+    components: { I9kCollapsible },
+    template: `<div style="display: grid; gap: var(--spacing-2); max-width: 20rem">
+      <I9kCollapsible variant="flush" :default-open="true"><template #summary>01 · Getting started</template><ol><li>Welcome</li><li>Setup</li></ol></I9kCollapsible>
+      <I9kCollapsible variant="flush"><template #summary>02 · Prompting</template><ol><li>Context</li></ol></I9kCollapsible>
+    </div>`,
+  }),
+};
+
 export const Independent: Story = {
   render: () => ({
     components: { I9kCollapsible },

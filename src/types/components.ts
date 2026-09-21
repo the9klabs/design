@@ -69,3 +69,18 @@ export interface I9kFooterColumn {
   title: string;
   links: I9kFooterLink[];
 }
+
+/**
+ * `card` is the bordered surface; `flush` drops the border and background for
+ * a list of disclosures inside a panel or sidebar, where a card per item
+ * would box the list in twice.
+ */
+export type I9kCollapsibleVariant = 'card' | 'flush';
+
+/** One step of an I9kBreadcrumb trail. The last item is the current page. */
+export interface I9kBreadcrumbItem {
+  id: string;
+  label: string;
+  /** Rendered as a link on every item but the last. */
+  href?: string;
+}
