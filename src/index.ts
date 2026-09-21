@@ -29,6 +29,7 @@ export { default as I9kLanguageSwitcher } from './components/I9kLanguageSwitcher
 export { default as I9kNavigation } from './components/I9kNavigation.vue';
 export { default as I9kNavMenu } from './components/I9kNavMenu.vue';
 export { default as I9kBreadcrumb } from './components/I9kBreadcrumb.vue';
+export { default as I9kSidebarLayout } from './components/I9kSidebarLayout.vue';
 export { default as I9kNino } from './components/I9kNino.vue';
 export { default as I9kProfileCard } from './components/I9kProfileCard.vue';
 export { default as I9kSocialLinks } from './components/I9kSocialLinks.vue';

@@ -32,6 +32,7 @@ import { I9kRadioGroupEntry } from './I9kRadioGroup';
 import { I9kSectionEntry } from './I9kSection';
 import { I9kSectionHeadingEntry } from './I9kSectionHeading';
 import { I9kSelectEntry } from './I9kSelect';
+import { I9kSidebarLayoutEntry } from './I9kSidebarLayout';
 import { I9kSocialLinksEntry } from './I9kSocialLinks';
 import { I9kStatEntry } from './I9kStat';
 import { I9kTextEntry } from './I9kText';
@@ -77,6 +78,7 @@ export const entries: ShowcaseEntry[] = [
   I9kNavigationEntry,
   I9kNavMenuEntry,
   I9kBreadcrumbEntry,
+  I9kSidebarLayoutEntry,
   I9kFooterEntry,
   I9kBrandWordmarkEntry,
   I9kSocialLinksEntry,

@@ -96,7 +96,7 @@ function tagsIn(fileText: string): { component: string; tagText: string }[] {
 
 describe('showcase registry', () => {
   it('finds the exported component names it is measured against', () => {
-    expect(exportedNames.length).toBe(41);
+    expect(exportedNames.length).toBe(42);
   });
 
   it('names only real exports', () => {

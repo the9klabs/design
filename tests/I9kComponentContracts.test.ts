@@ -47,6 +47,7 @@ const learningFrameExports = [
   "export type { I9kCollapsibleVariant } from './types/components';",
   "export type { I9kBreadcrumbItem } from './types/components';",
   "export { default as I9kBreadcrumb } from './components/I9kBreadcrumb.vue';",
+  "export { default as I9kSidebarLayout } from './components/I9kSidebarLayout.vue';",
 ] as const;
 
 describe('shared component contracts', () => {
