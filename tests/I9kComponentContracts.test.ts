@@ -43,6 +43,12 @@ const sectionExports = [
   "export { default as I9kSection } from './components/I9kSection.vue';",
 ] as const;
 
+const learningFrameExports = [
+  "export type { I9kCollapsibleVariant } from './types/components';",
+  "export type { I9kBreadcrumbItem } from './types/components';",
+  "export { default as I9kBreadcrumb } from './components/I9kBreadcrumb.vue';",
+] as const;
+
 describe('shared component contracts', () => {
   it('exports the common component types', () => {
     expect(indexSource).toContain(
@@ -67,6 +73,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(sectionExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(learningFrameExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 

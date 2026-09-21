@@ -3,6 +3,7 @@ import { I9kAsciiEmojiEntry } from './I9kAsciiEmoji';
 import { I9kBadgeEntry } from './I9kBadge';
 import { I9kBlurredCirclesEntry } from './I9kBlurredCircles';
 import { I9kBrandWordmarkEntry } from './I9kBrandWordmark';
+import { I9kBreadcrumbEntry } from './I9kBreadcrumb';
 import { I9kButtonEntry } from './I9kButton';
 import { I9kButtonGroupEntry } from './I9kButtonGroup';
 import { I9kCheckboxGroupEntry } from './I9kCheckboxGroup';
@@ -75,6 +76,7 @@ export const entries: ShowcaseEntry[] = [
   I9kModalEntry,
   I9kNavigationEntry,
   I9kNavMenuEntry,
+  I9kBreadcrumbEntry,
   I9kFooterEntry,
   I9kBrandWordmarkEntry,
   I9kSocialLinksEntry,
