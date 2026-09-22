@@ -31,6 +31,7 @@ const migratedComponents = [
   ['I9kBreadcrumb.vue', 'i9k-breadcrumb'],
   ['I9kSidebarLayout.vue', 'i9k-sidebar-layout'],
   ['I9kGlow.vue', 'i9k-glow'],
+  ['I9kTabs.vue', 'i9k-tabs'],
 ] as const;
 
 describe('migrated component styles', () => {
