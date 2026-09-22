@@ -55,6 +55,11 @@ const glowExports = [
   "export { default as I9kGlow } from './components/I9kGlow.vue';",
 ] as const;
 
+const tabsExports = [
+  "export type { I9kTabItem } from './types/components';",
+  "export { default as I9kTabs } from './components/I9kTabs.vue';",
+] as const;
+
 describe('shared component contracts', () => {
   it('exports the common component types', () => {
     expect(indexSource).toContain(
@@ -87,6 +92,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(glowExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(tabsExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 

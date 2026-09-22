@@ -36,6 +36,7 @@ import { I9kSelectEntry } from './I9kSelect';
 import { I9kSidebarLayoutEntry } from './I9kSidebarLayout';
 import { I9kSocialLinksEntry } from './I9kSocialLinks';
 import { I9kStatEntry } from './I9kStat';
+import { I9kTabsEntry } from './I9kTabs';
 import { I9kTextEntry } from './I9kText';
 import { I9kTextareaEntry } from './I9kTextarea';
 import { I9kThemeSwitcherEntry } from './I9kThemeSwitcher';
@@ -74,6 +75,7 @@ export const entries: ShowcaseEntry[] = [
   I9kButtonEntry,
   I9kButtonGroupEntry,
   I9kIconButtonEntry,
+  I9kTabsEntry,
   I9kToastEntry,
   I9kModalEntry,
   I9kNavigationEntry,

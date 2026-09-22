@@ -90,3 +90,13 @@ export interface I9kBreadcrumbItem {
   /** Rendered as a link on every item but the last. */
   href?: string;
 }
+
+/** One tab of an I9kTabs tablist. */
+export interface I9kTabItem {
+  /** Identifies the tab in `v-model` and names the slot that holds its panel content. */
+  value: string;
+  /** The tab's visible text and accessible name. */
+  label: string;
+  /** Skipped by the arrow keys and cannot be selected. */
+  disabled?: boolean;
+}

@@ -62,6 +62,18 @@ describe('showcase prop extraction', () => {
     expect(extracted.referencedTypes.I9kNavigationLink).toContain('label: string');
   });
 
+  it('reads a defineModel as a leading prop, required when its options say so', () => {
+    const props = component('I9kTabs').props;
+    expect(props[0]).toEqual({ name: 'modelValue', type: 'string', required: true, default: null });
+    expect(props.map((prop) => prop.name)).toEqual([
+      'modelValue',
+      'tabs',
+      'label',
+      'size',
+      'focusablePanel',
+    ]);
+  });
+
   it('reads props declared with the runtime defineProps form', () => {
     expect(component('I9kBrandWordmark').props).toEqual([
       { name: 'compact', type: 'boolean', required: false, default: 'false' },
@@ -97,12 +109,22 @@ describe('showcase emit and slot extraction', () => {
     ]);
   });
 
+  it('reads the update emit a defineModel declares', () => {
+    expect(component('I9kTabs').emits).toEqual([
+      { name: 'update:modelValue', payload: '[value: string]' },
+    ]);
+  });
+
   it('reads named slots in template order', () => {
     expect(component('I9kNavigation').slots).toEqual(['brand', 'actions']);
   });
 
   it('lists a slot rendered in both branches of a v-if once', () => {
     expect(component('I9kFooter').slots).toEqual(['brand', 'default', 'social-icon', 'utilities']);
+  });
+
+  it('reports a bound slot name in dynamic slot syntax rather than as default', () => {
+    expect(component('I9kTabs').slots).toEqual(['[selectedTab.value]']);
   });
 
   it('reports an unnamed slot as default', () => {
