@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite';
 import { ref } from 'vue';
 
 import I9kInput from '../src/components/I9kInput.vue';
+import I9kSection from '../src/components/I9kSection.vue';
 import I9kTabs from '../src/components/I9kTabs.vue';
 
 const meta = {
@@ -65,5 +66,27 @@ export const RightToLeft: Story = {
         <template #signup><I9kInput v-model="name" label="الاسم الكامل" /></template>
       </I9kTabs>
     </div>`,
+  }),
+};
+
+// I9kSection's primary variant remaps the theme tokens the tabs read, so the
+// tabs are shown on the green as well.
+export const InsidePrimarySection: Story = {
+  render: (args) => ({
+    components: { I9kInput, I9kSection, I9kTabs },
+    setup: () => {
+      const mode = ref(args.modelValue);
+      const email = ref('');
+      const name = ref('');
+      return { args, mode, email, name };
+    },
+    template: `<I9kSection variant="primary" title="Join the next cohort">
+      <div style="max-width: 28rem">
+        <I9kTabs v-bind="args" v-model="mode">
+          <template #login><I9kInput v-model="email" label="Email" type="email" /></template>
+          <template #signup><I9kInput v-model="name" label="Full name" /></template>
+        </I9kTabs>
+      </div>
+    </I9kSection>`,
   }),
 };
