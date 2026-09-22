@@ -283,6 +283,20 @@ describe('I9kTabs', () => {
     expect(selectedStates(wrapper)).toEqual(['false', 'true', 'false']);
   });
 
+  // The computed direction decides, not the attribute's spelling: upper-case
+  // dir and a CSS direction mirror the arrows too.
+  it.each([
+    ['an upper-case dir attribute', (host: HTMLElement) => host.setAttribute('dir', 'RTL')],
+    ['a CSS direction', (host: HTMLElement) => host.style.setProperty('direction', 'rtl')],
+  ])('mirrors the arrow keys under %s', async (_label, makeRtl) => {
+    const wrapper = mountTabs({ tabs: threeTabs });
+    makeRtl(wrapper.element.parentElement as HTMLElement);
+
+    await press(wrapper, 0, 'ArrowLeft');
+
+    expect(selectedStates(wrapper)).toEqual(['false', 'true', 'false']);
+  });
+
   it('shows the first enabled tab when the model names no enabled tab, without emitting', () => {
     const unknown = mountTabs({ modelValue: 'missing' });
     expect(selectedStates(unknown)).toEqual(['true', 'false']);

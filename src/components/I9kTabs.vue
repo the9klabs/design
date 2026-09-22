@@ -56,8 +56,9 @@ const onKeydown = (event: KeyboardEvent, index: number) => {
   if (event.altKey || event.ctrlKey || event.metaKey) return;
 
   const tab = event.currentTarget as HTMLElement;
-  // jsdom computes no `direction`, so read the nearest dir attribute instead.
-  const rtl = tab.closest('[dir]')?.getAttribute('dir') === 'rtl';
+  // The computed direction, so dir="RTL", dir="auto" and a CSS `direction`
+  // mirror the arrows as well as dir="rtl" does.
+  const rtl = getComputedStyle(tab).direction === 'rtl';
   let target: number;
 
   switch (event.key) {
