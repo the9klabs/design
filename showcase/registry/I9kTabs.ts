@@ -23,13 +23,13 @@ Emits:
 Slots:
 - one named slot per tab \`value\`, e.g. <template #login="{ value }">. It receives { value } and holds that tab's panel content.
 
-Behavior: tabs share the row width equally. Clicking a tab selects it. On a focused tab, ArrowRight and ArrowLeft move to the next and previous enabled tab, wrapping at both ends, and Home and End go to the first and last; moving selects the tab and focuses it. In a right-to-left context (the nearest dir attribute is "rtl") the arrows are mirrored, so ArrowLeft moves to the next tab. A modelValue that matches no enabled tab shows the first enabled tab, without emitting.
+Behavior: tabs share the row width equally. Clicking a tab selects it. On a focused tab, ArrowRight and ArrowLeft move to the next and previous enabled tab, wrapping at both ends, and Home and End go to the first and last; moving selects the tab and focuses it. In a right-to-left context (the tab's computed direction is rtl) the arrows are mirrored, so ArrowLeft moves to the next tab. A modelValue that matches no enabled tab shows the first enabled tab, without emitting.
 
 IMPORTANT: only the selected tab's panel is rendered, so its content unmounts when another tab is selected and mounts again, with fresh state, when it is selected again. Keep state that must survive a switch in the parent.
 
 IMPORTANT: \`label\` is required because a tablist must have a name; do not repeat the tab labels in it.
 
-IMPORTANT: bind v-model. The component only emits update:modelValue; it does not keep its own selection.
+IMPORTANT: bind v-model. Without an update:modelValue listener, defineModel keeps the selection locally and the parent never hears of it.
 
 Usage:
 <I9kTabs
@@ -48,8 +48,8 @@ Usage:
     'Only the selected panel is rendered, so its content remounts with fresh state on every switch; keep state that must survive a switch in the parent.',
     '`label` is required: it names the tablist for screen readers.',
     'Set `:focusable-panel="false"` (bound, not a plain attribute) when the panel starts with a focusable field, so the panel is not an extra tab stop.',
-    'Arrow keys mirror in RTL: under the nearest `dir="rtl"`, ArrowLeft moves to the next tab.',
-    'Bind `v-model`; the component emits `update:modelValue` and never selects a tab on its own.',
+    'Arrow keys mirror in a right-to-left context: ArrowLeft moves to the next tab.',
+    'Bind `v-model`; a value naming no enabled tab shows the first enabled tab without emitting.',
   ],
   demos: [
     {

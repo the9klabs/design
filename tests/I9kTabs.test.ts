@@ -297,6 +297,22 @@ describe('I9kTabs', () => {
     expect(selectedStates(wrapper)).toEqual(['false', 'true', 'false']);
   });
 
+  // What the registry tells agents: without a listener the selection is kept
+  // locally, so the parent never hears of it.
+  it("keeps a click's selection locally when the parent does not listen", async () => {
+    const wrapper = mount(I9kTabs, {
+      attachTo: document.body,
+      props: { modelValue: 'login', tabs: signInTabs, label: 'Sign in' },
+      slots: { login: '<p>Login panel</p>', signup: '<p>Signup panel</p>' },
+    });
+    mounted.push(wrapper);
+
+    await tabsOf(wrapper)[1].trigger('click');
+
+    expect(selectedStates(wrapper)).toEqual(['false', 'true']);
+    expect(wrapper.get('[role="tabpanel"]').text()).toBe('Signup panel');
+  });
+
   it('shows the first enabled tab when the model names no enabled tab, without emitting', () => {
     const unknown = mountTabs({ modelValue: 'missing' });
     expect(selectedStates(unknown)).toEqual(['true', 'false']);
