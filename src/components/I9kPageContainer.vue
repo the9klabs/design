@@ -22,13 +22,18 @@ withDefaults(
 </template>
 
 <style scoped>
+/* The gutter sits outside the shared page column rather than eating into it,
+   so the content ends where an I9kContainer's does and lines up with the
+   chrome. Below that width the box is the viewport and the gutter is padding,
+   which is what I9kContainer's margin gutter comes to as well. */
 .i9k-page-container {
+  --i9k-page-container-width: var(--container-width-md);
   --i9k-page-container-gutter: var(--spacing-13);
 
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 1000px;
+  width: calc(var(--i9k-page-container-width) + 2 * var(--i9k-page-container-gutter));
   max-width: 100%;
   min-height: calc(100vh - 250px);
   margin-inline: auto;
@@ -46,7 +51,7 @@ withDefaults(
 
 @media (max-width: 768px) {
   .i9k-page-container {
-    --i9k-page-container-gutter: var(--spacing-8);
+    --i9k-page-container-gutter: var(--container-gutter-sm);
 
     width: 100%;
   }

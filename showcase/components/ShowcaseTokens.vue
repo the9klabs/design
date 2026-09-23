@@ -26,6 +26,13 @@ const controlTokens = [
 ];
 
 const radiusTokens = ['--radius-sm', '--radius-md', '--radius-lg', '--radius-pill'];
+
+const columnTokens = [
+  '--container-width-sm',
+  '--container-width-md',
+  '--container-width-lg',
+  '--container-gutter',
+];
 </script>
 
 <template>
@@ -101,6 +108,21 @@ const radiusTokens = ['--radius-sm', '--radius-md', '--radius-lg', '--radius-pil
       </p>
       <ul class="showcase-tokens__list">
         <li v-for="token in controlTokens" :key="token">
+          <code>{{ token }}</code>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h3 id="tokens-column">Page column</h3>
+      <p>
+        The one measure the site chrome and every page section share.
+        <code>I9kContainer</code> reads it, and so do <code>I9kNavigation</code>,
+        <code>I9kFooter</code> and <code>I9kPageContainer</code>; the gutter is what each side keeps
+        on a viewport narrower than the column.
+      </p>
+      <ul class="showcase-tokens__list">
+        <li v-for="token in columnTokens" :key="token">
           <code>{{ token }}</code>
         </li>
       </ul>

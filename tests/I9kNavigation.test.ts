@@ -52,6 +52,12 @@ describe('I9kNavigation', () => {
     expect(wrapper.get('.navigation__brand').attributes('aria-label')).toBe('Ismail9k home');
   });
 
+  it('lays the bar out in the shared page column', () => {
+    const wrapper = mount(I9kNavigation, { props: { links } });
+
+    expect(wrapper.get('nav').classes()).toContain('i9k-container');
+  });
+
   it('exposes the compact state to the actions slot as well as the brand', () => {
     const wrapper = mount(I9kNavigation, {
       props: { links },

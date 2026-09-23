@@ -51,6 +51,12 @@ describe('I9kFooter', () => {
       expect(wrapper.find('nav').exists()).toBe(false);
     });
 
+    it('keeps the centred stack in the shared page column', () => {
+      const wrapper = mount(I9kFooter, { props: { socialLinks, tagline: 'Built with care.' } });
+
+      expect(wrapper.find('.i9k-container .footer-tagline').exists()).toBe(true);
+    });
+
     it('lets the default slot replace the tagline', () => {
       const wrapper = mount(I9kFooter, {
         props: { tagline: 'Hidden' },
@@ -103,6 +109,13 @@ describe('I9kFooter', () => {
         'More from me',
       ]);
       expect(nav.findAll('ul').map((list) => list.findAll('li').length)).toEqual([2, 2]);
+    });
+
+    it('lays the columns out in the shared page column', () => {
+      const wrapper = mount(I9kFooter, { props: { columns, socialLinks } });
+
+      expect(wrapper.find('.i9k-container nav').exists()).toBe(true);
+      expect(wrapper.find('.i9k-container .i9k-footer__bottom').exists()).toBe(true);
     });
 
     it('opens external links in a new tab and marks them with a hidden arrow', () => {

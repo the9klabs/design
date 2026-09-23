@@ -9,6 +9,7 @@ import { I9kButtonGroupEntry } from './I9kButtonGroup';
 import { I9kCheckboxGroupEntry } from './I9kCheckboxGroup';
 import { I9kClusterEntry } from './I9kCluster';
 import { I9kCollapsibleEntry } from './I9kCollapsible';
+import { I9kContainerEntry } from './I9kContainer';
 import { I9kFaqListEntry } from './I9kFaqList';
 import { I9kFieldEntry } from './I9kField';
 import { I9kFooterEntry } from './I9kFooter';
@@ -45,6 +46,7 @@ import { I9kToastEntry } from './I9kToast';
 import type { ShowcaseEntry } from './types';
 
 export const entries: ShowcaseEntry[] = [
+  I9kContainerEntry,
   I9kGridEntry,
   I9kPageContainerEntry,
   I9kClusterEntry,

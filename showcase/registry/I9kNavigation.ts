@@ -4,7 +4,7 @@ export const I9kNavigationEntry: ShowcaseEntry = {
   name: 'I9kNavigation',
   section: 'chrome',
   summary:
-    'Sticky site header with a brand slot, a link list, and an actions slot. Tracks scroll position to add a background on scroll and switch the brand into a compact state. Renders plain anchors, or a caller-supplied router link component.',
+    'Sticky site header with a brand slot, a link list, and an actions slot, laid out in the shared page column. Tracks scroll position to add a background on scroll and switch the brand into a compact state. Renders plain anchors, or a caller-supplied router link component.',
   agentPrompt: `Use I9kNavigation from @9klabs/design for a page's top-level site header.
 
 import { I9kNavigation } from '@9klabs/design';
@@ -28,6 +28,8 @@ Active links: with a router link component the header styles the active route it
 Compact/expand behavior: compactAt and expandAt are both scroll-Y pixel thresholds, not a single toggle point. Scrolling past compactAt turns compact on; scrolling back below expandAt turns it off. Because expandAt is lower than compactAt by default, there is a dead zone between them where the current state is kept — this hysteresis stops the header from flickering when the scroll position hovers near one threshold. Set expandAt below compactAt when customizing either.
 
 IMPORTANT: links is an array of plain objects, not slot content — build the menu by passing links, and use the brand and actions slots only for content outside that list.
+
+Column: the bar's content renders inside an I9kContainer, so the brand starts where an I9kContainer section's content does and where I9kFooter's columns do. Do not wrap the header in another container. An area that uses the wide column throughout redefines --container-width-md on its root and the header follows.
 
 Usage:
 <I9kNavigation :links="[{ id: 'docs', label: 'Docs', href: '/docs' }, { id: 'pricing', label: 'Pricing', href: '/pricing' }]" @navigate="onNavigate">

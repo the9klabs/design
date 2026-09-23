@@ -2,6 +2,7 @@
 import { computed, useSlots } from 'vue';
 
 import type { I9kFooterColumn, I9kFooterLink } from '../types/components';
+import I9kContainer from './I9kContainer.vue';
 import I9kSocialLinks, { type I9kSocialLink } from './I9kSocialLinks.vue';
 
 const props = withDefaults(
@@ -44,7 +45,7 @@ const structured = () => props.columns.length > 0 || Boolean(slots.brand);
 const tag = computed(() => props.linkComponent ?? 'a');
 
 // The grid gets one track per column up to this many; further columns wrap onto
-// another row. Four still leaves each track readable inside the 1000px measure.
+// another row. Four still leaves each track readable inside the page column.
 // The count reaches the stylesheet as a data attribute, not an inline style: a
 // consumer with a `style-src 'self'` Content Security Policy blocks inline
 // style attributes on server-rendered HTML, which would silently fall back to
@@ -62,56 +63,70 @@ const routed = (link: I9kFooterLink) =>
 </script>
 <template>
   <footer class="footer i9k-footer" :class="{ 'i9k-footer--structured': structured() }">
-    <template v-if="structured()">
-      <div class="i9k-footer__top">
-        <div class="i9k-footer__brand">
-          <component
-            :is="tag"
-            v-if="$slots.brand"
-            class="i9k-footer__brand-link"
-            :to="linkComponent ? brandHref : undefined"
-            :href="linkComponent ? undefined : brandHref"
-            :aria-label="brandLabel"
-            ><slot name="brand"
-          /></component>
-          <slot
-            ><p v-if="tagline" class="footer-tagline">{{ tagline }}</p></slot
-          >
-          <p v-if="copyright" class="i9k-footer__copyright">{{ copyright }}</p>
-        </div>
-        <nav
-          v-if="columns.length"
-          class="i9k-footer__columns"
-          :data-columns="columnCount"
-          :aria-label="navLabel"
-        >
-          <div v-for="column in columns" :key="column.id" class="i9k-footer__column">
-            <h2 class="i9k-footer__heading">{{ column.title }}</h2>
-            <ul class="i9k-footer__list">
-              <li v-for="link in column.links" :key="link.id">
-                <component
-                  :is="routed(link) ? tag : 'a'"
-                  class="i9k-footer__link"
-                  :class="{ 'i9k-footer__link--featured': link.featured }"
-                  :to="routed(link) ? link.href : undefined"
-                  :href="routed(link) ? undefined : link.href"
-                  :target="link.external ? '_blank' : undefined"
-                  :rel="link.external ? 'noopener' : undefined"
-                  @click="$emit('navigate', link, $event)"
-                  ><span v-if="link.emoji" class="i9k-footer__emoji" aria-hidden="true">{{
-                    link.emoji
-                  }}</span
-                  >{{ link.label
-                  }}<span v-if="link.external" class="i9k-footer__external" aria-hidden="true"
-                    >↗</span
-                  ></component
-                >
-              </li>
-            </ul>
+    <I9kContainer class="i9k-footer__inner">
+      <template v-if="structured()">
+        <div class="i9k-footer__top">
+          <div class="i9k-footer__brand">
+            <component
+              :is="tag"
+              v-if="$slots.brand"
+              class="i9k-footer__brand-link"
+              :to="linkComponent ? brandHref : undefined"
+              :href="linkComponent ? undefined : brandHref"
+              :aria-label="brandLabel"
+              ><slot name="brand"
+            /></component>
+            <slot
+              ><p v-if="tagline" class="footer-tagline">{{ tagline }}</p></slot
+            >
+            <p v-if="copyright" class="i9k-footer__copyright">{{ copyright }}</p>
           </div>
-        </nav>
-      </div>
-      <div v-if="socialLinks.length || $slots.utilities" class="i9k-footer__bottom">
+          <nav
+            v-if="columns.length"
+            class="i9k-footer__columns"
+            :data-columns="columnCount"
+            :aria-label="navLabel"
+          >
+            <div v-for="column in columns" :key="column.id" class="i9k-footer__column">
+              <h2 class="i9k-footer__heading">{{ column.title }}</h2>
+              <ul class="i9k-footer__list">
+                <li v-for="link in column.links" :key="link.id">
+                  <component
+                    :is="routed(link) ? tag : 'a'"
+                    class="i9k-footer__link"
+                    :class="{ 'i9k-footer__link--featured': link.featured }"
+                    :to="routed(link) ? link.href : undefined"
+                    :href="routed(link) ? undefined : link.href"
+                    :target="link.external ? '_blank' : undefined"
+                    :rel="link.external ? 'noopener' : undefined"
+                    @click="$emit('navigate', link, $event)"
+                    ><span v-if="link.emoji" class="i9k-footer__emoji" aria-hidden="true">{{
+                      link.emoji
+                    }}</span
+                    >{{ link.label
+                    }}<span v-if="link.external" class="i9k-footer__external" aria-hidden="true"
+                      >↗</span
+                    ></component
+                  >
+                </li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+        <div v-if="socialLinks.length || $slots.utilities" class="i9k-footer__bottom">
+          <I9kSocialLinks
+            v-if="socialLinks.length"
+            class="footer-socials"
+            :items="socialLinks"
+            :labels="socialLabels"
+            :follow-label="followLabel"
+            @click="(item, event) => $emit('socialClick', item, event)"
+            ><template #icon="slotProps"><slot name="social-icon" v-bind="slotProps" /></template
+          ></I9kSocialLinks>
+          <div v-if="$slots.utilities" class="i9k-footer__utilities"><slot name="utilities" /></div>
+        </div>
+      </template>
+      <template v-else>
         <I9kSocialLinks
           v-if="socialLinks.length"
           class="footer-socials"
@@ -119,36 +134,29 @@ const routed = (link: I9kFooterLink) =>
           :labels="socialLabels"
           :follow-label="followLabel"
           @click="(item, event) => $emit('socialClick', item, event)"
-          ><template #icon="slotProps"><slot name="social-icon" v-bind="slotProps" /></template
-        ></I9kSocialLinks>
+          ><template #icon="slotProps"
+            ><slot name="social-icon" v-bind="slotProps" /></template></I9kSocialLinks
+        ><slot
+          ><p v-if="tagline" class="footer-tagline">{{ tagline }}</p></slot
+        >
         <div v-if="$slots.utilities" class="i9k-footer__utilities"><slot name="utilities" /></div>
-      </div>
-    </template>
-    <template v-else>
-      <I9kSocialLinks
-        v-if="socialLinks.length"
-        class="footer-socials"
-        :items="socialLinks"
-        :labels="socialLabels"
-        :follow-label="followLabel"
-        @click="(item, event) => $emit('socialClick', item, event)"
-        ><template #icon="slotProps"
-          ><slot name="social-icon" v-bind="slotProps" /></template></I9kSocialLinks
-      ><slot
-        ><p v-if="tagline" class="footer-tagline">{{ tagline }}</p></slot
-      >
-      <div v-if="$slots.utilities" class="i9k-footer__utilities"><slot name="utilities" /></div>
-    </template>
+      </template>
+    </I9kContainer>
   </footer>
 </template>
 <style scoped>
+/* Both layouts sit in the shared page column: the inner box is an
+   I9kContainer, so the footer lines up with the page content above it and
+   with the bar, and the footer itself only pads the block direction. */
 .footer {
+  padding-block: var(--spacing-10);
+  margin-bottom: var(--spacing-5);
+}
+.i9k-footer__inner {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-8);
-  padding: var(--spacing-10);
-  margin-bottom: var(--spacing-5);
 }
 .footer-socials {
   justify-content: center;
@@ -166,16 +174,12 @@ const routed = (link: I9kFooterLink) =>
   gap: var(--spacing-4);
 }
 
-/* Multi-column layout. The measure matches I9kPageContainer, so the footer
-   lines up with the page content above it. */
+/* Multi-column layout. */
 .i9k-footer--structured {
-  --i9k-footer-gutter: var(--spacing-13);
-
+  padding-block: var(--spacing-15) var(--spacing-10);
+}
+.i9k-footer--structured .i9k-footer__inner {
   display: block;
-  width: 1000px;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: var(--spacing-15) var(--i9k-footer-gutter) var(--spacing-10);
 }
 .i9k-footer--structured .footer-socials {
   justify-content: flex-start;
@@ -273,9 +277,6 @@ const routed = (link: I9kFooterLink) =>
   border-top: 1px solid var(--border-color);
 }
 @media (max-width: 768px) {
-  .i9k-footer--structured {
-    --i9k-footer-gutter: var(--spacing-8);
-  }
   .i9k-footer__top {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--spacing-11);

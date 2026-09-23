@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
+import I9kContainer from './I9kContainer.vue';
+
 export interface I9kNavigationLink {
   id: string;
   label: string;
@@ -38,7 +40,7 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll));
 </script>
 <template>
   <header class="navigation" :class="{ 'is-scrolled': isScrolled }">
-    <nav class="navigation__inner" :aria-label="brandLabel">
+    <I9kContainer as="nav" class="navigation__inner" :aria-label="brandLabel">
       <component
         :is="tag"
         class="navigation__brand"
@@ -62,7 +64,7 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll));
         </ul>
         <div class="navigation__actions"><slot name="actions" :compact="isCompact" /></div>
       </div>
-    </nav>
+    </I9kContainer>
   </header>
 </template>
 <style scoped>
@@ -79,16 +81,19 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll));
   backdrop-filter: blur(var(--glass-blur));
   box-shadow: var(--shadow-sm);
 }
+/* The bar is an I9kContainer, so it sits in the shared page column and its
+   brand starts where the page's headings do. */
 .navigation__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 80rem;
-  padding: var(--spacing-8) var(--spacing-13);
-  margin: 0 auto;
+  padding-block: var(--spacing-8);
 }
+/* Pulled back by its own padding so the wordmark, not its hover box, lines up
+   with the column's edge. */
 .navigation__brand {
   padding: var(--spacing-4);
+  margin-inline-start: calc(var(--spacing-4) * -1);
   color: inherit;
   text-decoration: none;
 }
@@ -129,7 +134,7 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll));
 }
 @media (max-width: 768px) {
   .navigation__inner {
-    padding: var(--spacing-6) var(--spacing-4);
+    padding-block: var(--spacing-6);
   }
   .navigation__menu {
     display: none;

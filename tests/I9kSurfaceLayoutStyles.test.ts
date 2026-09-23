@@ -167,7 +167,7 @@ describe('surface and layout compiled styles', () => {
       if (
         rule.selector.includes('.i9k-page-container') &&
         isMediaRule(rule, 'max-width: 768px') &&
-        hasDeclaration(rule, '--i9k-page-container-gutter', 'var(--spacing-8)')
+        hasDeclaration(rule, '--i9k-page-container-gutter', 'var(--container-gutter-sm)')
       ) {
         mobileRule = rule;
       }
@@ -175,5 +175,63 @@ describe('surface and layout compiled styles', () => {
 
     expect(mobileRule?.selector).toMatch(/\.i9k-page-container\[data-v-[^\]]+\]/);
     expect(mobileRule && hasDeclaration(mobileRule, 'width', '100%')).toBe(true);
+  });
+
+  it('derives the PageContainer measure from the shared page column', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kPageContainer');
+    let baseRule: Rule | undefined;
+
+    stylesheet.walkRules((rule) => {
+      if (
+        rule.selector.includes('.i9k-page-container') &&
+        rule.parent?.type !== 'atrule' &&
+        hasDeclaration(rule, '--i9k-page-container-width', 'var(--container-width-md)')
+      ) {
+        baseRule = rule;
+      }
+    });
+
+    // The gutter sits outside the column, so dropping the `+ 2 * gutter` term
+    // would pull the content inside the chrome's edge; assert it verbatim.
+    expect(
+      baseRule &&
+        hasDeclaration(
+          baseRule,
+          'width',
+          'calc(var(--i9k-page-container-width) + 2 * var(--i9k-page-container-gutter))',
+        ),
+    ).toBe(true);
+    expect(baseRule?.selector).toMatch(/\.i9k-page-container\[data-v-[^\]]+\]/);
+  });
+
+  it('pins Container to the shared column and the safe mobile gutter', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kContainer');
+    let baseRule: Rule | undefined;
+    let mobileRule: Rule | undefined;
+
+    stylesheet.walkRules((rule) => {
+      if (!rule.selector.includes('.i9k-container')) return;
+      if (rule.parent?.type !== 'atrule') {
+        if (hasDeclaration(rule, '--i9k-container-width', 'var(--container-width-md)')) {
+          baseRule = rule;
+        }
+      } else if (
+        isMediaRule(rule, 'max-width: 768px') &&
+        hasDeclaration(rule, '--i9k-container-gutter', 'var(--container-gutter-sm)')
+      ) {
+        mobileRule = rule;
+      }
+    });
+
+    const column = 'min(100% - 2 * var(--i9k-container-gutter), var(--i9k-container-width))';
+
+    expect(baseRule?.selector).toMatch(/\.i9k-container\[data-v-[^\]]+\]/);
+    expect(
+      baseRule && hasDeclaration(baseRule, '--i9k-container-gutter', 'var(--container-gutter)'),
+    ).toBe(true);
+    // Width and centring are the whole primitive: pin both, not just the tokens.
+    expect(baseRule && hasDeclaration(baseRule, 'width', column)).toBe(true);
+    expect(baseRule && hasDeclaration(baseRule, 'margin-inline', 'auto')).toBe(true);
+    expect(mobileRule?.selector).toMatch(/\.i9k-container\[data-v-[^\]]+\]/);
   });
 });

@@ -23,6 +23,7 @@ const migratedComponents = [
   ['I9kCluster.vue', 'i9k-cluster'],
   ['I9kGrid.vue', 'i9k-grid'],
   ['I9kPageContainer.vue', 'i9k-page-container'],
+  ['I9kContainer.vue', 'i9k-container'],
   ['I9kPanel.vue', 'i9k-panel'],
   ['I9kStat.vue', 'i9k-stat'],
   ['I9kText.vue', 'i9k-text'],

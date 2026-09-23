@@ -43,6 +43,7 @@ export { default as I9kButtonGroup } from './components/I9kButtonGroup.vue';
 export { default as I9kCheckboxGroup } from './components/I9kCheckboxGroup.vue';
 export { default as I9kBadge } from './components/I9kBadge.vue';
 export { default as I9kCluster } from './components/I9kCluster.vue';
+export { default as I9kContainer } from './components/I9kContainer.vue';
 export { default as I9kField } from './components/I9kField.vue';
 export { default as I9kGrid } from './components/I9kGrid.vue';
 export { default as I9kInput } from './components/I9kInput.vue';

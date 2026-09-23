@@ -30,6 +30,7 @@ The package is framework-agnostic within Vue 3. `I9kButton` uses a normal anchor
 - `I9kButtonGroup`
 - `I9kBadge`
 - `I9kCluster`
+- `I9kContainer`, the shared page column the site chrome and page sections sit in
 - `I9kField`
 - `I9kGrid`
 - `I9kIconButton`
@@ -125,9 +126,10 @@ import {
 </template>
 ```
 
-`I9kPageContainer` renders a `div` by default to avoid creating nested page landmarks. Its medium
-size preserves the branded 1000px page width and responsive desktop/mobile gutters; choose a
-semantic root with `as` when the surrounding layout does not already provide one.
+`I9kPageContainer` renders a `div` by default to avoid creating nested page landmarks. Its content is
+the shared page column (`--container-width-md`, 75rem, the measure `I9kContainer`, `I9kNavigation`
+and `I9kFooter` use) with a size-driven gutter outside it; choose a semantic root with `as` when the
+surrounding layout does not already provide one.
 
 ## Color and surface roles
 

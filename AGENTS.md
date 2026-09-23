@@ -94,6 +94,18 @@ plans behind this work live in `docs/superpowers/`.
   `I9kModal` placed inside the section inherits the remap and turns translucent, so keep both out
   of it. `fullWidth` paints the fill past the column with a `border-image` outset rather than a
   `100vw` box, so it never adds a horizontal scrollbar.
+- `I9kContainer` is the page column: the one measure `I9kNavigation`, `I9kFooter`,
+  `I9kPageContainer` and every page section share, from the `--container-width-sm|md|lg` and
+  `--container-gutter` tokens. It sets only width and centring, so padding, backgrounds and
+  min-height stay with the caller and a full-bleed band is an element around it. Do not nest one
+  inside another (the inner one takes the gutter off twice on a phone); a narrower block inside a
+  column is `max-width` plus `margin-inline: auto`. `size="lg"` widens one container; an area that
+  needs the wide column throughout, chrome included, redefines `--container-width-md` on its root.
+  `I9kPageContainer` remains the page-level wrapper (flex column, minimum height) and derives its
+  width from the same token through its own `--i9k-page-container-width`; its `size` is still the
+  gutter, so its content lines up with the chrome only for `md`, or once the viewport is wider than
+  the column plus twice that size's gutter (1304px for `lg`, 1232px for `sm`). Anything that must
+  share the bar's edge on every viewport is an `I9kContainer`.
 
 ## Component showcase
 
