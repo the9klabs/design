@@ -32,6 +32,7 @@ const columnTokens = [
   '--container-width-md',
   '--container-width-lg',
   '--container-gutter',
+  '--container-gutter-sm',
 ];
 </script>
 
