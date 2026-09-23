@@ -102,8 +102,10 @@ plans behind this work live in `docs/superpowers/`.
   column is `max-width` plus `margin-inline: auto`. `size="lg"` widens one container; an area that
   needs the wide column throughout, chrome included, redefines `--container-width-md` on its root.
   `I9kPageContainer` remains the page-level wrapper (flex column, minimum height) and derives its
-  width from the same token; its `size` is still the gutter, and only `md` stays aligned with the
-  chrome below the column's width.
+  width from the same token through its own `--i9k-page-container-width`; its `size` is still the
+  gutter, so its content lines up with the chrome only for `md`, or once the viewport is wider than
+  the column plus twice that size's gutter (1304px for `lg`, 1232px for `sm`). Anything that must
+  share the bar's edge on every viewport is an `I9kContainer`.
 
 ## Component showcase
 
