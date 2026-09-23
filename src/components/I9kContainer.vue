@@ -55,7 +55,7 @@ withDefaults(
 
 @media (max-width: 768px) {
   .i9k-container {
-    --i9k-container-gutter: var(--spacing-8);
+    --i9k-container-gutter: var(--container-gutter-sm);
   }
 }
 </style>

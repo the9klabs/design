@@ -121,6 +121,7 @@ describe('shared component contracts', () => {
     ['--container-width-md', '75rem'],
     ['--container-width-lg', '90rem'],
     ['--container-gutter', 'var(--spacing-13)'],
+    ['--container-gutter-sm', 'var(--spacing-8)'],
   ])('declares %s as %s', (name, value) => {
     expect(tokenSource).toContain(`${name}: ${value};`);
   });

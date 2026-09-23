@@ -51,14 +51,18 @@
   /* Page column. The one measure the site chrome and every page section
      share: `md` is the site column, `sm` a reading column for long text and
      `lg` a wide, desktop-first work area. The gutter is what each side keeps
-     when the viewport is narrower than the column. I9kContainer reads these,
-     and so do I9kNavigation, I9kFooter and I9kPageContainer through it. An
-     area that needs the wide column throughout, chrome included, redefines
-     `--container-width-md` on its root. */
+     when the viewport is narrower than the column, and `-sm` is that gutter at
+     768px and below. I9kContainer reads these; the bar and footer go through
+     it, I9kPageContainer reads `md` itself. An area that needs the wide column
+     throughout, chrome included, redefines `--container-width-md` on its root.
+     The token is the content measure, not a padded box: a site whose column is
+     `width: 1000px; padding-inline: 2rem` under border-box sets it to 58.5rem,
+     the 936px its content already has. */
   --container-width-sm: 42rem;
   --container-width-md: 75rem;
   --container-width-lg: 90rem;
   --container-gutter: var(--spacing-13);
+  --container-gutter-sm: var(--spacing-8);
 
   --spacing-0: 0rem; /* 0px */
   --spacing-1: 0.125rem; /* 2px */
