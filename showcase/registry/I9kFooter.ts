@@ -61,7 +61,7 @@ Usage:
     '`external: true` adds `target="_blank"`, `rel="noopener"` and an aria-hidden arrow. Do not set it on `mailto:` links.',
     'The default slot fully replaces the tagline paragraph rather than appending to it.',
     'The social row only renders when `socialLinks` is non-empty. I9kSocialLink is not exported — inline its shape.',
-    'The multi-column footer sets its own 1000px measure and gutter to match I9kPageContainer; do not wrap it in another container.',
+    'Both layouts render their content inside an I9kContainer, so the footer lines up with the header and the page column on its own; do not wrap it in another container.',
   ],
   demos: [
     {

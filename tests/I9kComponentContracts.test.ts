@@ -60,6 +60,10 @@ const tabsExports = [
   "export { default as I9kTabs } from './components/I9kTabs.vue';",
 ] as const;
 
+const containerExports = [
+  "export { default as I9kContainer } from './components/I9kContainer.vue';",
+] as const;
+
 describe('shared component contracts', () => {
   it('exports the common component types', () => {
     expect(indexSource).toContain(
@@ -99,6 +103,10 @@ describe('shared component contracts', () => {
     expect(indexSource).toContain(statement);
   });
 
+  it.each(containerExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
   it.each([
     ['--control-height-sm', '2rem'],
     ['--control-height-md', '2.5rem'],
@@ -109,6 +117,10 @@ describe('shared component contracts', () => {
     ['--component-gap-sm', 'var(--spacing-4)'],
     ['--component-gap-md', 'var(--spacing-6)'],
     ['--component-gap-lg', 'var(--spacing-8)'],
+    ['--container-width-sm', '42rem'],
+    ['--container-width-md', '75rem'],
+    ['--container-width-lg', '90rem'],
+    ['--container-gutter', 'var(--spacing-13)'],
   ])('declares %s as %s', (name, value) => {
     expect(tokenSource).toContain(`${name}: ${value};`);
   });

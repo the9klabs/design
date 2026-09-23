@@ -176,4 +176,45 @@ describe('surface and layout compiled styles', () => {
     expect(mobileRule?.selector).toMatch(/\.i9k-page-container\[data-v-[^\]]+\]/);
     expect(mobileRule && hasDeclaration(mobileRule, 'width', '100%')).toBe(true);
   });
+
+  it('derives the PageContainer measure from the shared page column', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kPageContainer');
+    let width: string | undefined;
+
+    stylesheet.walkRules((rule) => {
+      if (rule.selector.includes('.i9k-page-container') && rule.parent?.type !== 'atrule') {
+        rule.walkDecls('width', (decl) => {
+          width = decl.value;
+        });
+      }
+    });
+
+    expect(width).toContain('var(--container-width-md)');
+  });
+
+  it('pins Container to the shared column and the safe mobile gutter', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kContainer');
+    let baseRule: Rule | undefined;
+    let mobileRule: Rule | undefined;
+
+    stylesheet.walkRules((rule) => {
+      if (!rule.selector.includes('.i9k-container')) return;
+      if (rule.parent?.type !== 'atrule') {
+        if (hasDeclaration(rule, '--i9k-container-width', 'var(--container-width-md)')) {
+          baseRule = rule;
+        }
+      } else if (
+        isMediaRule(rule, 'max-width: 768px') &&
+        hasDeclaration(rule, '--i9k-container-gutter', 'var(--spacing-8)')
+      ) {
+        mobileRule = rule;
+      }
+    });
+
+    expect(baseRule?.selector).toMatch(/\.i9k-container\[data-v-[^\]]+\]/);
+    expect(
+      baseRule && hasDeclaration(baseRule, '--i9k-container-gutter', 'var(--container-gutter)'),
+    ).toBe(true);
+    expect(mobileRule?.selector).toMatch(/\.i9k-container\[data-v-[^\]]+\]/);
+  });
 });

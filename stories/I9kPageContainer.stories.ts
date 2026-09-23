@@ -20,7 +20,7 @@ export const Default: Story = {
     setup: () => ({ args }),
     template: `
       <I9kPageContainer v-bind="args" style="outline: 1px dashed var(--border-color)">
-        <I9kText variant="lede">A centered 1000px page container with responsive gutters.</I9kText>
+        <I9kText variant="lede">A centered page container in the shared page column, with responsive gutters.</I9kText>
         <I9kPanel size="sm">Page content</I9kPanel>
       </I9kPageContainer>
     `,

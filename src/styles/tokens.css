@@ -48,6 +48,18 @@
   --component-gap-md: var(--spacing-6);
   --component-gap-lg: var(--spacing-8);
 
+  /* Page column. The one measure the site chrome and every page section
+     share: `md` is the site column, `sm` a reading column for long text and
+     `lg` a wide, desktop-first work area. The gutter is what each side keeps
+     when the viewport is narrower than the column. I9kContainer reads these,
+     and so do I9kNavigation, I9kFooter and I9kPageContainer through it. An
+     area that needs the wide column throughout, chrome included, redefines
+     `--container-width-md` on its root. */
+  --container-width-sm: 42rem;
+  --container-width-md: 75rem;
+  --container-width-lg: 90rem;
+  --container-gutter: var(--spacing-13);
+
   --spacing-0: 0rem; /* 0px */
   --spacing-1: 0.125rem; /* 2px */
   --spacing-2: 0.25rem; /* 4px */
