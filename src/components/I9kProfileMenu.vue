@@ -73,21 +73,28 @@ const handleOutsidePress = (event: Event) => {
   if (root.value && !root.value.contains(event.target as Node)) close();
 };
 
-const listenForOutsidePress = (open: boolean) => {
+// Escape is heard on the document too: Safari and Firefox on macOS do not
+// focus a clicked button, so after a mouse open a key goes to the body, never
+// through the root. A key that starts inside the root closes the panel there
+// first, and the document's call then finds it already closed.
+const listenWhileOpen = (open: boolean) => {
   if (typeof document === 'undefined') return;
-  if (open) document.addEventListener('pointerdown', handleOutsidePress);
-  else document.removeEventListener('pointerdown', handleOutsidePress);
+  if (open) {
+    document.addEventListener('pointerdown', handleOutsidePress);
+    document.addEventListener('keydown', handleKeydown);
+  } else {
+    document.removeEventListener('pointerdown', handleOutsidePress);
+    document.removeEventListener('keydown', handleKeydown);
+  }
 };
 
-watch(isOpen, listenForOutsidePress);
+watch(isOpen, listenWhileOpen);
 
 // A menu mounted already open (v-model:open starting true) never sees isOpen
 // change, so it starts listening here instead.
-onMounted(() => listenForOutsidePress(isOpen.value));
+onMounted(() => listenWhileOpen(isOpen.value));
 
-onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleOutsidePress);
-});
+onBeforeUnmount(() => listenWhileOpen(false));
 
 const handleLinkClick = (link: I9kNavigationLink, event: MouseEvent) => {
   emit('navigate', link, event);

@@ -122,6 +122,21 @@ describe('I9kProfileMenu', () => {
     expect(document.activeElement).toBe(trigger(wrapper).element);
   });
 
+  // Safari and Firefox on macOS do not focus a clicked button, so after a mouse
+  // open the key goes to the body, never through the menu's own root.
+  it('closes on Escape after a mouse open that left focus on the body', async () => {
+    const wrapper = mountMenu();
+    await trigger(wrapper).trigger('click');
+    (document.activeElement as HTMLElement | null)?.blur();
+    expect(document.activeElement).toBe(document.body);
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await nextTick();
+
+    expect(trigger(wrapper).attributes('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(trigger(wrapper).element);
+  });
+
   it('closes on a press outside it', async () => {
     const wrapper = mountMenu();
     await trigger(wrapper).trigger('click');
