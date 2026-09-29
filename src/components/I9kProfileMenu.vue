@@ -109,7 +109,7 @@ const handleLinkClick = (link: I9kNavigationLink, event: MouseEvent) => {
       <I9kAvatar :src="avatarSrc" :size="size" aria-hidden="true" />
     </button>
 
-    <div v-show="isOpen" :id="panelId" class="i9k-profile-menu__panel">
+    <div :id="panelId" class="i9k-profile-menu__panel" :hidden="!isOpen">
       <div v-if="name || detail" class="i9k-profile-menu__identity">
         <I9kAvatar :src="avatarSrc" size="lg" aria-hidden="true" />
         <div class="i9k-profile-menu__names">
@@ -191,6 +191,13 @@ const handleLinkClick = (link: I9kNavigationLink, event: MouseEvent) => {
   background: var(--theme-bg-color);
   box-shadow: var(--shadow-md);
   gap: var(--spacing-6);
+}
+
+/* Hidden by attribute rather than v-show, so a server render carries no inline
+   style and a strict style-src CSP cannot show it open before hydration. The
+   panel's own display: grid would otherwise beat the UA [hidden] rule. */
+.i9k-profile-menu__panel[hidden] {
+  display: none;
 }
 
 .i9k-profile-menu__identity {

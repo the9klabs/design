@@ -34,7 +34,7 @@ Emits:
 Slots:
 - actions — the block at the bottom of the panel, such as a sign-out button. Receives one slot prop, close: () => void, which closes the panel.
 
-Behavior: a disclosure, not an ARIA menu (no role="menu"). The button carries aria-expanded and aria-controls, and the panel follows it in DOM order, so Tab walks from the button into the links and actions. Escape closes the panel and returns focus to the button. A press outside the menu, keyboard focus leaving it, following a link, or calling the actions slot's close closes it. The panel is not teleported: it opens under the button, inside the bar's own stacking context (z-index 150 inside a bar at 100).
+Behavior: a disclosure, not an ARIA menu (no role="menu"). The button carries aria-expanded and aria-controls, and the panel follows it in DOM order, so Tab walks from the button into the links and actions. Escape closes the panel and returns focus to the button. A press outside the menu, keyboard focus leaving it, following a link, or calling the actions slot's close closes it. The panel is not teleported: it opens under the button, inside the bar's own stacking context (z-index 150 inside a bar at 100). A closed panel is hidden with the \`hidden\` attribute, not an inline style, so it server-renders without one and stays closed before hydration under a strict style-src Content-Security-Policy.
 
 Usage:
 <I9kProfileMenu
@@ -56,6 +56,7 @@ Usage:
     'The avatar on the button is decorative (`aria-hidden`), so `label` is the whole accessible name of the button; make it name the control ("Account menu"), not the picture.',
     'The panel is aligned to the inline end of the button and opens inward, so place the menu at the end of a bar (the right in left-to-right pages, the left in right-to-left ones).',
     'The panel is not teleported, so a bar with `overflow: hidden` would clip it; I9kNavigation does not.',
+    "The closed panel is hidden with the `hidden` attribute, never an inline `style`, so it works under a `style-src` Content-Security-Policy without `'unsafe-inline'`; do not restyle `.i9k-profile-menu__panel` with a `display` that beats `[hidden]`.",
   ],
   demos: [
     {

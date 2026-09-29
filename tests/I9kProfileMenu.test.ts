@@ -1,5 +1,6 @@
-import { defineComponent, nextTick } from 'vue';
+import { renderToString } from '@vue/server-renderer';
 import { mount } from '@vue/test-utils';
+import { createSSRApp, defineComponent, h, nextTick } from 'vue';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import I9kProfileMenu from '../src/components/I9kProfileMenu.vue';
@@ -50,6 +51,33 @@ describe('I9kProfileMenu', () => {
     expect(button.attributes('aria-controls')).toBe(panel(wrapper).attributes('id'));
     expect(panel(wrapper).isVisible()).toBe(false);
     expect(wrapper.find('[role="menu"]').exists()).toBe(false);
+  });
+
+  it('server-renders a closed panel hidden by attribute, with no inline style', async () => {
+    const html = await renderToString(
+      createSSRApp({
+        render: () => h(I9kProfileMenu, { label: 'Account menu', name: 'Ismail', links }),
+      }),
+    );
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const serverPanel = doc.querySelector('.i9k-profile-menu__panel')!;
+    const serverTrigger = doc.querySelector('button.i9k-profile-menu__trigger')!;
+
+    expect(serverPanel.hasAttribute('hidden')).toBe(true);
+    expect(serverPanel.hasAttribute('style')).toBe(false);
+    expect(serverTrigger.getAttribute('aria-controls')).toBe(serverPanel.id);
+  });
+
+  it('removes the hidden attribute when it opens and restores it when it closes', async () => {
+    const wrapper = mountMenu();
+    expect(panel(wrapper).attributes('hidden')).toBeDefined();
+
+    await trigger(wrapper).trigger('click');
+    expect(panel(wrapper).attributes('hidden')).toBeUndefined();
+    expect(panel(wrapper).attributes('style')).toBeUndefined();
+
+    await trigger(wrapper).trigger('click');
+    expect(panel(wrapper).attributes('hidden')).toBeDefined();
   });
 
   it('keeps the trigger picture out of the accessibility tree', () => {
