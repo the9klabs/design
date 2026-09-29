@@ -144,6 +144,12 @@ const handleLinkClick = (link: I9kNavigationLink, event: MouseEvent) => {
 
   position: relative;
   display: inline-flex;
+
+  /* The panel hangs from the root's bottom edge, so the root must be exactly as
+     tall as the button. A flex or grid parent stretches only an item whose block
+     size is auto; a definite one opts out without overriding the parent's own
+     alignment (I9kNavigation still centres it). */
+  block-size: fit-content;
 }
 
 .i9k-profile-menu__trigger {
