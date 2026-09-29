@@ -1,13 +1,15 @@
 <!-- src/components/I9kToast.vue -->
 <script setup lang="ts">
-import type { I9kComponentSize } from '../types/components';
+import type { I9kComponentSize, I9kToastVariant } from '../types/components';
 
-type Variant = 'info' | 'success' | 'warning' | 'error';
-
-const props = withDefaults(defineProps<{ variant?: Variant; size?: I9kComponentSize }>(), {
-  variant: 'info',
-  size: 'md',
-});
+const props = withDefaults(
+  defineProps<{ variant?: I9kToastVariant; size?: I9kComponentSize; live?: boolean }>(),
+  {
+    variant: 'info',
+    size: 'md',
+    live: true,
+  },
+);
 </script>
 
 <template>
@@ -19,7 +21,7 @@ const props = withDefaults(defineProps<{ variant?: Variant; size?: I9kComponentS
       `i9k-toast--${props.variant}`,
       `i9k-toast--${props.size}`,
     ]"
-    :role="props.variant === 'error' ? 'alert' : 'status'"
+    :role="props.live ? (props.variant === 'error' ? 'alert' : 'status') : undefined"
   >
     <slot />
   </div>

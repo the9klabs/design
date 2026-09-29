@@ -27,4 +27,14 @@ describe('I9kToast', () => {
 
     expect(wrapper.classes()).toContain(`i9k-toast--${size}`);
   });
+
+  it('renders no live role when live is false', () => {
+    const wrapper = mount(I9kToast, {
+      props: { variant: 'error', live: false },
+      slots: { default: 'Could not save.' },
+    });
+
+    expect(wrapper.attributes('role')).toBeUndefined();
+    expect(wrapper.classes()).toContain('i9k-toast--error');
+  });
 });

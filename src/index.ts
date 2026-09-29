@@ -7,6 +7,7 @@ export type { I9kGridColumns } from './types/components';
 export type { I9kPanelVariant } from './types/components';
 export type { I9kSectionVariant } from './types/components';
 export type { I9kTextVariant } from './types/components';
+export type { I9kToastVariant } from './types/components';
 export type { I9kCollapsibleVariant } from './types/components';
 export type { I9kBreadcrumbItem } from './types/components';
 export type { I9kTabItem } from './types/components';
