@@ -166,6 +166,33 @@ describe('I9kProfileMenu', () => {
     expect(wrapper.emitted('update:open')).toEqual([[false]]);
   });
 
+  // A press inside a cross-origin iframe (a video player) never reaches this
+  // document; the window losing focus to the iframe is what can be heard.
+  it('closes when focus moves into an iframe', async () => {
+    const frame = document.createElement('iframe');
+    document.body.appendChild(frame);
+    const wrapper = mountMenu();
+    await trigger(wrapper).trigger('click');
+
+    frame.focus();
+    expect(document.activeElement).toBe(frame);
+    window.dispatchEvent(new Event('blur'));
+    await nextTick();
+
+    expect(trigger(wrapper).attributes('aria-expanded')).toBe('false');
+    frame.remove();
+  });
+
+  it('stays open when the window loses focus to something other than an iframe', async () => {
+    const wrapper = mountMenu();
+    await trigger(wrapper).trigger('click');
+
+    window.dispatchEvent(new Event('blur'));
+    await nextTick();
+
+    expect(trigger(wrapper).attributes('aria-expanded')).toBe('true');
+  });
+
   it('stays open on a press inside its panel', async () => {
     const wrapper = mountMenu();
     await trigger(wrapper).trigger('click');

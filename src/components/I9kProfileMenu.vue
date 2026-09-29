@@ -73,6 +73,13 @@ const handleOutsidePress = (event: Event) => {
   if (root.value && !root.value.contains(event.target as Node)) close();
 };
 
+// A press inside a cross-origin iframe, such as a video player, never reaches
+// this document, and no focusout names it; the window losing focus to the
+// iframe is what can be heard.
+const handleWindowBlur = () => {
+  if (document.activeElement instanceof HTMLIFrameElement) close();
+};
+
 // Escape is heard on the document too: Safari and Firefox on macOS do not
 // focus a clicked button, so after a mouse open a key goes to the body, never
 // through the root. A key that starts inside the root closes the panel there
@@ -82,9 +89,11 @@ const listenWhileOpen = (open: boolean) => {
   if (open) {
     document.addEventListener('pointerdown', handleOutsidePress);
     document.addEventListener('keydown', handleKeydown);
+    window.addEventListener('blur', handleWindowBlur);
   } else {
     document.removeEventListener('pointerdown', handleOutsidePress);
     document.removeEventListener('keydown', handleKeydown);
+    window.removeEventListener('blur', handleWindowBlur);
   }
 };
 
