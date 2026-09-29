@@ -69,6 +69,26 @@ describe('I9kToaster', () => {
     expect(wrapper.get('[data-i9k-toaster-status]').text()).toBe('');
   });
 
+  it('announces a detail in its own language and direction', async () => {
+    const { toaster, wrapper } = mountToaster();
+    toaster.show({
+      variant: 'error',
+      message: 'Failed.',
+      detail: 'السعر مطلوب',
+      detailLang: 'ar',
+      detailDir: 'rtl',
+    });
+    await nextTick();
+    const alert = wrapper.get('[data-i9k-toaster-alert]');
+    expect(alert.text()).toBe('Failed. السعر مطلوب');
+    const detail = alert.get('[lang="ar"]');
+    expect(detail.text()).toBe('السعر مطلوب');
+    expect(detail.attributes('dir')).toBe('rtl');
+    toaster.show({ variant: 'success', message: 'Sent.', detail: 'تم', detailLang: 'ar' });
+    await nextTick();
+    expect(wrapper.get('[data-i9k-toaster-status] [lang="ar"]').text()).toBe('تم');
+  });
+
   it('re-creates the announcement when the same message is raised again', async () => {
     const { toaster, wrapper } = mountToaster();
     toaster.show({ id: 'login', variant: 'error', message: 'Wrong password.' });

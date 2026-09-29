@@ -15,7 +15,6 @@ import {
   I9K_TOASTER_KEY,
   I9K_TOASTER_LAYER_KEY,
   type I9kToaster as I9kToasterStore,
-  type I9kToastItem,
 } from '../composables/i9kToaster';
 import type { I9kComponentSize } from '../types/components';
 import I9kIconButton from './I9kIconButton.vue';
@@ -78,10 +77,6 @@ watch(
 );
 const regionLabel = computed(() => props.label ?? store.value?.labels.region ?? 'Notifications');
 const dismissText = computed(() => props.dismissLabel ?? store.value?.labels.dismiss ?? 'Dismiss');
-
-function spoken(toast: I9kToastItem) {
-  return toast.detail ? `${toast.message} ${toast.detail}` : toast.message;
-}
 
 function syncPause() {
   const want = pointerInside.value || focusInside.value;
@@ -243,12 +238,23 @@ onBeforeUnmount(() => {
     </TransitionGroup>
     <!-- Present from the first render, so a change of text is announced.
          Keyed by the toast's key, so the same message raised twice is
-         announced twice. -->
+         announced twice. The detail keeps its own lang and dir, so a screen
+         reader speaks it in its language (WCAG 3.1.2). -->
     <p class="i9k-toaster__announcer" role="status" data-i9k-toaster-status>
-      <span v-if="polite" :key="polite.key">{{ spoken(polite) }}</span>
+      <span v-if="polite" :key="polite.key"
+        >{{ polite.message }}{{ polite.detail ? ' ' : ''
+        }}<span v-if="polite.detail" :lang="polite.detailLang" :dir="polite.detailDir">{{
+          polite.detail
+        }}</span></span
+      >
     </p>
     <p class="i9k-toaster__announcer" role="alert" data-i9k-toaster-alert>
-      <span v-if="assertive" :key="assertive.key">{{ spoken(assertive) }}</span>
+      <span v-if="assertive" :key="assertive.key"
+        >{{ assertive.message }}{{ assertive.detail ? ' ' : ''
+        }}<span v-if="assertive.detail" :lang="assertive.detailLang" :dir="assertive.detailDir">{{
+          assertive.detail
+        }}</span></span
+      >
     </p>
   </section>
 </template>
