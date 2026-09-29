@@ -360,13 +360,16 @@ describe('I9kToaster', () => {
 
   it('shows and announces toasts only in the active host', async () => {
     const { toaster, wrapper } = mountToaster();
-    // A host one layer deeper, as an open I9kModal registers.
+    // A host one layer deeper, as an open I9kModal registers, that announced the toast.
     const deeper = toaster.registerHost(1);
     toaster.show({ message: 'Saved.' });
+    toaster.markAnnounced(toaster.latest!.key);
     await nextTick();
     expect(wrapper.findAll('[data-i9k-toast]')).toHaveLength(0);
     expect(wrapper.get('[data-i9k-toaster-status]').text()).toBe('');
     toaster.unregisterHost(deeper);
+    await nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await nextTick();
     // Shown once the deeper host goes, but not announced again.
     expect(wrapper.findAll('[data-i9k-toast]')).toHaveLength(1);

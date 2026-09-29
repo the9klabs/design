@@ -145,6 +145,42 @@ describe('createI9kToaster', () => {
     expect(toaster.toasts.map((toast) => toast.host)).toEqual([null, modal]);
   });
 
+  it('re-homes an unannounced toast from a leaving host to the next active one', () => {
+    const toaster = createI9kToaster();
+    const page = toaster.registerHost(0);
+    const modal = toaster.registerHost(1);
+    toaster.show({ id: 'save', variant: 'error', message: 'Failed.' });
+    const { key } = toaster.latest!;
+    toaster.unregisterHost(modal);
+    // Deferred a macrotask, until the modal dialog has closed and the page is no longer inert.
+    expect(toaster.latest?.host).toBe(modal);
+    vi.runOnlyPendingTimers();
+    expect(toaster.latest).toMatchObject({ id: 'save', key, host: page });
+    expect(toaster.toasts).toMatchObject([{ id: 'save', key, host: page }]);
+  });
+
+  it('leaves a toast its leaving host announced where it was', () => {
+    const toaster = createI9kToaster();
+    toaster.registerHost(0);
+    const modal = toaster.registerHost(1);
+    toaster.show({ id: 'save', variant: 'error', message: 'Failed.' });
+    toaster.markAnnounced(toaster.latest!.key);
+    toaster.unregisterHost(modal);
+    vi.runOnlyPendingTimers();
+    expect(toaster.latest?.host).toBe(modal);
+  });
+
+  it('drops a pending re-home on clear', () => {
+    const toaster = createI9kToaster();
+    toaster.registerHost(0);
+    const modal = toaster.registerHost(1);
+    toaster.show({ id: 'save', variant: 'error', message: 'Failed.' });
+    toaster.unregisterHost(modal);
+    toaster.clear();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(toaster.latest).toBeNull();
+  });
+
   it('uses default labels and accepts overrides', () => {
     expect(createI9kToaster().labels).toEqual({ region: 'Notifications', dismiss: 'Dismiss' });
     expect(createI9kToaster({ labels: { region: 'الإشعارات' } }).labels.region).toBe('الإشعارات');

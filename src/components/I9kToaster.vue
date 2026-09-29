@@ -66,6 +66,16 @@ const polite = computed(() =>
   latest.value && latest.value.variant !== 'error' ? latest.value : null,
 );
 const assertive = computed(() => (latest.value?.variant === 'error' ? latest.value : null));
+// Tells the store once this host's live region holds a toast, so a toast
+// raised as a modal closes, which its toaster unmounted before announcing, is
+// handed to the page instead, and one the modal did announce is not repeated.
+watch(
+  latest,
+  (toast) => {
+    if (toast) store.value?.markAnnounced(toast.key);
+  },
+  { flush: 'post' },
+);
 const regionLabel = computed(() => props.label ?? store.value?.labels.region ?? 'Notifications');
 const dismissText = computed(() => props.dismissLabel ?? store.value?.labels.dismiss ?? 'Dismiss');
 

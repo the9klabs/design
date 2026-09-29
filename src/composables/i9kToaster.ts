@@ -41,6 +41,8 @@ export interface I9kToastItem {
    * The host that was active when the toast was shown (`null` when none was
    * registered). Only that host announces it, so a page toaster left outside a
    * custom `aria-modal` dialog does not repeat what the dialog's toaster says.
+   * When that host leaves before announcing it (a toast raised in the same tick
+   * its modal closes), the store hands it to the host active after it.
    * Optional so items built by hand stay valid; the store always sets it.
    */
   readonly host?: symbol | null;
@@ -63,7 +65,14 @@ export interface I9kToaster {
   pause(): void;
   resume(): void;
   registerHost(layer: number): symbol;
+  /**
+   * Removes a host. If the latest toast was raised in it and it never announced
+   * it, the toast moves to the host active after it (in the browser a macrotask
+   * later, once a closing modal dialog has stopped making the page inert).
+   */
   unregisterHost(host: symbol): void;
+  /** Used by I9kToaster: records that a host's live region has rendered the toast with this key. */
+  markAnnounced(key: number): void;
   install(app: App): void;
 }
 
@@ -98,6 +107,10 @@ export function createI9kToaster(
   let pauses = 0;
   let keySeq = 0;
   let idSeq = 0;
+  // Keys only grow and only the latest toast is announced, so the highest key a
+  // host has announced says whether the latest one was.
+  let announcedKey = 0;
+  let rehome: ReturnType<typeof setTimeout> | undefined;
 
   const activeHost = computed(() => {
     let active: { host: symbol; layer: number } | null = null;
@@ -158,7 +171,13 @@ export function createI9kToaster(
     return id;
   }
 
+  function cancelRehome() {
+    if (rehome !== undefined) clearTimeout(rehome);
+    rehome = undefined;
+  }
+
   function clear() {
+    cancelRehome();
     for (const id of [...timers.keys()]) stopTimer(id);
     toasts.splice(0, toasts.length);
     latest.value = null;
@@ -189,9 +208,36 @@ export function createI9kToaster(
     return host;
   }
 
+  // Moves the latest toast from a host that left before announcing it to the
+  // host active now, under the same key so the shown item is not re-created.
+  function rehomeFrom(host: symbol, item: I9kToastItem) {
+    if (latest.value !== item || item.key <= announcedKey || item.host !== host) return;
+    const moved: I9kToastItem = { ...item, host: activeHost.value };
+    const index = toasts.findIndex((toast) => toast.key === item.key);
+    if (index !== -1) toasts.splice(index, 1, moved);
+    latest.value = moved;
+  }
+
   function unregisterHost(host: symbol) {
     const index = hosts.findIndex((entry) => entry.host === host);
     if (index !== -1) hosts.splice(index, 1);
+    const item = latest.value;
+    if (!item || item.host !== host || item.key <= announcedKey) return;
+    if (!isBrowser) {
+      rehomeFrom(host, item);
+      return;
+    }
+    // I9kModal calls dialog.close() a tick after it unmounts its toaster, and
+    // until then the page is inert: a live region there would not be heard.
+    cancelRehome();
+    rehome = setTimeout(() => {
+      rehome = undefined;
+      rehomeFrom(host, item);
+    }, 0);
+  }
+
+  function markAnnounced(key: number) {
+    if (key > announcedKey) announcedKey = key;
   }
 
   const toaster: I9kToaster = {
@@ -212,6 +258,7 @@ export function createI9kToaster(
     resume,
     registerHost,
     unregisterHost,
+    markAnnounced,
     install(app: App) {
       app.provide(I9K_TOASTER_KEY, toaster);
     },
@@ -230,7 +277,9 @@ export function useI9kToaster(): I9kToaster {
 /**
  * Shows the toast `source` describes while it returns one, shows it again
  * whenever the returned value changes, and dismisses it when `source` returns
- * nothing or the calling component unmounts.
+ * nothing or the calling component unmounts. A result may be raised in the same
+ * tick an I9kModal closes: the page's toaster announces it once the dialog has
+ * closed.
  */
 export function useI9kToastSource(
   source: () => I9kToastOptions | null | undefined | false,

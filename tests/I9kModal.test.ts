@@ -255,4 +255,65 @@ describe('I9kModal toaster host', () => {
     expect(wrapper.findAll('dialog [data-i9k-toast]')).toHaveLength(0);
     expect(wrapper.findAll('[data-i9k-toast="save"]')).toHaveLength(1);
   });
+
+  describe('a toast raised in the same tick the modal closes', () => {
+    function mountPageAndModal() {
+      const toaster = createI9kToaster();
+      const open = ref(true);
+      const wrapper = mount(
+        defineComponent({
+          setup: () => () => [
+            h('main', [h(I9kToaster)]),
+            h(I9kModal, { open: open.value, title: 'Edit' }, () => h('p', 'body')),
+          ],
+        }),
+        { global: { plugins: [toaster] }, attachTo: document.body },
+      );
+      mounted.push(wrapper);
+      const pageAlert = () => wrapper.get('main [data-i9k-toaster-alert]').text();
+      return { toaster, open, wrapper, pageAlert };
+    }
+
+    // The close settles: the re-render, the modal's deferred dialog.close(), and a macrotask.
+    async function settle() {
+      await nextTick();
+      await nextTick();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await nextTick();
+    }
+
+    it('is announced by the page once when raised after the close', async () => {
+      const { toaster, open, wrapper, pageAlert } = mountPageAndModal();
+      await nextTick();
+      open.value = false;
+      toaster.show({ variant: 'error', message: 'Failed.' });
+      await settle();
+      expect(wrapper.findAll('main [data-i9k-toast]')).toHaveLength(1);
+      expect(pageAlert()).toBe('Failed.');
+      expect(wrapper.findAll('main [data-i9k-toaster-alert] span')).toHaveLength(1);
+    });
+
+    it('is announced by the page once when raised before the close', async () => {
+      const { toaster, open, wrapper, pageAlert } = mountPageAndModal();
+      await nextTick();
+      toaster.show({ variant: 'error', message: 'Failed.' });
+      open.value = false;
+      await settle();
+      expect(wrapper.findAll('main [data-i9k-toast]')).toHaveLength(1);
+      expect(pageAlert()).toBe('Failed.');
+      expect(wrapper.findAll('main [data-i9k-toaster-alert] span')).toHaveLength(1);
+    });
+
+    it('is not announced again by the page when the modal announced it', async () => {
+      const { toaster, open, wrapper, pageAlert } = mountPageAndModal();
+      await nextTick();
+      toaster.show({ variant: 'error', message: 'Failed.' });
+      await nextTick();
+      expect(wrapper.get('dialog [data-i9k-toaster-alert]').text()).toBe('Failed.');
+      open.value = false;
+      await settle();
+      expect(wrapper.findAll('main [data-i9k-toast]')).toHaveLength(1);
+      expect(pageAlert()).toBe('');
+    });
+  });
 });

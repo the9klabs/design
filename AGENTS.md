@@ -109,8 +109,11 @@ plans behind this work live in `docs/superpowers/`.
 - `I9kToaster` is the one place notifications appear: install `createI9kToaster()` per app, render
   one `<I9kToaster />` at the root, raise toasts with `useI9kToastSource()` or
   `useI9kToaster().show()`; an open `I9kModal` hosts its own, so notifications stay readable above
-  the inert page. The store is per app, never a module singleton, so server renders never share
-  notifications. `I9kToast` alone stays for standing status in the page flow.
+  the inert page. A toast raised in the same tick a modal closes, which the modal's toaster
+  unmounted before announcing, is handed to the page's toaster (a macrotask later, once the
+  dialog has closed) through `markAnnounced` and `unregisterHost`; one the modal announced is
+  never repeated by the page. The store is per app, never a module singleton, so server renders
+  never share notifications. `I9kToast` alone stays for standing status in the page flow.
 
 ## Component showcase
 
