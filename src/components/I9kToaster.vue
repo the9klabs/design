@@ -53,9 +53,14 @@ const announcedAfter = store.value?.latest?.key ?? 0;
 // mounted, so the server and the first client render show none.
 const active = computed(() => host.value !== null && store.value?.activeHost === host.value);
 const visible = computed(() => (active.value ? (store.value?.toasts ?? []) : []));
+// Only the host that was active when a toast was raised announces it (any host
+// does when none was registered), so a page toaster left in the accessibility
+// tree beside a custom aria-modal dialog does not say it a second time.
 const latest = computed(() => {
   const toast = store.value?.latest ?? null;
-  return toast && toast.key > announcedAfter ? toast : null;
+  if (!toast || toast.key <= announcedAfter) return null;
+  const raisedIn = toast.host ?? null;
+  return raisedIn === null || raisedIn === host.value ? toast : null;
 });
 const polite = computed(() =>
   latest.value && latest.value.variant !== 'error' ? latest.value : null,

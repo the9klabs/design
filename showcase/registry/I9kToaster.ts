@@ -85,7 +85,7 @@ Behavior:
 - At most three toasts at once (createI9kToaster({ limit }) changes it); the oldest drops when another arrives. Newest is last.
 - Timers pause while the pointer is over the stack or focus is inside it. Every toast has a dismiss button.
 - Placement: top of the viewport, clear of the safe-area inset; the inline-end corner (top right in English, top left in Arabic) from 40rem up, full width below. It sits above I9kNavigation (z-index 300).
-- Screen readers: two visually hidden live regions (role="status" for info, success and warning; role="alert" for errors) are present from the first render and hold the newest toast's text; the visible toasts carry no role, so nothing is announced twice. Focus is never moved to a toast.
+- Screen readers: two visually hidden live regions (role="status" for info, success and warning; role="alert" for errors) are present from the first render and hold the newest toast's text, but only in the toaster that was showing toasts when it was raised (in any toaster when none was mounted yet); the visible toasts carry no role, so nothing is announced twice — not even by a page toaster left in the accessibility tree beside a custom role="dialog" aria-modal="true" host. Focus is never moved to a toast.
 - Modals: an open I9kModal renders its own I9kToaster inside the dialog when a store is provided, one layer deeper, and only the deepest host shows the toasts — so a toast raised while a modal is open is readable, announced and dismissable above the inert page. Nothing to wire up.
 - SSR-safe: the state lives in the store created per app, never in a module singleton, and timers only start in the browser.
 
@@ -104,7 +104,7 @@ IMPORTANT: do not also render the same message inline with I9kToast — the noti
     'Set labels on the store (`createI9kToaster({ labels })`, or assign `toaster.labels.region` / `.dismiss`), not as props on the page `<I9kToaster>`: an open I9kModal’s toaster reads only the store. `labels` is read-only as a whole, so assign its fields rather than the object.',
     '`useI9kToastSource()` re-shows only when the getter’s value changes: setting a ref to the text it already holds shows nothing, so clear it at the start of each attempt. A change in anything else the getter reads (a `t()` locale switch) re-shows a toast the user dismissed.',
     'Toasts are plain text (`message`, optional `detail`) — no slots, links or buttons inside them. Mark a detail in another language with `detailLang` and `detailDir`.',
-    'A toaster never announces a toast raised before it appeared, so opening a modal does not repeat the page’s last notification.',
+    'A toaster never announces a toast raised before it appeared, so opening a modal does not repeat the page’s last notification, and only the toaster that was active when a toast was raised announces it, so the page does not repeat a toast raised in a modal, neither while the modal is open nor once it closes.',
     'Do not render the same message inline as well; move it to the toaster.',
   ],
   demos: [

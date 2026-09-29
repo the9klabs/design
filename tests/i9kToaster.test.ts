@@ -132,6 +132,19 @@ describe('createI9kToaster', () => {
     expect(toaster.activeHost).toBe(page);
   });
 
+  it('records the host that was active when each toast was shown', () => {
+    const toaster = createI9kToaster();
+    toaster.show({ id: 'early', message: 'Early.' });
+    expect(toaster.latest?.host).toBeNull();
+    const page = toaster.registerHost(0);
+    toaster.show({ id: 'page', message: 'Page.' });
+    expect(toaster.latest?.host).toBe(page);
+    const modal = toaster.registerHost(1);
+    toaster.show({ id: 'page', message: 'Again.' });
+    expect(toaster.latest?.host).toBe(modal);
+    expect(toaster.toasts.map((toast) => toast.host)).toEqual([null, modal]);
+  });
+
   it('uses default labels and accepts overrides', () => {
     expect(createI9kToaster().labels).toEqual({ region: 'Notifications', dismiss: 'Dismiss' });
     expect(createI9kToaster({ labels: { region: 'الإشعارات' } }).labels.region).toBe('الإشعارات');

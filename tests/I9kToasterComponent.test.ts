@@ -1,10 +1,15 @@
 import { mount } from '@vue/test-utils';
 import { renderToString } from '@vue/server-renderer';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue';
+import { createSSRApp, defineComponent, h, nextTick, provide, ref } from 'vue';
 
 import I9kToaster from '../src/components/I9kToaster.vue';
-import { createI9kToaster, useI9kToastSource } from '../src/composables/i9kToaster';
+import {
+  createI9kToaster,
+  I9K_TOASTER_LAYER_KEY,
+  useI9kToaster,
+  useI9kToastSource,
+} from '../src/composables/i9kToaster';
 
 const mounted: { unmount: () => void }[] = [];
 afterEach(() => {
@@ -353,17 +358,92 @@ describe('I9kToaster', () => {
     });
   });
 
-  it('shows toasts only in the active host, while still announcing them', async () => {
+  it('shows and announces toasts only in the active host', async () => {
     const { toaster, wrapper } = mountToaster();
     // A host one layer deeper, as an open I9kModal registers.
     const deeper = toaster.registerHost(1);
     toaster.show({ message: 'Saved.' });
     await nextTick();
     expect(wrapper.findAll('[data-i9k-toast]')).toHaveLength(0);
-    expect(wrapper.get('[data-i9k-toaster-status]').text()).toBe('Saved.');
+    expect(wrapper.get('[data-i9k-toaster-status]').text()).toBe('');
     toaster.unregisterHost(deeper);
     await nextTick();
+    // Shown once the deeper host goes, but not announced again.
     expect(wrapper.findAll('[data-i9k-toast]')).toHaveLength(1);
+    expect(wrapper.get('[data-i9k-toaster-status]').text()).toBe('');
+  });
+
+  describe('two hosts that are both in the accessibility tree', () => {
+    // As a custom role="dialog" aria-modal="true" host leaves the page's
+    // toaster reachable, unlike a native modal dialog.
+    function mountTwoHosts() {
+      const toaster = createI9kToaster();
+      const dialogOpen = ref(true);
+      const Deeper = defineComponent({
+        setup() {
+          provide(I9K_TOASTER_LAYER_KEY, 1);
+          return () => h('div', { role: 'dialog', 'aria-modal': 'true' }, [h(I9kToaster)]);
+        },
+      });
+      const wrapper = mount(
+        defineComponent({
+          setup: () => () =>
+            h('div', [h('main', [h(I9kToaster)]), dialogOpen.value ? h(Deeper) : null]),
+        }),
+        { global: { plugins: [toaster] }, attachTo: document.body },
+      );
+      mounted.push(wrapper);
+      const regions = (host: 'main' | '[role="dialog"]') => ({
+        alert: () => wrapper.find(`${host} [data-i9k-toaster-alert]`).text(),
+        status: () => wrapper.find(`${host} [data-i9k-toaster-status]`).text(),
+      });
+      return {
+        toaster,
+        wrapper,
+        dialogOpen,
+        page: regions('main'),
+        dialog: regions('[role="dialog"]'),
+      };
+    }
+
+    it('announces a toast only from the host that was active when it was raised', async () => {
+      const { toaster, dialogOpen, page, dialog } = mountTwoHosts();
+      await nextTick();
+      toaster.show({ id: 'save', variant: 'error', message: 'Failed.' });
+      await nextTick();
+      expect(dialog.alert()).toBe('Failed.');
+      expect(page.alert()).toBe('');
+      toaster.show({ variant: 'success', message: 'Sent.' });
+      await nextTick();
+      expect(dialog.status()).toBe('Sent.');
+      expect(page.status()).toBe('');
+      dialogOpen.value = false;
+      await nextTick();
+      // The page now shows what was raised in the dialog without repeating it.
+      expect(page.status()).toBe('');
+      toaster.show({ variant: 'error', message: 'Failed again.' });
+      await nextTick();
+      expect(page.alert()).toBe('Failed again.');
+    });
+  });
+
+  it('announces a toast raised after it was created but before any host registered', async () => {
+    const toaster = createI9kToaster();
+    const Raiser = defineComponent({
+      setup() {
+        // Runs after the toaster's setup, before any host has mounted.
+        useI9kToaster().show({ variant: 'error', message: 'Failed.' });
+        return () => null;
+      },
+    });
+    const wrapper = mount(
+      defineComponent({ setup: () => () => h('div', [h(I9kToaster), h(Raiser)]) }),
+      { global: { plugins: [toaster] }, attachTo: document.body },
+    );
+    mounted.push(wrapper);
+    expect(toaster.latest?.host).toBeNull();
+    await nextTick();
+    expect(wrapper.get('[data-i9k-toaster-alert]').text()).toBe('Failed.');
   });
 
   it('server-renders no toast and no style attribute', async () => {

@@ -37,6 +37,13 @@ export interface I9kToastItem {
   detailLang?: string;
   detailDir?: 'ltr' | 'rtl' | 'auto';
   duration: number | null;
+  /**
+   * The host that was active when the toast was shown (`null` when none was
+   * registered). Only that host announces it, so a page toaster left outside a
+   * custom `aria-modal` dialog does not repeat what the dialog's toaster says.
+   * Optional so items built by hand stay valid; the store always sets it.
+   */
+  readonly host?: symbol | null;
 }
 
 export interface I9kToasterLabels {
@@ -134,6 +141,7 @@ export function createI9kToaster(
       detailLang: input.detailLang,
       detailDir: input.detailDir,
       duration,
+      host: activeHost.value,
     };
     stopTimer(id);
     const index = toasts.findIndex((toast) => toast.id === id);
