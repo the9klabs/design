@@ -1,9 +1,11 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { renderToString } from '@vue/server-renderer';
-import { createSSRApp, h, nextTick } from 'vue';
+import { createSSRApp, defineComponent, h, nextTick } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import I9kSidebarLayout from '../src/components/I9kSidebarLayout.vue';
+import I9kToaster from '../src/components/I9kToaster.vue';
+import { createI9kToaster } from '../src/composables/i9kToaster';
 
 // jsdom has never implemented window.matchMedia; the layout reads it on mount
 // to tell the wide column from the narrow drawer.
@@ -493,5 +495,78 @@ describe('I9kSidebarLayout', () => {
     ).toBe('false');
     app.unmount();
     container.remove();
+  });
+
+  describe('toaster host', () => {
+    // The page's own toaster sits outside the layout, as an app root renders it.
+    function mountWithToaster(withStore = true) {
+      const toaster = createI9kToaster();
+      const wrapper = mount(
+        defineComponent({
+          setup: () => () => [
+            withStore ? h(I9kToaster) : null,
+            h(
+              I9kSidebarLayout,
+              { sidebarLabel: 'Course contents', toggleLabel: 'Course contents' },
+              {
+                sidebar: () => h('p', 'Contents'),
+                'sidebar-footer': () => h('button', 'Buy'),
+                default: () => h('p', 'Lesson'),
+              },
+            ),
+          ],
+        }),
+        { global: { plugins: withStore ? [toaster] : [] }, attachTo: document.body },
+      );
+      mounted.push(wrapper);
+      return { toaster, wrapper };
+    }
+
+    it('shows and announces a notification inside the open drawer', async () => {
+      wide = false;
+      const { toaster, wrapper } = mountWithToaster();
+      await nextTick();
+      expect(sidebar(wrapper).find('.i9k-toaster').exists()).toBe(false);
+      await toggle(wrapper).trigger('click');
+      await nextTick();
+      toaster.show({ id: 'buy', variant: 'error', message: 'Checkout failed.' });
+      await nextTick();
+      const dialog = wrapper.get('[role="dialog"]');
+      expect(dialog.get('[role="alert"]').text()).toBe('Checkout failed.');
+      expect(dialog.find('[data-i9k-toast="buy"] [data-i9k-toast-dismiss]').exists()).toBe(true);
+      expect(wrapper.findAll('[data-i9k-toast="buy"]')).toHaveLength(1);
+      // The page's toaster, left outside the aria-modal drawer, stays quiet.
+      expect(wrapper.findAll('[role="alert"]').filter((alert) => alert.text())).toHaveLength(1);
+    });
+
+    it('hands notifications back to the page once the drawer closes', async () => {
+      wide = false;
+      const { toaster, wrapper } = mountWithToaster();
+      await nextTick();
+      await toggle(wrapper).trigger('click');
+      await nextTick();
+      toaster.show({ id: 'buy', variant: 'error', message: 'Checkout failed.' });
+      await nextTick();
+      await wrapper.get('.i9k-sidebar-layout__close').trigger('click');
+      await nextTick();
+      expect(sidebar(wrapper).find('.i9k-toaster').exists()).toBe(false);
+      expect(wrapper.findAll('[data-i9k-toast="buy"]')).toHaveLength(1);
+    });
+
+    it('hosts no toaster on a wide viewport', async () => {
+      const { wrapper } = mountWithToaster();
+      await nextTick();
+      expect(sidebar(wrapper).find('.i9k-toaster').exists()).toBe(false);
+    });
+
+    it('hosts no toaster without a provided store', async () => {
+      wide = false;
+      const { wrapper } = mountWithToaster(false);
+      await nextTick();
+      await toggle(wrapper).trigger('click');
+      await nextTick();
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+      expect(wrapper.find('.i9k-toaster').exists()).toBe(false);
+    });
   });
 });

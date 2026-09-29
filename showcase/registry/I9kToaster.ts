@@ -86,7 +86,7 @@ Behavior:
 - Timers pause while the pointer is over the stack or focus is inside it. Every toast has a dismiss button.
 - Placement: top of the viewport, clear of the safe-area inset; the inline-end corner (top right in English, top left in Arabic) from 40rem up, full width below. It sits above I9kNavigation (z-index 300).
 - Screen readers: two visually hidden live regions (role="status" for info, success and warning; role="alert" for errors) are present from the first render and hold the newest toast's text, but only in the toaster that was showing toasts when it was raised (in any toaster when none was mounted yet); the visible toasts carry no role, so nothing is announced twice — not even by a page toaster left in the accessibility tree beside a custom role="dialog" aria-modal="true" host. Focus is never moved to a toast.
-- Modals: an open I9kModal renders its own I9kToaster inside the dialog when a store is provided, one layer deeper, and only the deepest host shows the toasts — so a toast raised while a modal is open is readable, announced and dismissable above the inert page. Nothing to wire up. A result may be raised in the same tick the modal closes (open.value = false and toaster.show(), in either order): the page's toaster shows it and announces it once the dialog has closed, and a toast the modal already announced is never announced again by the page.
+- Modals: an open I9kModal renders its own I9kToaster inside the dialog when a store is provided, one layer deeper, and only the deepest host shows the toasts — so a toast raised while a modal is open is readable, announced and dismissable above the inert page. I9kSidebarLayout's open drawer (an aria-modal dialog on a narrow screen) does the same. Nothing to wire up. A result may be raised in the same tick the modal closes (open.value = false and toaster.show(), in either order): the page's toaster shows it and announces it once the dialog has closed, and a toast the modal already announced is never announced again by the page.
 - SSR-safe: the state lives in the store created per app, never in a module singleton, and timers only start in the browser.
 
 Props (I9kToaster):
@@ -98,7 +98,7 @@ Both override this toaster only; a modal's toaster still reads the store's label
 
 IMPORTANT: do not also render the same message inline with I9kToast — the notification replaces the banner. I9kToast alone stays for standing status in the page flow.`,
   gotchas: [
-    'Render exactly one `<I9kToaster />` per app root; I9kModal adds its own while open, so never place one inside a modal yourself.',
+    'Render exactly one `<I9kToaster />` per app root; I9kModal and I9kSidebarLayout’s drawer add their own while open, so never place one inside either yourself.',
     '`useI9kToaster()` and `useI9kToastSource()` throw without an installed store: call `app.use(createI9kToaster())` (a Nuxt plugin) first. The store is per app, so server renders never share notifications.',
     'Warnings and errors are sticky: they stay until the user dismisses them or code dismisses them. A `useI9kToastSource()` toast also goes when its getter returns nothing or its component unmounts; a `toaster.show()` toast outlives the component that raised it, so dismiss it yourself. Pass `duration` to change that.',
     'Set labels on the store (`createI9kToaster({ labels })`, or assign `toaster.labels.region` / `.dismiss`), not as props on the page `<I9kToaster>`: an open I9kModal’s toaster reads only the store. `labels` is read-only as a whole, so assign its fields rather than the object.',

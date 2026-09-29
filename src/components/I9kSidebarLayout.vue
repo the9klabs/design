@@ -1,7 +1,19 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue';
+import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  provide,
+  ref,
+  useId,
+  watch,
+} from 'vue';
 
+import { I9K_TOASTER_KEY, I9K_TOASTER_LAYER_KEY } from '../composables/i9kToaster';
 import I9kIconButton from './I9kIconButton.vue';
+import I9kToaster from './I9kToaster.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -23,6 +35,17 @@ const emit = defineEmits<{
   'update:sidebarHidden': [hidden: boolean];
   'update:drawerOpen': [open: boolean];
 }>();
+
+// The open drawer is an aria-modal dialog with the bar and the column made
+// inert, so a notification raised from inside it (a failed checkout in the
+// sidebar footer) is shown by a toaster in the drawer, as I9kModal does. The
+// layer only matters to toaster hosts, so providing it to all of the layout's
+// content is harmless: the drawer's toaster sits one layer above the page's; an
+// I9kModal opened inside the layout sits one deeper still, above the drawer; and
+// a page toaster placed inside the layout's slots shares the drawer's layer, where
+// the drawer's, registered later as it opens, wins until it closes.
+const toaster = inject(I9K_TOASTER_KEY, null);
+provide(I9K_TOASTER_LAYER_KEY, inject(I9K_TOASTER_LAYER_KEY, 0) + 1);
 
 // The stylesheet's narrow query below is written as this one's exact
 // complement, `not all and (min-width: 769px)`: with `(max-width: 768px)` a
@@ -272,6 +295,11 @@ onUnmounted(() => {
             <slot name="sidebar-footer" />
           </div>
         </aside>
+        <!-- Registers as the drawer opens and leaves as it closes. position:
+             fixed, and the drawer has no transform or filter (its animation is
+             opacity only), so the stack sits where the page's does. Its dismiss
+             buttons are inside the dialog, so they stay reachable. -->
+        <I9kToaster v-if="isDrawer && toaster" />
       </div>
     </div>
   </div>
