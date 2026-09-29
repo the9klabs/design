@@ -260,6 +260,22 @@ describe('I9kProfileMenu', () => {
     expect(trigger(wrapper).attributes('aria-expanded')).toBe('false');
   });
 
+  it('returns focus to the button when an action closes the panel', async () => {
+    const wrapper = mountMenu(
+      {},
+      {
+        actions:
+          '<template #actions="{ close }"><button data-sign-out @click="close">Sign out</button></template>',
+      },
+    );
+    await trigger(wrapper).trigger('click');
+    (wrapper.get('[data-sign-out]').element as HTMLElement).focus();
+
+    await wrapper.get('[data-sign-out]').trigger('click');
+
+    expect(document.activeElement).toBe(trigger(wrapper).element);
+  });
+
   it('follows v-model:open from outside', async () => {
     const wrapper = mountMenu({ open: true });
     expect(trigger(wrapper).attributes('aria-expanded')).toBe('true');

@@ -105,6 +105,14 @@ onMounted(() => listenWhileOpen(isOpen.value));
 
 onBeforeUnmount(() => listenWhileOpen(false));
 
+// The close handed to the actions slot: the control that called it is hidden
+// with the panel, so focus goes back to the button instead of falling to the
+// body, as Escape does.
+const closeFromAction = () => {
+  close();
+  trigger.value?.focus();
+};
+
 const handleLinkClick = (link: I9kNavigationLink, event: MouseEvent) => {
   emit('navigate', link, event);
   close();
@@ -148,7 +156,7 @@ const handleLinkClick = (link: I9kNavigationLink, event: MouseEvent) => {
       </ul>
 
       <div v-if="$slots.actions" class="i9k-profile-menu__actions">
-        <slot name="actions" :close="close" />
+        <slot name="actions" :close="closeFromAction" />
       </div>
     </div>
   </div>

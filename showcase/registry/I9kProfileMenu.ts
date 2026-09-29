@@ -32,9 +32,9 @@ Emits:
 - navigate — [link: I9kNavigationLink, event: MouseEvent], fired when a panel link is clicked, just before the panel closes itself.
 
 Slots:
-- actions — the block at the bottom of the panel, such as a sign-out button. Receives one slot prop, close: () => void, which closes the panel.
+- actions — the block at the bottom of the panel, such as a sign-out button. Receives one slot prop, close: () => void, which closes the panel and returns focus to the button.
 
-Behavior: a disclosure, not an ARIA menu (no role="menu"). The button carries aria-expanded and aria-controls, and the panel follows it in DOM order, so Tab walks from the button into the links and actions. Escape closes the panel and returns focus to the button. A press outside the menu, keyboard focus leaving it, following a link, or calling the actions slot's close closes it. The panel is not teleported: it opens under the button, inside the bar's own stacking context (z-index 150 inside a bar at 100). A closed panel is hidden with the \`hidden\` attribute, not an inline style, so it server-renders without one and stays closed before hydration under a strict style-src Content-Security-Policy.
+Behavior: a disclosure, not an ARIA menu (no role="menu"). The button carries aria-expanded and aria-controls, and the panel follows it in DOM order, so Tab walks from the button into the links and actions. Escape closes the panel and returns focus to the button; it is heard on the whole document while the panel is open, because Safari and Firefox on macOS do not focus a clicked button. A press outside the menu, keyboard focus leaving it, focus moving into an iframe (a video player), following a link, or calling the actions slot's close closes it. The name and detail lines take dir="auto", so a Latin name or an email address keeps its order on a right-to-left page. The panel is not teleported: it opens under the button, inside the bar's own stacking context (z-index 150 inside a bar at 100). A closed panel is hidden with the \`hidden\` attribute, not an inline style, so it server-renders without one and stays closed before hydration under a strict style-src Content-Security-Policy.
 
 Usage:
 <I9kProfileMenu
