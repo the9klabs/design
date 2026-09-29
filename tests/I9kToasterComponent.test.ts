@@ -229,6 +229,26 @@ describe('I9kToaster', () => {
     });
   });
 
+  it('keeps focus on a toast shown again under the same id', async () => {
+    const toaster = createI9kToaster();
+    // A real TransitionGroup, so the replaced item lingers while it leaves, as in a browser.
+    const wrapper = mount(I9kToaster, {
+      global: { plugins: [toaster], stubs: { 'transition-group': false } },
+      attachTo: document.body,
+    });
+    mounted.push(wrapper);
+    toaster.show({ id: 'login', variant: 'error', message: 'Wrong password.' });
+    await nextTick();
+    const first = wrapper.get('[data-i9k-toast="login"] [data-i9k-toast-dismiss]').element;
+    (first as HTMLElement).focus();
+    toaster.show({ id: 'login', variant: 'error', message: 'Too many attempts.' });
+    await nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const replacement = wrapper.get('[data-i9k-toast="login"] [data-i9k-toast-dismiss]').element;
+    expect(replacement).not.toBe(first);
+    expect(document.activeElement).toBe(replacement);
+  });
+
   it('resumes timers when the limit drops a focused toast', async () => {
     const toaster = createI9kToaster();
     const wrapper = mount(I9kToaster, {

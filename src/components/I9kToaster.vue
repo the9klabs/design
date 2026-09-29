@@ -139,9 +139,15 @@ function hovered() {
 // A removed element fires no focusout or pointerleave, so whenever a toast
 // leaves (the limit, a source clearing it, a replacement, dismiss() or clear()
 // from app code) re-read where focus and the pointer are. Focus on a leaving
-// item counts as outside: that item is about to go. Runs once the list has
-// re-rendered and again once a leave transition ends.
+// item counts as outside: that item is about to go, unless a toast shown again
+// under its id replaces it, when focus moves to the replacement's dismiss
+// button rather than falling to <body>. Runs once the list has re-rendered and
+// again once a leave transition ends.
 function syncInside() {
+  const leaving = document.activeElement?.closest<HTMLElement>('.i9k-toaster-leave-active');
+  if (leaving && root.value?.contains(leaving)) {
+    dismissButtonOf(leaving.dataset.i9kToast ?? '')?.focus();
+  }
   const focused = document.activeElement;
   focusInside.value = Boolean(
     focused && root.value?.contains(focused) && !focused.closest('.i9k-toaster-leave-active'),
