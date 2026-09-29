@@ -17,6 +17,19 @@ export { I9K_NINO_EXPRESSIONS } from './types/components';
 export type { I9kCheckboxOption, I9kRadioOption } from './types/forms';
 export type { I9kIconName } from './types/icons';
 export { I9K_COUNTRY_DIAL_CODES } from './data/countries';
+export type {
+  I9kToaster as I9kToasterStore,
+  I9kToasterLabels,
+  I9kToastItem,
+  I9kToastOptions,
+} from './composables/i9kToaster';
+export {
+  createI9kToaster,
+  I9K_TOASTER_KEY,
+  I9K_TOASTER_LAYER_KEY,
+  useI9kToaster,
+  useI9kToastSource,
+} from './composables/i9kToaster';
 
 export { default as I9kArticleHeader } from './components/I9kArticleHeader.vue';
 export { default as I9kAsciiEmoji } from './components/I9kAsciiEmoji.vue';

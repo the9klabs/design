@@ -1,0 +1,235 @@
+import { mount } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { defineComponent, h, nextTick, ref } from 'vue';
+
+import {
+  createI9kToaster,
+  useI9kToaster,
+  useI9kToastSource,
+  type I9kToastOptions,
+} from '../src/composables/i9kToaster';
+
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
+
+describe('createI9kToaster', () => {
+  it('shows a toast with defaults and returns its id', () => {
+    const toaster = createI9kToaster();
+    const id = toaster.show({ message: 'Saved.' });
+    expect(toaster.toasts).toHaveLength(1);
+    expect(toaster.toasts[0]).toMatchObject({
+      id,
+      variant: 'info',
+      message: 'Saved.',
+      detail: null,
+      duration: 5000,
+    });
+    expect(toaster.latest?.id).toBe(id);
+  });
+
+  it('replaces a toast shown again under the same id with a new key', () => {
+    const toaster = createI9kToaster();
+    toaster.show({ id: 'login', variant: 'error', message: 'Wrong password.' });
+    const firstKey = toaster.toasts[0].key;
+    toaster.show({ id: 'login', variant: 'error', message: 'Wrong password.' });
+    expect(toaster.toasts).toHaveLength(1);
+    expect(toaster.toasts[0].key).not.toBe(firstKey);
+  });
+
+  it('keeps at most the limit, dropping the oldest', () => {
+    const toaster = createI9kToaster({ limit: 3 });
+    ['a', 'b', 'c', 'd'].forEach((message) => toaster.show({ message }));
+    expect(toaster.toasts.map((toast) => toast.message)).toEqual(['b', 'c', 'd']);
+  });
+
+  it('dismisses info and success after their duration, never warning or error', () => {
+    const toaster = createI9kToaster();
+    toaster.show({ id: 'ok', variant: 'success', message: 'Saved.' });
+    toaster.show({ id: 'warn', variant: 'warning', message: 'Careful.' });
+    toaster.show({ id: 'err', variant: 'error', message: 'Failed.' });
+    vi.advanceTimersByTime(5000);
+    expect(toaster.toasts.map((toast) => toast.id)).toEqual(['warn', 'err']);
+    vi.advanceTimersByTime(60_000);
+    expect(toaster.toasts).toHaveLength(2);
+  });
+
+  it('honours an explicit duration, including null', () => {
+    const toaster = createI9kToaster();
+    toaster.show({ id: 'short', message: 'a', duration: 1000 });
+    toaster.show({ id: 'sticky', message: 'b', duration: null });
+    vi.advanceTimersByTime(1000);
+    expect(toaster.toasts.map((toast) => toast.id)).toEqual(['sticky']);
+  });
+
+  it('pauses and resumes the remaining time', () => {
+    const toaster = createI9kToaster();
+    toaster.show({ message: 'Saved.', duration: 1000 });
+    vi.advanceTimersByTime(600);
+    toaster.pause();
+    vi.advanceTimersByTime(5000);
+    expect(toaster.toasts).toHaveLength(1);
+    toaster.resume();
+    vi.advanceTimersByTime(399);
+    expect(toaster.toasts).toHaveLength(1);
+    vi.advanceTimersByTime(1);
+    expect(toaster.toasts).toHaveLength(0);
+  });
+
+  it('starts no timer for a toast shown while paused until resumed', () => {
+    const toaster = createI9kToaster();
+    toaster.pause();
+    toaster.show({ message: 'Saved.', duration: 1000 });
+    vi.advanceTimersByTime(5000);
+    expect(toaster.toasts).toHaveLength(1);
+    toaster.resume();
+    vi.advanceTimersByTime(1000);
+    expect(toaster.toasts).toHaveLength(0);
+  });
+
+  it('counts nested pauses', () => {
+    const toaster = createI9kToaster();
+    toaster.show({ message: 'Saved.', duration: 1000 });
+    toaster.pause();
+    toaster.pause();
+    toaster.resume();
+    vi.advanceTimersByTime(5000);
+    expect(toaster.toasts).toHaveLength(1);
+    toaster.resume();
+    vi.advanceTimersByTime(1000);
+    expect(toaster.toasts).toHaveLength(0);
+  });
+
+  it('clears latest when the latest toast is dismissed, not when an older one is', () => {
+    const toaster = createI9kToaster();
+    const older = toaster.show({ message: 'a', duration: null });
+    const newer = toaster.show({ message: 'b', duration: null });
+    toaster.dismiss(older);
+    expect(toaster.latest?.id).toBe(newer);
+    toaster.dismiss(newer);
+    expect(toaster.latest).toBeNull();
+  });
+
+  it('clear removes every toast and timer', () => {
+    const toaster = createI9kToaster();
+    toaster.show({ message: 'a' });
+    toaster.show({ message: 'b', variant: 'error' });
+    toaster.clear();
+    expect(toaster.toasts).toHaveLength(0);
+    expect(toaster.latest).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('makes the deepest, then newest, host active', () => {
+    const toaster = createI9kToaster();
+    const page = toaster.registerHost(0);
+    expect(toaster.activeHost).toBe(page);
+    const modal = toaster.registerHost(1);
+    const latePage = toaster.registerHost(0);
+    expect(toaster.activeHost).toBe(modal);
+    toaster.unregisterHost(modal);
+    expect(toaster.activeHost).toBe(latePage);
+    toaster.unregisterHost(latePage);
+    expect(toaster.activeHost).toBe(page);
+  });
+
+  it('uses default labels and accepts overrides', () => {
+    expect(createI9kToaster().labels).toEqual({ region: 'Notifications', dismiss: 'Dismiss' });
+    expect(createI9kToaster({ labels: { region: 'الإشعارات' } }).labels.region).toBe('الإشعارات');
+  });
+
+  it('installs itself for injection', () => {
+    const toaster = createI9kToaster();
+    let injected: unknown = null;
+    mount(
+      defineComponent({
+        setup() {
+          injected = useI9kToaster();
+          return () => null;
+        },
+      }),
+      { global: { plugins: [toaster] } },
+    );
+    expect(injected).toBe(toaster);
+  });
+
+  it('useI9kToaster throws without a provided toaster', () => {
+    const Probe = defineComponent({
+      setup() {
+        useI9kToaster();
+        return () => null;
+      },
+    });
+    expect(() => mount(Probe)).toThrow(/createI9kToaster/);
+  });
+});
+
+describe('useI9kToastSource', () => {
+  function mountSource(source: () => I9kToastOptions | null) {
+    const toaster = createI9kToaster();
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          useI9kToastSource(source);
+          return () => h('div');
+        },
+      }),
+      { global: { plugins: [toaster] } },
+    );
+    return { toaster, wrapper };
+  }
+
+  it('shows, replaces and dismisses the toast the getter describes', async () => {
+    const message = ref<string | null>(null);
+    const { toaster } = mountSource(() =>
+      message.value ? { id: 'login', variant: 'error', message: message.value } : null,
+    );
+    expect(toaster.toasts).toHaveLength(0);
+    message.value = 'Wrong password.';
+    await nextTick();
+    expect(toaster.toasts).toMatchObject([{ id: 'login', message: 'Wrong password.' }]);
+    message.value = 'Too many attempts.';
+    await nextTick();
+    expect(toaster.toasts).toMatchObject([{ id: 'login', message: 'Too many attempts.' }]);
+    message.value = null;
+    await nextTick();
+    expect(toaster.toasts).toHaveLength(0);
+  });
+
+  it('shows immediately when the getter already has a value', () => {
+    const { toaster } = mountSource(() => ({ variant: 'error', message: 'Failed.' }));
+    expect(toaster.toasts).toHaveLength(1);
+  });
+
+  it('gives a source without an id its own id', async () => {
+    const first = ref<string | null>('a');
+    const toaster = createI9kToaster();
+    mount(
+      defineComponent({
+        setup() {
+          useI9kToastSource(() => (first.value ? { message: first.value, duration: null } : null));
+          useI9kToastSource(() => ({ message: 'b', duration: null }));
+          return () => null;
+        },
+      }),
+      { global: { plugins: [toaster] } },
+    );
+    expect(toaster.toasts).toHaveLength(2);
+    first.value = null;
+    await nextTick();
+    expect(toaster.toasts.map((toast) => toast.message)).toEqual(['b']);
+  });
+
+  it('dismisses its toast when the component unmounts', () => {
+    const { toaster, wrapper } = mountSource(() => ({ variant: 'error', message: 'Failed.' }));
+    wrapper.unmount();
+    expect(toaster.toasts).toHaveLength(0);
+  });
+
+  it('dismisses the old id when the getter switches ids', async () => {
+    const id = ref('a');
+    const { toaster } = mountSource(() => ({ id: id.value, message: 'x', duration: null }));
+    id.value = 'b';
+    await nextTick();
+    expect(toaster.toasts.map((toast) => toast.id)).toEqual(['b']);
+  });
+});
