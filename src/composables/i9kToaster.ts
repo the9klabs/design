@@ -86,7 +86,9 @@ const DEFAULT_DURATION = 5000;
 const MAX_DURATION = 2 ** 31 - 1;
 const isBrowser = typeof window !== 'undefined';
 
-let sourceSeq = 0;
+// Counted per store, like every other id, so concurrent server renders (one
+// store each) give the same source the same id whatever else is rendering.
+const sourceSeqs = new WeakMap<I9kToaster, number>();
 
 interface Timer {
   handle: ReturnType<typeof setTimeout> | undefined;
@@ -292,7 +294,9 @@ export function useI9kToastSource(
   source: () => I9kToastOptions | null | undefined | false,
   toaster: I9kToaster = useI9kToaster(),
 ): void {
-  const ownId = `i9k-toast-source-${++sourceSeq}`;
+  const seq = (sourceSeqs.get(toaster) ?? 0) + 1;
+  sourceSeqs.set(toaster, seq);
+  const ownId = `i9k-toast-source-${seq}`;
   let shownId: string | null = null;
   watch(
     source,

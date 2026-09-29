@@ -288,6 +288,22 @@ describe('useI9kToastSource', () => {
     expect(toaster.toasts.map((toast) => toast.message)).toEqual(['b']);
   });
 
+  it('counts sources per toaster, so two apps give their first source the same id', () => {
+    const ids = [createI9kToaster(), createI9kToaster()].map((toaster) => {
+      mount(
+        defineComponent({
+          setup() {
+            useI9kToastSource(() => ({ message: 'a', duration: null }));
+            return () => null;
+          },
+        }),
+        { global: { plugins: [toaster] } },
+      );
+      return toaster.toasts[0].id;
+    });
+    expect(ids[0]).toBe(ids[1]);
+  });
+
   it('dismisses its toast when the component unmounts', () => {
     const { toaster, wrapper } = mountSource(() => ({ variant: 'error', message: 'Failed.' }));
     wrapper.unmount();
