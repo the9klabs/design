@@ -106,6 +106,11 @@ plans behind this work live in `docs/superpowers/`.
   gutter, so its content lines up with the chrome only for `md`, or once the viewport is wider than
   the column plus twice that size's gutter (1304px for `lg`, 1232px for `sm`). Anything that must
   share the bar's edge on every viewport is an `I9kContainer`.
+- `I9kToaster` is the one place notifications appear: install `createI9kToaster()` per app, render
+  one `<I9kToaster />` at the root, raise toasts with `useI9kToastSource()` or
+  `useI9kToaster().show()`; an open `I9kModal` hosts its own, so notifications stay readable above
+  the inert page. The store is per app, never a module singleton, so server renders never share
+  notifications. `I9kToast` alone stays for standing status in the page flow.
 
 ## Component showcase
 
