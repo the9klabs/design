@@ -76,4 +76,5 @@ export { default as I9kTextarea } from './components/I9kTextarea.vue';
 export { default as I9kText } from './components/I9kText.vue';
 export { default as I9kTimelineCard } from './components/I9kTimelineCard.vue';
 export { default as I9kToast } from './components/I9kToast.vue';
+export { default as I9kToaster } from './components/I9kToaster.vue';
 export { default as I9kModal } from './components/I9kModal.vue';
