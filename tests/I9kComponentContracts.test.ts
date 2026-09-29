@@ -64,8 +64,9 @@ const containerExports = [
   "export { default as I9kContainer } from './components/I9kContainer.vue';",
 ] as const;
 
-const avatarExports = [
+const profileMenuExports = [
   "export { default as I9kAvatar } from './components/I9kAvatar.vue';",
+  "export { default as I9kProfileMenu } from './components/I9kProfileMenu.vue';",
 ] as const;
 
 describe('shared component contracts', () => {
@@ -111,7 +112,7 @@ describe('shared component contracts', () => {
     expect(indexSource).toContain(statement);
   });
 
-  it.each(avatarExports)('exports %s', (statement) => {
+  it.each(profileMenuExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 
