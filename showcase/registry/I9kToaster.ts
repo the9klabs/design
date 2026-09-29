@@ -57,10 +57,16 @@ app.use(createI9kToaster({ labels: { region: 'Notifications', dismiss: 'Dismiss'
 <RouterView />
 <I9kToaster />
 
+Translate through the store, not through props: an open I9kModal renders its own toaster, which reads only the store and its labels. \`toaster.labels\` is reactive and read-only as a whole — assign its fields (toaster.labels.region = t('notifications.region'), or Object.assign(toaster.labels, { region, dismiss })) when the locale changes; replacing the object is a type error and would not update anything.
+
 Raise a toast from a ref you already have — the toast follows the ref: it shows while the getter returns options, is shown again when they change, and is dismissed when the getter returns null or the component unmounts:
 
 const error = ref<string | null>(null);
 useI9kToastSource(() => (error.value ? { id: 'login', variant: 'error', message: error.value } : null));
+
+Two limits of useI9kToastSource:
+- It re-shows only when the getter's value changes. Setting the ref to the text it already holds does nothing, so a repeated identical failure is not shown again: clear the ref at the start of each attempt (error.value = null), then set it on failure.
+- It re-shows whenever anything else the getter reads changes, e.g. a t() call when the locale switches — which brings back a toast the user dismissed. Keep the getter to the ref, or accept that.
 
 Or raise one imperatively:
 
@@ -84,16 +90,19 @@ Behavior:
 - SSR-safe: the state lives in the store created per app, never in a module singleton, and timers only start in the browser.
 
 Props (I9kToaster):
-- toaster?: the store to show; defaults to the installed one.
+- toaster?: I9kToasterStore | null — the store to show (the type createI9kToaster() returns, exported under that name); defaults to the installed one.
 - label?: string — the stack's accessible name; defaults to the store's labels.region ('Notifications').
-- dismissLabel?: string — each dismiss button's name; defaults to labels.dismiss ('Dismiss'). Translate both.
+- dismissLabel?: string — each dismiss button's name; defaults to labels.dismiss ('Dismiss').
+Both override this toaster only; a modal's toaster still reads the store's labels, so set translations on the store.
 - size?: 'sm' | 'md' | 'lg' (default 'md')
 
 IMPORTANT: do not also render the same message inline with I9kToast — the notification replaces the banner. I9kToast alone stays for standing status in the page flow.`,
   gotchas: [
     'Render exactly one `<I9kToaster />` per app root; I9kModal adds its own while open, so never place one inside a modal yourself.',
     '`useI9kToaster()` and `useI9kToastSource()` throw without an installed store: call `app.use(createI9kToaster())` (a Nuxt plugin) first. The store is per app, so server renders never share notifications.',
-    'Warnings and errors are sticky: they stay until the user dismisses them, the source clears them, or the component that raised them unmounts. Pass `duration` to change that.',
+    'Warnings and errors are sticky: they stay until the user dismisses them or code dismisses them. A `useI9kToastSource()` toast also goes when its getter returns nothing or its component unmounts; a `toaster.show()` toast outlives the component that raised it, so dismiss it yourself. Pass `duration` to change that.',
+    'Set labels on the store (`createI9kToaster({ labels })`, or assign `toaster.labels.region` / `.dismiss`), not as props on the page `<I9kToaster>`: an open I9kModal’s toaster reads only the store. `labels` is read-only as a whole, so assign its fields rather than the object.',
+    '`useI9kToastSource()` re-shows only when the getter’s value changes: setting a ref to the text it already holds shows nothing, so clear it at the start of each attempt. A change in anything else the getter reads (a `t()` locale switch) re-shows a toast the user dismissed.',
     'Toasts are plain text (`message`, optional `detail`) — no slots, links or buttons inside them. Mark a detail in another language with `detailLang` and `detailDir`.',
     'A toaster never announces a toast raised before it appeared, so opening a modal does not repeat the page’s last notification.',
     'Do not render the same message inline as well; move it to the toaster.',

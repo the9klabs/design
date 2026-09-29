@@ -48,7 +48,8 @@ export interface I9kToaster {
   readonly toasts: readonly I9kToastItem[];
   readonly latest: I9kToastItem | null;
   readonly activeHost: symbol | null;
-  labels: I9kToasterLabels;
+  /** Reactive: change a label by assigning its field (`toaster.labels.region = …`), never the object. */
+  readonly labels: I9kToasterLabels;
   show(options: I9kToastOptions): string;
   dismiss(id: string): void;
   clear(): void;

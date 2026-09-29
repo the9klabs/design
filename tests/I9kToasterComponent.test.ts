@@ -1,10 +1,10 @@
 import { mount } from '@vue/test-utils';
 import { renderToString } from '@vue/server-renderer';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createSSRApp, h, nextTick } from 'vue';
+import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue';
 
 import I9kToaster from '../src/components/I9kToaster.vue';
-import { createI9kToaster } from '../src/composables/i9kToaster';
+import { createI9kToaster, useI9kToastSource } from '../src/composables/i9kToaster';
 
 const mounted: { unmount: () => void }[] = [];
 afterEach(() => {
@@ -131,6 +131,48 @@ describe('I9kToaster', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     toaster.show({ variant: 'success', message: 'Saved.', duration: 20 });
     await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(toaster.toasts).toHaveLength(0);
+  });
+
+  it('resumes timers when the limit drops a focused toast', async () => {
+    const toaster = createI9kToaster();
+    const wrapper = mount(I9kToaster, {
+      global: { plugins: [toaster], stubs: { 'transition-group': false } },
+      attachTo: document.body,
+    });
+    mounted.push(wrapper);
+    for (const id of ['a', 'b', 'c']) toaster.show({ id, variant: 'error', message: id });
+    await nextTick();
+    (wrapper.get('[data-i9k-toast="a"] [data-i9k-toast-dismiss]').element as HTMLElement).focus();
+    toaster.show({ id: 'd', variant: 'success', message: 'Saved.', duration: 20 });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(toaster.toasts.map((toast) => toast.id)).toEqual(['b', 'c']);
+  });
+
+  it('resumes timers when the source clears a focused toast', async () => {
+    const toaster = createI9kToaster();
+    const error = ref<string | null>('Failed.');
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          useI9kToastSource(() =>
+            error.value ? { id: 'save', variant: 'error', message: error.value } : null,
+          );
+          return () => h(I9kToaster);
+        },
+      }),
+      {
+        global: { plugins: [toaster], stubs: { 'transition-group': false } },
+        attachTo: document.body,
+      },
+    );
+    mounted.push(wrapper);
+    await nextTick();
+    (wrapper.get('[data-i9k-toast-dismiss]').element as HTMLElement).focus();
+    error.value = null;
+    await nextTick();
+    toaster.show({ variant: 'success', message: 'Saved.', duration: 20 });
+    await new Promise((resolve) => setTimeout(resolve, 200));
     expect(toaster.toasts).toHaveLength(0);
   });
 

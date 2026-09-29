@@ -1,11 +1,20 @@
 <!-- src/components/I9kToaster.vue -->
 <script setup lang="ts">
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import {
+  computed,
+  inject,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
 
 import {
   I9K_TOASTER_KEY,
   I9K_TOASTER_LAYER_KEY,
-  type I9kToaster,
+  type I9kToaster as I9kToasterStore,
   type I9kToastItem,
 } from '../composables/i9kToaster';
 import type { I9kComponentSize } from '../types/components';
@@ -15,7 +24,7 @@ import I9kToast from './I9kToast.vue';
 const props = withDefaults(
   defineProps<{
     /** The store to show; defaults to the one installed with `app.use(createI9kToaster())`. */
-    toaster?: I9kToaster | null;
+    toaster?: I9kToasterStore | null;
     /** The stack's accessible name; defaults to the store's `labels.region`. */
     label?: string;
     /** Each dismiss button's accessible name; defaults to the store's `labels.dismiss`. */
@@ -80,6 +89,22 @@ function onFocusOut(event: FocusEvent) {
   syncPause();
 }
 
+// A removed element fires no focusout or pointerleave, so whenever a toast
+// leaves (the limit, a source clearing it, a replacement, dismiss() or clear()
+// from app code) re-read where focus and the pointer are. Focus on a leaving
+// item counts as outside: that item is about to go. Runs once the list has
+// re-rendered and again once a leave transition ends.
+function syncInside() {
+  const focused = document.activeElement;
+  focusInside.value = Boolean(
+    focused && root.value?.contains(focused) && !focused.closest('.i9k-toaster-leave-active'),
+  );
+  pointerInside.value = root.value?.matches(':hover') ?? false;
+  syncPause();
+}
+
+watch(() => visible.value.map((toast) => toast.key).join(), syncInside, { flush: 'post' });
+
 function dismissButtonOf(id: string) {
   for (const item of root.value?.querySelectorAll<HTMLElement>('[data-i9k-toast]') ?? []) {
     if (item.dataset.i9kToast === id && !item.classList.contains('i9k-toaster-leave-active')) {
@@ -97,19 +122,11 @@ async function dismiss(id: string) {
   current.dismiss(id);
   await nextTick();
   // The dismissed button took focus with it: hand focus to the toast that took
-  // its place (or the one before it), and resume timers once focus has left.
+  // its place (or the one before it).
   const next = current.toasts[index] ?? current.toasts[index - 1];
   const button = hadFocus && next ? dismissButtonOf(next.id) : null;
   if (button) button.focus();
-  else {
-    // Focus on a leaving item's button counts as outside: the item is removed
-    // after its transition without a focusout, which would keep timers paused.
-    const focused = document.activeElement;
-    focusInside.value = Boolean(
-      focused && root.value?.contains(focused) && !focused.closest('.i9k-toaster-leave-active'),
-    );
-  }
-  syncPause();
+  syncInside();
 }
 
 onMounted(() => {
@@ -134,7 +151,12 @@ onBeforeUnmount(() => {
     @focusin="onFocusIn"
     @focusout="onFocusOut"
   >
-    <TransitionGroup tag="ol" name="i9k-toaster" class="i9k-toaster__list">
+    <TransitionGroup
+      tag="ol"
+      name="i9k-toaster"
+      class="i9k-toaster__list"
+      @after-leave="syncInside"
+    >
       <li
         v-for="toast in visible"
         :key="toast.key"
