@@ -111,6 +111,15 @@ describe('I9kProfileMenu', () => {
     expect(wrapper.get('.i9k-profile-menu__detail').text()).toBe('me@example.com');
   });
 
+  // On a right-to-left page a Latin name or an email address starting with a
+  // digit would otherwise be laid out in the page's direction and reorder.
+  it('sets each account line direction from its own text', () => {
+    const wrapper = mountMenu();
+
+    expect(wrapper.get('.i9k-profile-menu__name').attributes('dir')).toBe('auto');
+    expect(wrapper.get('.i9k-profile-menu__detail').attributes('dir')).toBe('auto');
+  });
+
   it('closes on Escape and returns focus to the button', async () => {
     const wrapper = mountMenu();
     await trigger(wrapper).trigger('click');

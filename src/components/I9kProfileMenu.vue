@@ -120,8 +120,8 @@ const handleLinkClick = (link: I9kNavigationLink, event: MouseEvent) => {
       <div v-if="name || detail" class="i9k-profile-menu__identity">
         <I9kAvatar :src="avatarSrc" size="lg" aria-hidden="true" />
         <div class="i9k-profile-menu__names">
-          <p v-if="name" class="i9k-profile-menu__name">{{ name }}</p>
-          <p v-if="detail" class="i9k-profile-menu__detail">{{ detail }}</p>
+          <p v-if="name" class="i9k-profile-menu__name" dir="auto">{{ name }}</p>
+          <p v-if="detail" class="i9k-profile-menu__detail" dir="auto">{{ detail }}</p>
         </div>
       </div>
 
