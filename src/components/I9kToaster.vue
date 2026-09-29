@@ -42,6 +42,9 @@ const root = ref<HTMLElement | null>(null);
 const pointerInside = ref(false);
 const focusInside = ref(false);
 let paused = false;
+// Where focus was just before it entered the stack, so dismissing the last
+// toast can hand it back (inside a modal, falling to <body> would escape it).
+let cameFrom: HTMLElement | null = null;
 // A toast raised before this toaster existed is not announced again by it, so
 // opening a modal does not repeat the page's last notification.
 const announcedAfter = store.value?.latest?.key ?? 0;
@@ -78,7 +81,16 @@ function onPointer(inside: boolean) {
   syncPause();
 }
 
-function onFocusIn() {
+function isOutside(target: EventTarget | null): target is Node {
+  return target instanceof Node && !root.value?.contains(target);
+}
+
+function onFocusIn(event: FocusEvent) {
+  // A focusin with no relatedTarget (focus returning to the window, or handed
+  // on after the focused item was removed) keeps what was remembered.
+  if (isOutside(event.relatedTarget) && event.relatedTarget instanceof HTMLElement) {
+    cameFrom = event.relatedTarget;
+  }
   focusInside.value = true;
   syncPause();
 }
@@ -86,7 +98,27 @@ function onFocusIn() {
 function onFocusOut(event: FocusEvent) {
   const next = event.relatedTarget as Node | null;
   focusInside.value = Boolean(next && root.value?.contains(next));
+  // Focus genuinely left: to another element, or to nothing while the window
+  // keeps focus (a click on the page). A window switch keeps the memory.
+  if (isOutside(next) || (!next && document.hasFocus())) cameFrom = null;
   syncPause();
+}
+
+function canReturnTo(element: HTMLElement | null): element is HTMLElement {
+  return Boolean(
+    element &&
+    element.isConnected &&
+    !root.value?.contains(element) &&
+    !element.matches(':disabled') &&
+    !element.closest('[inert]'),
+  );
+}
+
+// Only a device whose pointer hovers can be trusted with :hover: a touch
+// browser can keep it on the last tapped element after pointerleave.
+function hovered() {
+  const hovers = window.matchMedia?.('(hover: hover)').matches ?? false;
+  return hovers && (root.value?.matches(':hover') ?? false);
 }
 
 // A removed element fires no focusout or pointerleave, so whenever a toast
@@ -99,7 +131,7 @@ function syncInside() {
   focusInside.value = Boolean(
     focused && root.value?.contains(focused) && !focused.closest('.i9k-toaster-leave-active'),
   );
-  pointerInside.value = root.value?.matches(':hover') ?? false;
+  pointerInside.value = hovered();
   syncPause();
 }
 
@@ -118,14 +150,19 @@ async function dismiss(id: string) {
   const current = store.value;
   if (!current) return;
   const hadFocus = Boolean(root.value?.contains(document.activeElement));
+  const returnTo = cameFrom;
   const index = current.toasts.findIndex((toast) => toast.id === id);
   current.dismiss(id);
   await nextTick();
   // The dismissed button took focus with it: hand focus to the toast that took
-  // its place (or the one before it).
+  // its place (or the one before it) or, after the last one, back to where it
+  // came from — unless focus has already gone somewhere else meanwhile.
   const next = current.toasts[index] ?? current.toasts[index - 1];
   const button = hadFocus && next ? dismissButtonOf(next.id) : null;
+  const focused = document.activeElement;
+  const stillOurs = !focused || focused === document.body || root.value?.contains(focused);
   if (button) button.focus();
+  else if (hadFocus && !next && stillOurs && canReturnTo(returnTo)) returnTo.focus();
   syncInside();
 }
 
