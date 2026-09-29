@@ -6,6 +6,7 @@ import { createI9kToaster, I9K_TOASTER_KEY } from '../../src/composables/i9kToas
 import type { ShowcaseEntry } from './types';
 
 const notificationsDemoCode = `<!-- toaster = useI9kToaster(), from app.use(createI9kToaster()) -->
+<I9kToaster />
 <I9kButton @click="toaster.show({ variant: 'success', message: 'Changes saved.' })">
   Save
 </I9kButton>
@@ -20,8 +21,7 @@ const notificationsDemoCode = `<!-- toaster = useI9kToaster(), from app.use(crea
   })"
 >
   Fail to save
-</I9kButton>
-<I9kToaster />`;
+</I9kButton>`;
 
 /**
  * The showcase has no app-level toaster, so this demo provides its own store,
@@ -48,14 +48,14 @@ export const I9kToasterEntry: ShowcaseEntry = {
 
 import { createI9kToaster, I9kToaster, useI9kToaster, useI9kToastSource } from '@9klabs/design';
 
-Install once per app, then render exactly one <I9kToaster /> at the app root (next to the router view or in the root layout):
+Install once per app, then render exactly one <I9kToaster /> at the app root, before the page content in the tree (in the root layout, above the router view). A toaster never announces a toast raised before its own setup ran, so a toast raised during the setup of a page rendered above it is shown but never announced:
 
 // main.ts (in Nuxt, a plugin: nuxtApp.vueApp.use(createI9kToaster({ labels })))
 app.use(createI9kToaster({ labels: { region: 'Notifications', dismiss: 'Dismiss' } }));
 
 <!-- App.vue -->
-<RouterView />
 <I9kToaster />
+<RouterView />
 
 Translate through the store, not through props: an open I9kModal renders its own toaster, which reads only the store and its labels. \`toaster.labels\` is reactive and read-only as a whole — assign its fields (toaster.labels.region = t('notifications.region'), or Object.assign(toaster.labels, { region, dismiss })) when the locale changes; replacing the object is a type error and would not update anything.
 
@@ -98,7 +98,7 @@ Both override this toaster only; a modal's toaster still reads the store's label
 
 IMPORTANT: do not also render the same message inline with I9kToast — the notification replaces the banner. I9kToast alone stays for standing status in the page flow.`,
   gotchas: [
-    'Render exactly one `<I9kToaster />` per app root; I9kModal and I9kSidebarLayout’s drawer add their own while open, so never place one inside either yourself.',
+    'Render exactly one `<I9kToaster />` per app root, before the page content (above the router view): a toast raised during a page’s setup before the toaster’s own setup ran is shown but never announced. I9kModal and I9kSidebarLayout’s drawer add their own while open, so never place one inside either yourself.',
     '`useI9kToaster()` and `useI9kToastSource()` throw without an installed store: call `app.use(createI9kToaster())` (a Nuxt plugin) first. The store is per app, so server renders never share notifications.',
     'Warnings and errors are sticky: they stay until the user dismisses them or code dismisses them. A `useI9kToastSource()` toast also goes when its getter returns nothing or its component unmounts; a `toaster.show()` toast outlives the component that raised it, so dismiss it yourself. Pass `duration` to change that.',
     'Set labels on the store (`createI9kToaster({ labels })`, or assign `toaster.labels.region` / `.dismiss`), not as props on the page `<I9kToaster>`: an open I9kModal’s toaster reads only the store. `labels` is read-only as a whole, so assign its fields rather than the object.',
