@@ -61,6 +61,26 @@ describe('createI9kToaster', () => {
     expect(toaster.toasts.map((toast) => toast.id)).toEqual(['sticky']);
   });
 
+  it('keeps a toast with a non-finite or over-long duration, as a sticky one', () => {
+    const toaster = createI9kToaster();
+    toaster.show({ id: 'forever', message: 'a', duration: Infinity });
+    toaster.show({ id: 'too-long', message: 'b', duration: 2 ** 31 });
+    toaster.show({ id: 'nan', message: 'c', duration: NaN });
+    expect(toaster.toasts.map((toast) => toast.duration)).toEqual([null, null, null]);
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(60_000);
+    expect(toaster.toasts).toHaveLength(3);
+  });
+
+  it('still times out the longest duration a timer can hold', () => {
+    const toaster = createI9kToaster();
+    toaster.show({ id: 'longest', message: 'a', duration: 2 ** 31 - 1 });
+    vi.advanceTimersByTime(60_000);
+    expect(toaster.toasts).toHaveLength(1);
+    vi.advanceTimersByTime(2 ** 31 - 1);
+    expect(toaster.toasts).toHaveLength(0);
+  });
+
   it('pauses and resumes the remaining time', () => {
     const toaster = createI9kToaster();
     toaster.show({ message: 'Saved.', duration: 1000 });

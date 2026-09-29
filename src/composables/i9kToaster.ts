@@ -21,8 +21,9 @@ export interface I9kToastOptions {
   detailLang?: string;
   detailDir?: 'ltr' | 'rtl' | 'auto';
   /**
-   * Milliseconds before auto-dismissal; `null` never. Defaults to 5000 for info and success,
-   * `null` otherwise.
+   * Milliseconds before auto-dismissal; `null` never, and `null` is the way to ask for a sticky
+   * toast. Defaults to 5000 for info and success, `null` otherwise. A value no timer can hold (not
+   * finite, or above 2147483647, about 24.8 days) is treated as `null` rather than firing at once.
    */
   duration?: number | null;
 }
@@ -81,6 +82,8 @@ export const I9K_TOASTER_KEY: InjectionKey<I9kToaster> = Symbol('i9k-toaster');
 export const I9K_TOASTER_LAYER_KEY: InjectionKey<number> = Symbol('i9k-toaster-layer');
 
 const DEFAULT_DURATION = 5000;
+// setTimeout holds a signed 32-bit delay; anything longer fires at once.
+const MAX_DURATION = 2 ** 31 - 1;
 const isBrowser = typeof window !== 'undefined';
 
 let sourceSeq = 0;
@@ -139,12 +142,16 @@ export function createI9kToaster(
   function show(input: I9kToastOptions): string {
     const variant = input.variant ?? 'info';
     const id = input.id ?? `i9k-toast-${++idSeq}`;
-    const duration =
+    const requested =
       input.duration !== undefined
         ? input.duration
         : variant === 'info' || variant === 'success'
           ? DEFAULT_DURATION
           : null;
+    const duration =
+      requested !== null && Number.isFinite(requested) && requested <= MAX_DURATION
+        ? requested
+        : null;
     const item: I9kToastItem = {
       id,
       key: ++keySeq,

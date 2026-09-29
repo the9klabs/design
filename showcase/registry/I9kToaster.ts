@@ -79,7 +79,7 @@ A toast (I9kToastOptions) is plain text:
 - variant?: 'info' | 'success' | 'warning' | 'error' (default 'info')
 - id?: string — showing a toast with an id already on screen replaces it, restarts its timer and announces it again, so a repeated failure never piles up.
 - detail?: string — a second line, e.g. the server's message; detailLang?: string and detailDir?: 'ltr' | 'rtl' | 'auto' mark its language, e.g. an Arabic server message on an English page.
-- duration?: number | null — milliseconds before it dismisses itself. Default 5000 for info and success; warning and error never dismiss themselves (null = never).
+- duration?: number | null — milliseconds before it dismisses itself. Default 5000 for info and success; warning and error never dismiss themselves (null = never; ask for a sticky toast with null — a value no timer can hold, such as Infinity or anything above 2147483647, is treated as null too).
 
 Behavior:
 - At most three toasts at once (createI9kToaster({ limit }) changes it); the oldest drops when another arrives. Newest is last.
