@@ -114,6 +114,26 @@ describe('I9kToaster', () => {
     );
   });
 
+  it('resumes timers when the last toast is dismissed from its focused button', async () => {
+    const toaster = createI9kToaster();
+    // A real TransitionGroup, so the dismissed item lingers while it leaves, as in a browser.
+    const wrapper = mount(I9kToaster, {
+      global: { plugins: [toaster], stubs: { 'transition-group': false } },
+      attachTo: document.body,
+    });
+    mounted.push(wrapper);
+    toaster.show({ id: 'a', variant: 'error', message: 'Failed.' });
+    await nextTick();
+    const button = wrapper.get('[data-i9k-toast-dismiss]');
+    (button.element as HTMLElement).focus();
+    await button.trigger('click');
+    await nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    toaster.show({ variant: 'success', message: 'Saved.', duration: 20 });
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(toaster.toasts).toHaveLength(0);
+  });
+
   it('reads its labels from the store unless given props', async () => {
     const { toaster, wrapper } = mountToaster();
     toaster.labels.region = 'الإشعارات';

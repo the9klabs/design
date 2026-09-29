@@ -101,7 +101,14 @@ async function dismiss(id: string) {
   const next = current.toasts[index] ?? current.toasts[index - 1];
   const button = hadFocus && next ? dismissButtonOf(next.id) : null;
   if (button) button.focus();
-  else focusInside.value = Boolean(root.value?.contains(document.activeElement));
+  else {
+    // Focus on a leaving item's button counts as outside: the item is removed
+    // after its transition without a focusout, which would keep timers paused.
+    const focused = document.activeElement;
+    focusInside.value = Boolean(
+      focused && root.value?.contains(focused) && !focused.closest('.i9k-toaster-leave-active'),
+    );
+  }
   syncPause();
 }
 
