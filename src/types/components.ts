@@ -18,6 +18,8 @@ export type I9kSectionVariant = 'default' | 'primary';
 
 export type I9kTextVariant = 'body' | 'lede';
 
+export type I9kToastVariant = 'info' | 'success' | 'warning' | 'error';
+
 export type I9kTone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';
 
 /**

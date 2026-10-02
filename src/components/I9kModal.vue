@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
+import { inject, nextTick, onBeforeUnmount, onMounted, provide, ref, useId, watch } from 'vue';
 
+import { I9K_TOASTER_KEY, I9K_TOASTER_LAYER_KEY } from '../composables/i9kToaster';
 import type { I9kComponentSize } from '../types/components';
 import I9kIconButton from './I9kIconButton.vue';
+import I9kToaster from './I9kToaster.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -17,6 +19,12 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{ 'update:open': [open: boolean]; close: [] }>();
+
+// An open modal <dialog> makes the rest of the page inert, so a notification
+// raised while it is open is shown by a toaster inside it, one layer deeper
+// than the page's (the store shows toasts in the deepest host only).
+const toaster = inject(I9K_TOASTER_KEY, null);
+provide(I9K_TOASTER_LAYER_KEY, inject(I9K_TOASTER_LAYER_KEY, 0) + 1);
 
 const dialog = ref<HTMLDialogElement | null>(null);
 const titleId = useId();
@@ -133,6 +141,9 @@ onBeforeUnmount(() => {
       </header>
       <div class="i9k-modal__body"><slot /></div>
       <footer v-if="$slots.footer" class="i9k-modal__footer"><slot name="footer" /></footer>
+      <!-- position: fixed, and the dialog has no transform, so it sits where
+           the page's toaster does, above the backdrop. -->
+      <I9kToaster v-if="toaster" />
     </div>
   </dialog>
 </template>

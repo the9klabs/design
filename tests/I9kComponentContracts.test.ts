@@ -64,6 +64,25 @@ const containerExports = [
   "export { default as I9kContainer } from './components/I9kContainer.vue';",
 ] as const;
 
+const toasterExports = [
+  "export type { I9kToastVariant } from './types/components';",
+  `export type {
+  I9kToaster as I9kToasterStore,
+  I9kToasterLabels,
+  I9kToastItem,
+  I9kToastOptions,
+} from './composables/i9kToaster';`,
+  `export {
+  createI9kToaster,
+  I9K_TOASTER_KEY,
+  I9K_TOASTER_LAYER_KEY,
+  useI9kToaster,
+  useI9kToastSource,
+} from './composables/i9kToaster';`,
+  "export { default as I9kToast } from './components/I9kToast.vue';",
+  "export { default as I9kToaster } from './components/I9kToaster.vue';",
+] as const;
+
 const profileMenuExports = [
   "export { default as I9kAvatar } from './components/I9kAvatar.vue';",
   "export { default as I9kProfileMenu } from './components/I9kProfileMenu.vue';",
@@ -109,6 +128,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(containerExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(toasterExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 

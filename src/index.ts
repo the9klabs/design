@@ -7,6 +7,7 @@ export type { I9kGridColumns } from './types/components';
 export type { I9kPanelVariant } from './types/components';
 export type { I9kSectionVariant } from './types/components';
 export type { I9kTextVariant } from './types/components';
+export type { I9kToastVariant } from './types/components';
 export type { I9kCollapsibleVariant } from './types/components';
 export type { I9kBreadcrumbItem } from './types/components';
 export type { I9kTabItem } from './types/components';
@@ -16,6 +17,19 @@ export { I9K_NINO_EXPRESSIONS } from './types/components';
 export type { I9kCheckboxOption, I9kRadioOption } from './types/forms';
 export type { I9kIconName } from './types/icons';
 export { I9K_COUNTRY_DIAL_CODES } from './data/countries';
+export type {
+  I9kToaster as I9kToasterStore,
+  I9kToasterLabels,
+  I9kToastItem,
+  I9kToastOptions,
+} from './composables/i9kToaster';
+export {
+  createI9kToaster,
+  I9K_TOASTER_KEY,
+  I9K_TOASTER_LAYER_KEY,
+  useI9kToaster,
+  useI9kToastSource,
+} from './composables/i9kToaster';
 
 export { default as I9kArticleHeader } from './components/I9kArticleHeader.vue';
 export { default as I9kAsciiEmoji } from './components/I9kAsciiEmoji.vue';
@@ -64,4 +78,5 @@ export { default as I9kTextarea } from './components/I9kTextarea.vue';
 export { default as I9kText } from './components/I9kText.vue';
 export { default as I9kTimelineCard } from './components/I9kTimelineCard.vue';
 export { default as I9kToast } from './components/I9kToast.vue';
+export { default as I9kToaster } from './components/I9kToaster.vue';
 export { default as I9kModal } from './components/I9kModal.vue';
