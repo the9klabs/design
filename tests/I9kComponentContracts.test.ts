@@ -83,6 +83,11 @@ const toasterExports = [
   "export { default as I9kToaster } from './components/I9kToaster.vue';",
 ] as const;
 
+const profileMenuExports = [
+  "export { default as I9kAvatar } from './components/I9kAvatar.vue';",
+  "export { default as I9kProfileMenu } from './components/I9kProfileMenu.vue';",
+] as const;
+
 describe('shared component contracts', () => {
   it('exports the common component types', () => {
     expect(indexSource).toContain(
@@ -127,6 +132,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(toasterExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(profileMenuExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 
