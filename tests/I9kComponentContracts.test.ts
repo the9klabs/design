@@ -95,6 +95,10 @@ const chatExports = [
   "export { default as I9kChatOptions } from './components/I9kChatOptions.vue';",
 ] as const;
 
+const levelMeterExports = [
+  "export { default as I9kLevelMeter } from './components/I9kLevelMeter.vue';",
+] as const;
+
 describe('shared component contracts', () => {
   it('exports the common component types', () => {
     expect(indexSource).toContain(
@@ -147,6 +151,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(chatExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(levelMeterExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 
