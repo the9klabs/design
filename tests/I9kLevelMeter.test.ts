@@ -51,6 +51,25 @@ describe('I9kLevelMeter', () => {
     expect(wrapper.attributes('aria-valuetext')).toBeUndefined();
   });
 
+  // A strict Content-Security-Policy (`style-src 'self'`) drops inline style
+  // attributes, so the rising steps must not depend on one.
+  it.each([5, 3, 8])('renders %s steps without any inline style attribute', (max) => {
+    const wrapper = mount(I9kLevelMeter, { props: { value: 2, max, label: 'Level' } });
+
+    expect(wrapper.html()).not.toMatch(/\sstyle=/);
+  });
+
+  it('draws each step taller than the one before it', () => {
+    const wrapper = mount(I9kLevelMeter, { props: { value: 2, label: 'Level' } });
+    const heights = wrapper
+      .findAll('.i9k-level-meter__step')
+      .map((step) => Number(step.attributes('height')));
+
+    expect(heights.every((height, index) => index === 0 || height > heights[index - 1]!)).toBe(
+      true,
+    );
+  });
+
   it('honours a custom maximum', () => {
     const wrapper = mount(I9kLevelMeter, { props: { value: 2, max: 3, label: 'Level' } });
 

@@ -37,6 +37,35 @@ const filled = computed(() => {
 });
 
 const text = computed(() => props.valueText?.trim() || undefined);
+
+// The steps are SVG rects sized by geometry attributes rather than an inline
+// style, because a strict Content-Security-Policy (`style-src 'self'`) drops
+// style attributes. Units are the viewBox's; CSS scales the drawing to the
+// size's height, and the outline keeps a 1px stroke whatever the scale.
+const STEP_WIDTH = 5;
+const STEP_GAP = 3;
+const HEIGHT = 14;
+const INSET = 0.5;
+
+const viewBox = computed(
+  () => `0 0 ${steps.value * STEP_WIDTH + (steps.value - 1) * STEP_GAP} ${HEIGHT}`,
+);
+
+const rects = computed(() =>
+  Array.from({ length: steps.value }, (_, index) => {
+    const step = index + 1;
+    const height = HEIGHT * (0.4 + (0.6 * step) / steps.value);
+
+    return {
+      step,
+      x: index * (STEP_WIDTH + STEP_GAP) + INSET,
+      y: HEIGHT - height + INSET,
+      width: STEP_WIDTH - INSET * 2,
+      height: height - INSET * 2,
+      filled: step <= filled.value,
+    };
+  }),
+);
 </script>
 
 <template>
@@ -49,14 +78,18 @@ const text = computed(() => props.valueText?.trim() || undefined);
     :aria-valuenow="filled"
     :aria-valuetext="text"
   >
-    <span class="i9k-level-meter__steps" aria-hidden="true">
-      <span
-        v-for="step in steps"
-        :key="step"
-        :class="['i9k-level-meter__step', { 'i9k-level-meter__step--filled': step <= filled }]"
-        :style="{ '--i9k-level-meter-rise': step / steps }"
+    <svg class="i9k-level-meter__steps" :viewBox="viewBox" aria-hidden="true" focusable="false">
+      <rect
+        v-for="rect in rects"
+        :key="rect.step"
+        :class="['i9k-level-meter__step', { 'i9k-level-meter__step--filled': rect.filled }]"
+        :x="rect.x"
+        :y="rect.y"
+        :width="rect.width"
+        :height="rect.height"
+        rx="1"
       />
-    </span>
+    </svg>
     <span v-if="text" class="i9k-level-meter__text">{{ text }}</span>
   </span>
 </template>
@@ -68,8 +101,6 @@ const text = computed(() => props.valueText?.trim() || undefined);
    Arabic. */
 .i9k-level-meter {
   --i9k-level-meter-height: 0.875rem;
-  --i9k-level-meter-step-width: 0.3125rem;
-  --i9k-level-meter-step-gap: var(--spacing-1);
   --i9k-level-meter-gap: var(--spacing-3);
   --i9k-level-meter-font-size: 0.875rem;
 
@@ -85,39 +116,40 @@ const text = computed(() => props.valueText?.trim() || undefined);
 
 .i9k-level-meter--sm {
   --i9k-level-meter-height: 0.75rem;
-  --i9k-level-meter-step-width: 0.25rem;
   --i9k-level-meter-gap: var(--spacing-2);
   --i9k-level-meter-font-size: 0.8rem;
 }
 
 .i9k-level-meter--lg {
   --i9k-level-meter-height: 1.125rem;
-  --i9k-level-meter-step-width: 0.4375rem;
-  --i9k-level-meter-step-gap: var(--spacing-2);
   --i9k-level-meter-gap: var(--spacing-4);
   --i9k-level-meter-font-size: 1rem;
 }
 
 .i9k-level-meter__steps {
-  display: inline-flex;
+  display: block;
   flex: none;
-  align-items: flex-end;
-  gap: var(--i9k-level-meter-step-gap);
+  width: auto;
   height: var(--i9k-level-meter-height);
+  overflow: visible;
+}
+
+/* The drawing has no reading direction of its own, so mirror it to rise in
+   the reading direction. */
+.i9k-level-meter:dir(rtl) .i9k-level-meter__steps {
+  transform: scaleX(-1);
 }
 
 .i9k-level-meter__step {
-  box-sizing: border-box;
-  width: var(--i9k-level-meter-step-width);
-  height: calc(var(--i9k-level-meter-height) * (0.4 + 0.6 * var(--i9k-level-meter-rise)));
-  border: 1px solid var(--control-border-color);
-  border-radius: var(--spacing-1);
-  background: transparent;
+  fill: transparent;
+  stroke: var(--control-border-color);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
 }
 
 .i9k-level-meter__step--filled {
-  border-color: var(--primary-text-color);
-  background: var(--primary-text-color);
+  fill: var(--primary-text-color);
+  stroke: var(--primary-text-color);
 }
 
 .i9k-level-meter__text {
