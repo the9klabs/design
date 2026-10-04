@@ -88,6 +88,13 @@ const profileMenuExports = [
   "export { default as I9kProfileMenu } from './components/I9kProfileMenu.vue';",
 ] as const;
 
+const chatExports = [
+  "export { default as I9kChat } from './components/I9kChat.vue';",
+  "export { default as I9kChatBubble } from './components/I9kChatBubble.vue';",
+  "export { default as I9kChatComposer } from './components/I9kChatComposer.vue';",
+  "export { default as I9kChatOptions } from './components/I9kChatOptions.vue';",
+] as const;
+
 describe('shared component contracts', () => {
   it('exports the common component types', () => {
     expect(indexSource).toContain(
@@ -136,6 +143,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(profileMenuExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(chatExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 

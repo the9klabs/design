@@ -8,6 +8,10 @@ import { I9kBreadcrumbEntry } from './I9kBreadcrumb';
 import { I9kButtonEntry } from './I9kButton';
 import { I9kButtonGroupEntry } from './I9kButtonGroup';
 import { I9kCheckboxGroupEntry } from './I9kCheckboxGroup';
+import { I9kChatEntry } from './I9kChat';
+import { I9kChatBubbleEntry } from './I9kChatBubble';
+import { I9kChatComposerEntry } from './I9kChatComposer';
+import { I9kChatOptionsEntry } from './I9kChatOptions';
 import { I9kClusterEntry } from './I9kCluster';
 import { I9kCollapsibleEntry } from './I9kCollapsible';
 import { I9kContainerEntry } from './I9kContainer';
@@ -71,6 +75,10 @@ export const entries: ShowcaseEntry[] = [
   I9kIconEntry,
   I9kAsciiEmojiEntry,
   I9kNinoEntry,
+  I9kChatEntry,
+  I9kChatBubbleEntry,
+  I9kChatOptionsEntry,
+  I9kChatComposerEntry,
   I9kFieldEntry,
   I9kCheckboxGroupEntry,
   I9kInputEntry,

@@ -36,6 +36,10 @@ const migratedComponents = [
   ['I9kSidebarLayout.vue', 'i9k-sidebar-layout'],
   ['I9kGlow.vue', 'i9k-glow'],
   ['I9kTabs.vue', 'i9k-tabs'],
+  ['I9kChat.vue', 'i9k-chat'],
+  ['I9kChatBubble.vue', 'i9k-chat-bubble'],
+  ['I9kChatComposer.vue', 'i9k-chat-composer'],
+  ['I9kChatOptions.vue', 'i9k-chat-options'],
 ] as const;
 
 describe('migrated component styles', () => {
