@@ -63,7 +63,7 @@ function snap(value: number): number {
 }
 
 /**
- * A planet as halftone dots: every other grid cell inside its disc, so it
+ * A planet as halftone dots: one small dot per grid cell inside its disc, so it
  * reads as dotted, never solid. The crescent is the disc minus a second disc
  * shifted toward its centre; the ringed planet adds a flat ellipse of dots.
  */
@@ -74,7 +74,7 @@ export function planetDots(
   radius: number,
 ): SkyDot[] {
   const dots: SkyDot[] = [];
-  const step = SKY_GRID * 2;
+  const step = SKY_GRID;
   const reach = kind === 'ringed' ? radius * 1.9 : radius;
   for (let y = snap(cy - reach); y <= cy + reach; y += step) {
     for (let x = snap(cx - reach); x <= cx + reach; x += step) {

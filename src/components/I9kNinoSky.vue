@@ -128,7 +128,7 @@ function draw(now: number) {
     cool: color('--i9k-nino-sky-cool'),
   };
 
-  context.globalAlpha = 0.28;
+  context.globalAlpha = 0.34;
   context.fillStyle = color('--i9k-nino-sky-planet');
   for (const dot of planets) context.fillRect(dot.x, dot.y, SKY_GRID / 2, SKY_GRID / 2);
 
@@ -138,7 +138,8 @@ function draw(now: number) {
     const alpha = still ? 0.6 : starAlpha(star, now);
     context.globalAlpha = star.tone === 'faint' ? alpha * 0.45 : alpha;
     context.fillStyle = tones[star.tone];
-    context.fillRect(star.x, star.y, SKY_GRID / 2, SKY_GRID / 2);
+    const size = star.tone === 'faint' ? SKY_GRID / 2 : (SKY_GRID * 3) / 4;
+    context.fillRect(star.x, star.y, size, size);
   }
 
   sparkles = sparkles.filter((sparkle) => now - sparkle.born < SPARKLE_MS);
