@@ -7,8 +7,12 @@ import { build } from 'vite';
 import { nextTick } from 'vue';
 
 import I9kNino from '../src/components/I9kNino.vue';
-import { NINO_BEAT, NINO_FACES, NINO_TALK_MOUTH } from '../src/data/nino';
-import { I9K_NINO_EXPRESSIONS } from '../src/types/components';
+import { NINO_ACTION_DURATIONS, NINO_BEAT, NINO_FACES, NINO_TALK_MOUTH } from '../src/data/nino';
+import {
+  I9K_NINO_ACTIONS,
+  I9K_NINO_EXPRESSIONS,
+  type I9kNinoExposed,
+} from '../src/types/components';
 
 async function buildComponentStylesheet(componentName: string): Promise<Root> {
   const result = await build({
@@ -269,7 +273,7 @@ describe('I9kNino compiled styles', () => {
         if (node.type !== 'decl') continue;
         if (node.prop !== 'animation' && !node.prop.startsWith('animation-')) continue;
         if (isReducedMotionRule(rule) && node.value === 'none') stilled.push(rule.selector);
-        else if (!isReducedMotionRule(rule)) animated.push(rule.selector);
+        else if (!isReducedMotionRule(rule) && node.value !== 'none') animated.push(rule.selector);
       }
     });
 
@@ -460,5 +464,127 @@ describe('I9kNino talking', () => {
     expect(
       hidden.some((selector) => /^\.i9k-nino__mouth--talk\[data-v-[\w-]+\]$/.test(selector)),
     ).toBe(true);
+  });
+});
+
+describe('I9kNino actions', () => {
+  const ninoOf = (wrapper: VueWrapper) => wrapper.vm as unknown as I9kNinoExposed;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it.each(I9K_NINO_ACTIONS)('plays %s to the end and reports it', async (action) => {
+    const wrapper = mount(I9kNino);
+    const done = ninoOf(wrapper).play(action);
+    await nextTick();
+
+    expect(wrapper.classes()).toEqual(
+      expect.arrayContaining(['i9k-nino--acting', `i9k-nino--action-${action}`]),
+    );
+    expect(wrapper.attributes('style')).toContain(
+      `--i9k-nino-action-duration: ${NINO_ACTION_DURATIONS[action]}ms`,
+    );
+
+    await advance(NINO_ACTION_DURATIONS[action] - 1);
+    expect(wrapper.emitted('action-end')).toBeUndefined();
+
+    await advance(1);
+    await expect(done).resolves.toEqual({ action, completed: true });
+    expect(wrapper.emitted('action-end')).toEqual([[{ action, completed: true }]]);
+    expect(wrapper.classes()).not.toContain('i9k-nino--acting');
+  });
+
+  it('cuts a running action off when another starts', async () => {
+    const wrapper = mount(I9kNino);
+    const wave = ninoOf(wrapper).play('wave');
+    await advance(100);
+    const shake = ninoOf(wrapper).play('shake');
+
+    await expect(wave).resolves.toEqual({ action: 'wave', completed: false });
+    await nextTick();
+    expect(wrapper.classes()).toContain('i9k-nino--action-shake');
+    expect(wrapper.classes()).not.toContain('i9k-nino--action-wave');
+
+    await advance(NINO_ACTION_DURATIONS.shake);
+    await expect(shake).resolves.toEqual({ action: 'shake', completed: true });
+    expect(wrapper.emitted('action-end')).toEqual([
+      [{ action: 'wave', completed: false }],
+      [{ action: 'shake', completed: true }],
+    ]);
+  });
+
+  it('settles every call exactly once when the button is mashed', async () => {
+    const wrapper = mount(I9kNino);
+    const calls = [
+      ninoOf(wrapper).play('jump'),
+      ninoOf(wrapper).play('jump'),
+      ninoOf(wrapper).play('jump'),
+    ];
+
+    await advance(NINO_ACTION_DURATIONS.jump);
+    await expect(Promise.all(calls)).resolves.toEqual([
+      { action: 'jump', completed: false },
+      { action: 'jump', completed: false },
+      { action: 'jump', completed: true },
+    ]);
+    expect(wrapper.emitted('action-end')).toHaveLength(3);
+  });
+
+  it('restarts the same action from its first frame', async () => {
+    const wrapper = mount(I9kNino);
+    void ninoOf(wrapper).play('nod');
+    await nextTick();
+    const firstStage = wrapper.get('[data-nino-part="stage"]').element;
+
+    void ninoOf(wrapper).play('nod');
+    await nextTick();
+    expect(wrapper.get('[data-nino-part="stage"]').element).not.toBe(firstStage);
+  });
+
+  it('keeps acting while his mood changes', async () => {
+    const wrapper = mount(I9kNino);
+    void ninoOf(wrapper).play('jump');
+
+    await wrapper.setProps({ expression: 'happy' });
+    await advance(NINO_BEAT.swapAt);
+    expect(wrapper.classes()).toEqual(
+      expect.arrayContaining(['i9k-nino--happy', 'i9k-nino--action-jump']),
+    );
+  });
+
+  it('reports at once and moves nothing when it is not animating', async () => {
+    const wrapper = mount(I9kNino, { props: { animated: false } });
+    const done = ninoOf(wrapper).play('wave');
+    await nextTick();
+
+    expect(wrapper.classes()).not.toContain('i9k-nino--acting');
+    await expect(done).resolves.toEqual({ action: 'wave', completed: true });
+    expect(wrapper.emitted('action-end')).toEqual([[{ action: 'wave', completed: true }]]);
+  });
+
+  it('reports at once for a visitor who prefers reduced motion', async () => {
+    stubReducedMotion();
+    const wrapper = mount(I9kNino);
+    const done = ninoOf(wrapper).play('jump');
+    await nextTick();
+
+    expect(wrapper.classes()).not.toContain('i9k-nino--acting');
+    await expect(done).resolves.toEqual({ action: 'jump', completed: true });
+  });
+
+  it('settles a pending action quietly when unmounted', async () => {
+    const wrapper = mount(I9kNino);
+    const done = ninoOf(wrapper).play('wave');
+
+    wrapper.unmount();
+    await expect(done).resolves.toEqual({ action: 'wave', completed: false });
+    expect(wrapper.emitted('action-end')).toBeUndefined();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

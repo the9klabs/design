@@ -1,4 +1,4 @@
-import type { I9kNinoExpression } from '../types/components';
+import type { I9kNinoAction, I9kNinoExpression } from '../types/components';
 
 /**
  * A rectangle or a path in Nino's 64-unit viewBox. Every coordinate is a
@@ -72,3 +72,15 @@ export const NINO_TALK_MOUTH = 'M22 32H42V34H44V38H42V40H22V38H20V34H22Z';
  * eyes are closed. The CSS keyframes use the same 240ms.
  */
 export const NINO_BEAT = { swapAt: 100, duration: 240 } as const;
+
+/**
+ * The one place an action's length lives. The component writes it to
+ * --i9k-nino-action-duration for the keyframes and uses it for the timer that
+ * ends the action, so the two can never drift apart.
+ */
+export const NINO_ACTION_DURATIONS: Record<I9kNinoAction, number> = {
+  wave: 1000,
+  jump: 800,
+  nod: 900,
+  shake: 700,
+};

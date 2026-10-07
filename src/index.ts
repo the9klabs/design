@@ -12,8 +12,15 @@ export type { I9kCollapsibleVariant } from './types/components';
 export type { I9kBreadcrumbItem } from './types/components';
 export type { I9kTabItem } from './types/components';
 export type { I9kFooterColumn, I9kFooterLink } from './types/components';
-export type { I9kNinoExpression, I9kNinoLook, I9kNinoSize } from './types/components';
-export { I9K_NINO_EXPRESSIONS } from './types/components';
+export type {
+  I9kNinoAction,
+  I9kNinoActionResult,
+  I9kNinoExposed,
+  I9kNinoExpression,
+  I9kNinoLook,
+  I9kNinoSize,
+} from './types/components';
+export { I9K_NINO_ACTIONS, I9K_NINO_EXPRESSIONS } from './types/components';
 export type { I9kCheckboxOption, I9kRadioOption } from './types/forms';
 export type { I9kIconName } from './types/icons';
 export { I9K_COUNTRY_DIAL_CODES } from './data/countries';

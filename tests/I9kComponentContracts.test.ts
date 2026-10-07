@@ -100,6 +100,18 @@ const levelMeterExports = [
   "export { default as I9kTooltip } from './components/I9kTooltip.vue';",
 ] as const;
 
+const ninoExports = [
+  `export type {
+  I9kNinoAction,
+  I9kNinoActionResult,
+  I9kNinoExposed,
+  I9kNinoExpression,
+  I9kNinoLook,
+  I9kNinoSize,
+} from './types/components';`,
+  "export { I9K_NINO_ACTIONS, I9K_NINO_EXPRESSIONS } from './types/components';",
+] as const;
+
 describe('shared component contracts', () => {
   it('exports the common component types', () => {
     expect(indexSource).toContain(
@@ -156,6 +168,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(levelMeterExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(ninoExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 

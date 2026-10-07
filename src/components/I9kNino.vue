@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
 
-import { NINO_BEAT, NINO_FACES, NINO_TALK_MOUTH } from '../data/nino';
-import type { I9kNinoExpression, I9kNinoLook, I9kNinoSize } from '../types/components';
+import { NINO_ACTION_DURATIONS, NINO_BEAT, NINO_FACES, NINO_TALK_MOUTH } from '../data/nino';
+import type {
+  I9kNinoAction,
+  I9kNinoActionResult,
+  I9kNinoExposed,
+  I9kNinoExpression,
+  I9kNinoLook,
+  I9kNinoSize,
+} from '../types/components';
 
 const props = withDefaults(
   defineProps<{
@@ -26,6 +33,8 @@ const props = withDefaults(
   }>(),
   { expression: 'idle', look: 'center', size: 'md', animated: true, talking: false, label: null },
 );
+
+const emit = defineEmits<{ 'action-end': [result: I9kNinoActionResult] }>();
 
 const titleId = `${useId()}-nino-title`;
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
@@ -69,7 +78,61 @@ watch(
   },
 );
 
-onBeforeUnmount(clearBeat);
+const activeAction = ref<I9kNinoAction | null>(null);
+/** Re-keys the stage, so every play() starts its keyframes at frame 0, even a repeat. */
+const run = ref(0);
+let actionTimer: ReturnType<typeof setTimeout> | undefined;
+let settleAction: ((completed: boolean, notify: boolean) => void) | undefined;
+
+function endAction(completed: boolean, notify = true) {
+  const settle = settleAction;
+  settleAction = undefined;
+  clearTimeout(actionTimer);
+  activeAction.value = null;
+  settle?.(completed, notify);
+}
+
+/**
+ * Plays one action. A newer call cuts the running one off (it settles with
+ * completed: false), so every call settles exactly once and an await never
+ * hangs. With motion off it moves nothing and reports completion at once.
+ */
+function play(action: I9kNinoAction): Promise<I9kNinoActionResult> {
+  endAction(false);
+
+  if (!motionAllowed()) {
+    const result = { action, completed: true };
+    return Promise.resolve().then(() => {
+      emit('action-end', result);
+      return result;
+    });
+  }
+
+  return new Promise((resolve) => {
+    activeAction.value = action;
+    run.value += 1;
+    settleAction = (completed, notify) => {
+      const result = { action, completed };
+      if (notify) emit('action-end', result);
+      resolve(result);
+    };
+    actionTimer = setTimeout(() => endAction(true), NINO_ACTION_DURATIONS[action]);
+  });
+}
+
+onBeforeUnmount(() => {
+  clearBeat();
+  endAction(false, false);
+});
+
+const exposed: I9kNinoExposed = { play };
+defineExpose(exposed);
+
+const actionStyle = computed(() =>
+  activeAction.value
+    ? { '--i9k-nino-action-duration': `${NINO_ACTION_DURATIONS[activeAction.value]}ms` }
+    : undefined,
+);
 
 const face = computed(() => NINO_FACES[shownExpression.value]);
 const classes = computed(() => [
@@ -80,12 +143,14 @@ const classes = computed(() => [
   ...(props.animated ? ['i9k-nino--animated'] : []),
   ...(beating.value ? ['i9k-nino--beat'] : []),
   ...(props.talking ? ['i9k-nino--talking'] : []),
+  ...(activeAction.value ? ['i9k-nino--acting', `i9k-nino--action-${activeAction.value}`] : []),
 ]);
 </script>
 
 <template>
   <svg
     :class="classes"
+    :style="actionStyle"
     viewBox="0 0 64 64"
     shape-rendering="crispEdges"
     focusable="false"
@@ -101,7 +166,7 @@ const classes = computed(() => [
       arms, and eyes glances. (Kept inside the svg: a comment beside the root
       would make the component a fragment in development builds.)
     -->
-    <g class="i9k-nino__stage" data-nino-part="stage">
+    <g :key="run" class="i9k-nino__stage" data-nino-part="stage">
       <rect class="i9k-nino__shadow" data-nino-part="shadow" x="14" y="58" width="36" height="2" />
       <g class="i9k-nino__figure" data-nino-part="figure">
         <rect class="i9k-nino__body" data-nino-part="leg" x="20" y="48" width="4" height="2" />
@@ -505,6 +570,146 @@ const classes = computed(() => [
   }
 }
 
+/* Actions: one-shots from play(). Each pauses the ambient motion of the layers
+   it shares, and its length comes from NINO_ACTION_DURATIONS through
+   --i9k-nino-action-duration. The look-center part of the eyes selector only
+   matches the look-around rule's specificity. */
+.i9k-nino--animated.i9k-nino--acting .i9k-nino__upper,
+.i9k-nino--animated.i9k-nino--acting .i9k-nino__figure,
+.i9k-nino--animated.i9k-nino--acting.i9k-nino--look-center .i9k-nino__eyes {
+  animation: none;
+}
+
+/* The wave uses the right-hand arm on every page: arms are drawn, not read. */
+.i9k-nino--animated.i9k-nino--action-wave .i9k-nino__arm--right {
+  animation: i9k-nino-wave var(--i9k-nino-action-duration) steps(1, end);
+}
+
+.i9k-nino--animated.i9k-nino--action-jump .i9k-nino__figure {
+  animation: i9k-nino-jump var(--i9k-nino-action-duration) steps(1, end);
+}
+
+.i9k-nino--animated.i9k-nino--action-jump .i9k-nino__arm {
+  animation: i9k-nino-jump-arms var(--i9k-nino-action-duration) steps(1, end);
+}
+
+.i9k-nino--animated.i9k-nino--action-jump .i9k-nino__shadow {
+  animation: i9k-nino-jump-shadow var(--i9k-nino-action-duration) steps(1, end);
+}
+
+.i9k-nino--animated.i9k-nino--action-nod .i9k-nino__upper {
+  animation: i9k-nino-nod var(--i9k-nino-action-duration) steps(1, end);
+}
+
+.i9k-nino--animated.i9k-nino--action-shake .i9k-nino__upper {
+  animation: i9k-nino-shake var(--i9k-nino-action-duration) steps(1, end);
+}
+
+@keyframes i9k-nino-wave {
+  0%,
+  28%,
+  56% {
+    transform: translate(0, -16px);
+  }
+
+  14%,
+  42%,
+  70% {
+    transform: translate(-2px, -18px);
+  }
+
+  86%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes i9k-nino-jump {
+  0%,
+  70% {
+    transform: translateY(2px);
+  }
+
+  15%,
+  55% {
+    transform: translateY(-6px);
+  }
+
+  30% {
+    transform: translateY(-12px);
+  }
+
+  82%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes i9k-nino-jump-arms {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+  }
+
+  15% {
+    transform: translateY(-14px);
+  }
+}
+
+/* The shadow is the one part off the grid: it is a soft hint, not a pixel. */
+@keyframes i9k-nino-jump-shadow {
+  0%,
+  70% {
+    transform: scaleX(1.1);
+  }
+
+  15%,
+  55% {
+    transform: scaleX(0.8);
+  }
+
+  30% {
+    transform: scaleX(0.6);
+  }
+
+  82%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes i9k-nino-nod {
+  0%,
+  40% {
+    transform: translateY(4px);
+  }
+
+  20%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes i9k-nino-shake {
+  0%,
+  33%,
+  66% {
+    transform: translateX(-2px);
+  }
+
+  16%,
+  50% {
+    transform: translateX(2px);
+  }
+
+  83%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
 /* The expression lives in the markup, never in a keyframe, so switching motion
    off leaves the chosen face exactly as it was drawn. Every animated selector
    above is listed here; keep this block last. */
@@ -520,7 +725,13 @@ const classes = computed(() => [
   .i9k-nino--animated.i9k-nino--beat .i9k-nino__eye,
   .i9k-nino--animated.i9k-nino--beat .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth,
-  .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk {
+  .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk,
+  .i9k-nino--animated.i9k-nino--action-wave .i9k-nino__arm--right,
+  .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__figure,
+  .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__arm,
+  .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__shadow,
+  .i9k-nino--animated.i9k-nino--action-nod .i9k-nino__upper,
+  .i9k-nino--animated.i9k-nino--action-shake .i9k-nino__upper {
     animation: none;
   }
 }
