@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import postcss, { type AtRule, type Root, type Rule } from 'postcss';
 import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { build } from 'vite';
 
 import I9kNino from '../src/components/I9kNino.vue';
@@ -77,6 +77,16 @@ function drawnParts(wrapper: VueWrapper) {
   return wrapper
     .findAll('[data-nino-part]')
     .filter((part) => ['rect', 'path'].includes(part.element.tagName.toLowerCase()));
+}
+
+/** Every `animation` declaration outside the reduced-motion block, with its selector. */
+function animationRules(stylesheet: Root) {
+  const found: { selector: string; value: string }[] = [];
+  stylesheet.walkDecls('animation', (decl) => {
+    const rule = decl.parent as Rule;
+    if (!isReducedMotionRule(rule)) found.push({ selector: rule.selector, value: decl.value });
+  });
+  return found;
 }
 
 describe('I9kNino', () => {
@@ -273,5 +283,54 @@ describe('I9kNino compiled styles', () => {
     });
 
     expect(visible).toBe(true);
+  });
+});
+
+describe('I9kNino ambient life', () => {
+  let stylesheet: Root;
+
+  beforeAll(async () => {
+    stylesheet = await buildComponentStylesheet('I9kNino');
+  });
+
+  it('moves like a sprite: every animation is stepped, never eased', () => {
+    const moving = animationRules(stylesheet).filter(({ value }) => value !== 'none');
+
+    expect(moving.length).toBeGreaterThan(0);
+    for (const { selector, value } of moving) {
+      // The build minifies steps(1, end) to its keyword, step-end.
+      expect(value, selector).toMatch(/steps\(1,\s*end\)|step-end/);
+    }
+  });
+
+  it('breathes, blinks and pulses his antenna in every mood', () => {
+    const rules = animationRules(stylesheet);
+    const valueFor = (fragment: string) =>
+      rules.find(({ selector }) => selector.includes(fragment))?.value;
+
+    expect(valueFor('.i9k-nino--animated .i9k-nino__upper')).toContain('i9k-nino-breathe');
+    expect(valueFor('.i9k-nino--animated .i9k-nino__antenna')).toContain('i9k-nino-antenna');
+    expect(valueFor(':not(.i9k-nino--eyes-closed) .i9k-nino__eye')).toContain('i9k-nino-blink');
+  });
+
+  it('glances about only when idle and free to look', () => {
+    const glances = animationRules(stylesheet).filter(
+      ({ selector, value }) => selector.includes('.i9k-nino__eyes') && value !== 'none',
+    );
+
+    expect(glances.length).toBeGreaterThan(0);
+    for (const { selector } of glances) {
+      expect(selector).toContain('.i9k-nino--idle');
+      expect(selector).toContain('.i9k-nino--look-center');
+    }
+  });
+
+  it('glances the other way first on a right-to-left page', () => {
+    const flips: string[] = [];
+    stylesheet.walkDecls('--i9k-nino-dir', (decl) => {
+      if (decl.value.trim() === '-1') flips.push((decl.parent as Rule).selector);
+    });
+
+    expect(flips.join(' ')).toContain('rtl');
   });
 });

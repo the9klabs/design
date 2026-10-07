@@ -144,6 +144,7 @@ const classes = computed(() => [
   --i9k-nino-glint: color-mix(in srgb, var(--white-color) 22%, transparent);
   --i9k-nino-look-x: 0;
   --i9k-nino-look-y: 0;
+  --i9k-nino-dir: 1;
   display: block;
   /* A jump or a raised arm leaves the box on purpose. */
   overflow: visible;
@@ -237,32 +238,121 @@ const classes = computed(() => [
   --i9k-nino-look-x: -1;
 }
 
+/* Reading direction as a sign, for keyframes that glance toward start or end. */
+[dir='rtl'] .i9k-nino,
+.i9k-nino[dir='rtl'] {
+  --i9k-nino-dir: -1;
+}
+
+/* Motion is stepped, never eased: every keyframe lands on the two-unit grid,
+   so Nino moves like a sprite and never blurs between device pixels. A layer
+   with several possible animations takes the last matching rule, so the rules
+   below run from the most ambient to the most deliberate, and the
+   reduced-motion block stays last. Anything that lifts him moves the figure,
+   so his feet come along; upper only dips or slides. */
+
+/* Ambient life */
+.i9k-nino--animated .i9k-nino__upper {
+  animation: i9k-nino-breathe 2.4s steps(1, end) infinite;
+}
+
+.i9k-nino--animated .i9k-nino__antenna {
+  animation: i9k-nino-antenna 3.2s steps(1, end) infinite;
+}
+
+.i9k-nino--animated.i9k-nino--thinking .i9k-nino__antenna {
+  animation: i9k-nino-antenna 1.2s steps(1, end) infinite;
+}
+
 .i9k-nino--animated:not(.i9k-nino--eyes-closed) .i9k-nino__eye {
-  animation: i9k-nino-blink 5.4s steps(1, end) infinite;
+  animation: i9k-nino-blink 13s steps(1, end) infinite;
+}
+
+/* Only an idle Nino with nowhere to look glances about; a caller's look wins. */
+.i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__eyes {
+  animation: i9k-nino-look-around 9s steps(1, end) infinite;
+}
+
+/* Expression motion */
+.i9k-nino--animated.i9k-nino--happy .i9k-nino__figure {
+  animation: i9k-nino-hop 3.2s steps(1, end) infinite;
 }
 
 .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure {
-  animation: i9k-nino-bob 2.4s ease-in-out infinite;
+  animation: i9k-nino-bob 2.4s steps(1, end) infinite;
 }
 
 .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure {
-  animation: i9k-nino-shiver 0.6s ease-in-out infinite;
+  animation: i9k-nino-shiver 0.6s steps(1, end) infinite;
 }
 
+@keyframes i9k-nino-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+@keyframes i9k-nino-antenna {
+  0%,
+  90%,
+  100% {
+    opacity: 1;
+  }
+
+  82% {
+    opacity: 0.3;
+  }
+}
+
+/* Two single blinks and a double one per cycle, so it never feels metronomic. */
 @keyframes i9k-nino-blink {
   0%,
-  93% {
-    transform: scaleY(1);
-  }
-
-  94%,
-  96% {
-    transform: scaleY(0.15);
-  }
-
-  97%,
+  31%,
+  63%,
+  93%,
+  95.5%,
   100% {
     transform: scaleY(1);
+  }
+
+  30%,
+  62%,
+  92%,
+  94.5% {
+    transform: scaleY(0.15);
+  }
+}
+
+@keyframes i9k-nino-look-around {
+  0%,
+  78%,
+  100% {
+    transform: translateX(0);
+  }
+
+  62% {
+    transform: translateX(calc(var(--i9k-nino-dir) * -4px));
+  }
+
+  70% {
+    transform: translateX(calc(var(--i9k-nino-dir) * 4px));
+  }
+}
+
+@keyframes i9k-nino-hop {
+  0%,
+  90%,
+  100% {
+    transform: translateY(0);
+  }
+
+  85% {
+    transform: translateY(-2px);
   }
 }
 
@@ -279,30 +369,31 @@ const classes = computed(() => [
 
 @keyframes i9k-nino-shiver {
   0%,
+  50%,
   100% {
     transform: translateX(0);
   }
 
   25% {
-    transform: translateX(-1px);
+    transform: translateX(-2px);
   }
 
   75% {
-    transform: translateX(1px);
+    transform: translateX(2px);
   }
 }
 
 /* The expression lives in the markup, never in a keyframe, so switching motion
-   off leaves the chosen face exactly as it was drawn. */
+   off leaves the chosen face exactly as it was drawn. Every animated selector
+   above is listed here; keep this block last. */
 @media (prefers-reduced-motion: reduce) {
-  .i9k-nino--animated:not(.i9k-nino--eyes-closed) .i9k-nino__eye {
-    animation: none;
-  }
-
-  .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure {
-    animation: none;
-  }
-
+  .i9k-nino--animated .i9k-nino__upper,
+  .i9k-nino--animated .i9k-nino__antenna,
+  .i9k-nino--animated.i9k-nino--thinking .i9k-nino__antenna,
+  .i9k-nino--animated:not(.i9k-nino--eyes-closed) .i9k-nino__eye,
+  .i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__eyes,
+  .i9k-nino--animated.i9k-nino--happy .i9k-nino__figure,
+  .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure {
     animation: none;
   }
