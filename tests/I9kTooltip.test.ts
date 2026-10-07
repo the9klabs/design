@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { computeAccessibleDescription } from 'dom-accessibility-api';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent } from 'vue';
 
 import I9kTooltip from '../src/components/I9kTooltip.vue';
@@ -132,5 +132,117 @@ describe('I9kTooltip', () => {
     mounted = mountHost();
 
     expect(mounted.html()).not.toMatch(/\sstyle=/);
+  });
+});
+
+// Where popovers are supported the bubble opens in the top layer, so a card's
+// `overflow: hidden` or a hover transform cannot clip it, and it is placed
+// from the trigger's rect, inside the viewport.
+describe('I9kTooltip in the top layer', () => {
+  // jsdom has no popovers; these stand in for the browser's methods.
+  const proto = HTMLElement.prototype as unknown as Record<string, unknown>;
+
+  function rect(left: number, top: number, width: number, height: number) {
+    return {
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    } as DOMRect;
+  }
+
+  function stubLayout(trigger: DOMRect, bubbleSize: DOMRect) {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.getAttribute('role') === 'tooltip' ? bubbleSize : trigger;
+    });
+  }
+
+  let show: ReturnType<typeof vi.fn>;
+  let hide: ReturnType<typeof vi.fn>;
+
+  afterEach(() => {
+    // Unmount while the stubs still exist: an open tooltip hides its popover.
+    mounted?.unmount();
+    mounted = undefined;
+    delete proto.showPopover;
+    delete proto.hidePopover;
+    vi.restoreAllMocks();
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: 0,
+    });
+  });
+
+  async function mountInTopLayer() {
+    show = vi.fn();
+    hide = vi.fn();
+    proto.showPopover = show;
+    proto.hidePopover = hide;
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: 375,
+    });
+    mounted = mountHost();
+    await mounted.vm.$nextTick();
+    return mounted;
+  }
+
+  it('opens and closes as a manual popover, never by the hidden attribute', async () => {
+    const wrapper = await mountInTopLayer();
+    stubLayout(rect(16, 400, 60, 20), rect(0, 0, 200, 50));
+    const tip = bubble(wrapper);
+
+    expect(tip.attributes('popover')).toBe('manual');
+    expect(tip.attributes('hidden')).toBeUndefined();
+
+    await wrapper.get('button').trigger('focusin');
+    expect(show).toHaveBeenCalledTimes(1);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await wrapper.vm.$nextTick();
+    expect(hide).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a bubble that would run past the screen edge inside it', async () => {
+    const wrapper = await mountInTopLayer();
+    // A trigger part-way along a 375px line, under a 288px bubble.
+    stubLayout(rect(200, 400, 60, 20), rect(0, 0, 288, 50));
+
+    await wrapper.get('button').trigger('focusin');
+    const style = (bubble(wrapper).element as HTMLElement).style;
+
+    // 375 - 288 - 16 = 71; 400 - 50 - 6 = 344.
+    expect(style.getPropertyValue('--i9k-tooltip-x')).toBe('71px');
+    expect(style.getPropertyValue('--i9k-tooltip-y')).toBe('344px');
+    expect(bubble(wrapper).attributes('data-placement')).toBe('above');
+  });
+
+  it('opens below a trigger with no room above it', async () => {
+    const wrapper = await mountInTopLayer();
+    stubLayout(rect(16, 10, 60, 20), rect(0, 0, 200, 50));
+
+    await wrapper.get('button').trigger('focusin');
+    const style = (bubble(wrapper).element as HTMLElement).style;
+
+    expect(style.getPropertyValue('--i9k-tooltip-y')).toBe('36px');
+    expect(bubble(wrapper).attributes('data-placement')).toBe('below');
+  });
+
+  it('closes its popover when it unmounts open', async () => {
+    const wrapper = await mountInTopLayer();
+    stubLayout(rect(16, 400, 60, 20), rect(0, 0, 200, 50));
+    await wrapper.get('button').trigger('focusin');
+
+    wrapper.unmount();
+    mounted = undefined;
+
+    expect(hide).toHaveBeenCalledTimes(1);
   });
 });

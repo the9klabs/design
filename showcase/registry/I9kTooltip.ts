@@ -17,7 +17,7 @@ Emits: none.
 Slots:
 - default({ describedBy }) — the trigger. Bind describedBy to the trigger's aria-describedby, and make the trigger focusable (a button, a link, or tabindex="0").
 
-Behavior: the bubble has role="tooltip" and is hidden by the hidden attribute until opened. It opens on mouse or pen hover and on keyboard focus, and closes when the pointer or focus leaves. A tap toggles it, because a finger has no hover; a tap elsewhere closes it. Escape closes it without moving the pointer or the focus, and the pointer can move onto the bubble without closing it (WCAG 1.4.13). It sits above the trigger, aligned to its start edge in either reading direction, and never wider than the screen.
+Behavior: the bubble has role="tooltip" and is hidden by the hidden attribute until opened. It opens on mouse or pen hover and on keyboard focus, and closes when the pointer or focus leaves. A tap toggles it, because a finger has no hover; a tap elsewhere closes it. Escape closes it without moving the pointer or the focus, and the pointer can move onto the bubble without closing it (WCAG 1.4.13). It opens in the top layer (a manual popover), so no ancestor's overflow: hidden or transform clips it, placed above the trigger from its start edge in either reading direction, kept inside the viewport, below the trigger when there is no room above, and following it on scroll and resize. Where popovers are unsupported it falls back to sitting above the trigger inside it.
 
 IMPORTANT: never put anything a reader must act on, or must read to use the page, only in a tooltip; it is hidden until asked for.
 
@@ -28,7 +28,8 @@ Usage:
   gotchas: [
     'The trigger must take focus, or a keyboard can never open it.',
     'Bind `describedBy`, or a screen reader never hears the text.',
-    'The bubble is hidden by the `hidden` attribute, not an inline style, so a strict style-src CSP cannot show it open before hydration.',
+    'The server render hides the bubble with the `hidden` attribute, not an inline style, so a strict style-src CSP cannot show it open before hydration; its placement is written through the CSSOM, which that CSP allows.',
+    'Inside `I9kSection variant="primary"` the bubble takes the section green, so its white text stays readable.',
   ],
   demos: [
     {

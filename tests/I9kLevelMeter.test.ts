@@ -158,6 +158,21 @@ describe('I9kLevelMeter', () => {
     });
   });
 
+  // The two branches write the steps and the text separately; they must stay
+  // the same meter.
+  it('draws the same steps and text with or without a description', () => {
+    const plain = mount(I9kLevelMeter, {
+      props: { value: 3, label: 'Level', valueText: 'Junior' },
+    });
+    const described = mount(I9kLevelMeter, {
+      props: { value: 3, label: 'Level', valueText: 'Junior', description: 'Up to 2 years.' },
+    });
+
+    expect(described.get('[role="meter"]').element.innerHTML).toBe(
+      plain.get('[role="meter"]').element.innerHTML,
+    );
+  });
+
   it('is neither focusable nor described without a description', () => {
     const wrapper = mount(I9kLevelMeter, { props: { value: 3, label: 'Level', description: ' ' } });
 

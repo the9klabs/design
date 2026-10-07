@@ -394,6 +394,24 @@ describe('scoped existing component compiled styles', () => {
     expect(failures).toEqual([]);
   });
 
+  // The section turns --text-color white but not the page background, so a
+  // tooltip there takes the section's green, where white text passes AA (the
+  // test above checks white-on-green surfaces).
+  it('gives an I9kTooltip inside a primary I9kSection the green, not the page background', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kTooltip');
+    const rule = findRule(
+      stylesheet,
+      '--i9k-tooltip-bg',
+      'var(--i9k-section-bg)',
+      '.i9k-section--primary',
+    );
+
+    expect(rule).toBeDefined();
+    expect(
+      findRule(stylesheet, 'background', 'var(--i9k-tooltip-bg)', '.i9k-tooltip__bubble'),
+    ).toBeDefined();
+  });
+
   it('gives native controls on a primary I9kSection a dark color scheme', async () => {
     const stylesheet = await buildComponentStylesheet('I9kSection');
     const rootRule = findRule(
