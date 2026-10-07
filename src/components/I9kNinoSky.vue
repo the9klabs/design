@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import I9kNino from './I9kNino.vue';
 import {
@@ -44,6 +44,8 @@ const LOOK_SETTLE_MS = 2000;
 const FRAME_MS = 33;
 const SPARKLE_MS = 700;
 const MAX_PIXEL_RATIO = 2;
+/** The longest step the motion clock takes between two frames. */
+const MAX_STEP_MS = 100;
 
 const root = ref<HTMLElement | null>(null);
 const canvas = ref<HTMLCanvasElement | null>(null);
@@ -69,6 +71,11 @@ let boopTimer: ReturnType<typeof setTimeout> | undefined;
 let lookTimer: ReturnType<typeof setTimeout> | undefined;
 let frameId = 0;
 let lastDraw = -Infinity;
+// The drift, the twinkle and the sparkles follow this clock, which only runs
+// while the loop does. Nino starts from the centre and picks up where he left
+// off, instead of jumping by however long the sky spent off screen.
+let motionTime = 0;
+let lastTick: number | undefined;
 let skyWidth = 0;
 let skyHeight = 0;
 let stars: SkyStar[] = [];
@@ -164,10 +171,12 @@ function place(now: number) {
 
 function frame(now: number) {
   frameId = 0;
+  motionTime += lastTick === undefined ? 0 : Math.min(now - lastTick, MAX_STEP_MS);
+  lastTick = now;
   if (now - lastDraw >= FRAME_MS) {
     lastDraw = now;
-    draw(now);
-    place(now);
+    draw(motionTime);
+    place(motionTime);
   }
   schedule();
 }
@@ -184,6 +193,7 @@ function schedule() {
 function stop() {
   if (frameId && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(frameId);
   frameId = 0;
+  lastTick = undefined;
 }
 
 /** Re-reads whether motion is allowed: the still frame, or the loop. */
@@ -193,8 +203,23 @@ function refresh() {
     return;
   }
   stop();
-  if (!motionAllowed()) flight.value?.style.removeProperty('transform');
-  draw(0);
+  if (motionAllowed()) return;
+  // The still frame: Nino back at the centre, where the drift starts again,
+  // and no sparkles left frozen mid-flight.
+  motionTime = 0;
+  sparkles = [];
+  flight.value?.style.removeProperty('transform');
+  draw(motionTime);
+}
+
+async function restartSpin() {
+  spinning.value = false;
+  // The class has to leave the DOM before it comes back, or a boop that lands
+  // mid-spin never restarts the animation: wait for the render, force a
+  // reflow, then put it back.
+  await nextTick();
+  void button.value?.offsetWidth;
+  spinning.value = true;
 }
 
 function onVisibility() {
@@ -213,22 +238,17 @@ function boop() {
 
   if (motionAllowed()) {
     const nino = button.value;
-    spinning.value = false;
-    // Restarts the spin when a boop lands mid-spin: the class comes off, a
-    // reflow is forced, and it goes back on.
-    if (nino) void nino.offsetWidth;
-    spinning.value = true;
+    void restartSpin();
 
     const box = root.value?.getBoundingClientRect();
     const centre = nino?.getBoundingClientRect();
     if (box && centre) {
-      const now = performance.now();
       const burst = createSparkles(
         centre.left - box.left + centre.width / 2,
         centre.top - box.top + centre.height / 2,
         boops,
       );
-      sparkles.push(...burst.map((sparkle) => ({ ...sparkle, born: now })));
+      sparkles.push(...burst.map((sparkle) => ({ ...sparkle, born: motionTime })));
     }
     schedule();
   }
@@ -257,6 +277,8 @@ function onPointerMove(event: PointerEvent) {
   }, LOOK_SETTLE_MS);
 }
 
+watch(() => props.animated, refresh);
+
 onMounted(() => {
   mounted = true;
   if (typeof window.matchMedia === 'function') {
@@ -269,7 +291,7 @@ onMounted(() => {
   if (typeof ResizeObserver === 'function' && root.value) {
     resizeObserver = new ResizeObserver(() => {
       measure();
-      draw(lastDraw > 0 ? lastDraw : 0);
+      draw(motionTime);
     });
     resizeObserver.observe(root.value);
   }

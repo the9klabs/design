@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { renderToString } from '@vue/server-renderer';
 import { computeAccessibleName } from 'dom-accessibility-api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -105,6 +105,61 @@ describe('I9kNinoSky', () => {
     wrapper.unmount();
     expect(cancel).toHaveBeenCalledWith(7);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('spins Nino again when a boop lands while he is still spinning', async () => {
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi' } });
+    const button = wrapper.get('button');
+    await button.trigger('click');
+    await flushPromises();
+
+    const spinChanges: string[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        spinChanges.push((record.target as Element).className);
+      }
+    });
+    observer.observe(button.element, { attributes: true, attributeFilter: ['class'] });
+    await button.trigger('click');
+    await flushPromises();
+    observer.disconnect();
+
+    // The spin class must come off and go back on, or the animation never restarts.
+    expect(spinChanges.some((name) => !name.includes('i9k-nino-sky__nino--spin'))).toBe(true);
+    expect(button.classes()).toContain('i9k-nino-sky__nino--spin');
+  });
+
+  it('starts and stops its loop when `animated` changes', async () => {
+    const frame = vi.fn(() => 3);
+    const cancel = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', frame);
+    vi.stubGlobal('cancelAnimationFrame', cancel);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi', animated: false } });
+    expect(frame).not.toHaveBeenCalled();
+
+    await wrapper.setProps({ animated: true });
+    expect(frame).toHaveBeenCalled();
+
+    await wrapper.setProps({ animated: false });
+    expect(cancel).toHaveBeenCalledWith(3);
+  });
+
+  it('starts Nino’s drift from the centre, however long the page has been open', () => {
+    const callbacks: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callbacks.push(callback);
+      return callbacks.length;
+    });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(1000);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(288);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi' } });
+
+    // The first frame arrives long after the page loaded.
+    callbacks.shift()?.(123_457);
+    const flight = wrapper.get('.i9k-nino-sky__flight').element as HTMLElement;
+
+    expect(flight.style.transform).toBe('translate(0.0px, 0.0px) rotate(0.00deg)');
   });
 
   // A strict Content-Security-Policy (`style-src 'self'`) drops inline style
