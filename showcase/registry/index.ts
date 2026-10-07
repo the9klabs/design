@@ -51,6 +51,7 @@ import { I9kThemeSwitcherEntry } from './I9kThemeSwitcher';
 import { I9kTimelineCardEntry } from './I9kTimelineCard';
 import { I9kToastEntry } from './I9kToast';
 import { I9kToasterEntry } from './I9kToaster';
+import { I9kTooltipEntry } from './I9kTooltip';
 import type { ShowcaseEntry } from './types';
 
 export const entries: ShowcaseEntry[] = [
@@ -94,6 +95,7 @@ export const entries: ShowcaseEntry[] = [
   I9kTabsEntry,
   I9kToastEntry,
   I9kToasterEntry,
+  I9kTooltipEntry,
   I9kModalEntry,
   I9kNavigationEntry,
   I9kNavMenuEntry,

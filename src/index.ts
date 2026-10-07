@@ -68,6 +68,7 @@ export { default as I9kField } from './components/I9kField.vue';
 export { default as I9kGrid } from './components/I9kGrid.vue';
 export { default as I9kInput } from './components/I9kInput.vue';
 export { default as I9kLevelMeter } from './components/I9kLevelMeter.vue';
+export { default as I9kTooltip } from './components/I9kTooltip.vue';
 export { default as I9kLinkCard } from './components/I9kLinkCard.vue';
 export { default as I9kPageContainer } from './components/I9kPageContainer.vue';
 export { default as I9kPageHeader } from './components/I9kPageHeader.vue';

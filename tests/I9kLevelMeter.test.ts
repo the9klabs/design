@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import { computeAccessibleName } from 'dom-accessibility-api';
+import { computeAccessibleDescription, computeAccessibleName } from 'dom-accessibility-api';
 import { describe, expect, it, vi } from 'vitest';
 
 import I9kLevelMeter from '../src/components/I9kLevelMeter.vue';
@@ -113,6 +113,57 @@ describe('I9kLevelMeter', () => {
 
     expect(wrapper.classes()).toContain('course-level');
     expect(wrapper.attributes('data-testid')).toBe('level');
+  });
+
+  // A description says who or what the level is for: a tooltip on hover,
+  // focus or tap, and the meter's accessible description.
+  describe('with a description', () => {
+    const props = {
+      value: 3,
+      label: 'Level',
+      valueText: 'Junior',
+      description: 'Up to 2 years in a real team.',
+    };
+
+    it('makes the meter focusable and describes it with the text', () => {
+      const wrapper = mount(I9kLevelMeter, { props, attachTo: document.body });
+      const meter = wrapper.get('[role="meter"]');
+
+      expect(meter.attributes('tabindex')).toBe('0');
+      expect(computeAccessibleName(meter.element)).toBe('Level');
+      expect(computeAccessibleDescription(meter.element)).toBe('Up to 2 years in a real team.');
+      expect(wrapper.get('[role="tooltip"]').attributes('hidden')).toBeDefined();
+      wrapper.unmount();
+    });
+
+    it('opens the tooltip when the meter takes focus', async () => {
+      const wrapper = mount(I9kLevelMeter, { props, attachTo: document.body });
+
+      await wrapper.get('[role="meter"]').trigger('focusin');
+
+      expect(wrapper.get('[role="tooltip"]').attributes('hidden')).toBeUndefined();
+      wrapper.unmount();
+    });
+
+    it('still forwards attributes to the outermost element', () => {
+      const wrapper = mount(I9kLevelMeter, { props, attrs: { class: 'course-level' } });
+
+      expect(wrapper.classes()).toContain('course-level');
+    });
+
+    it('renders without any inline style attribute', () => {
+      const wrapper = mount(I9kLevelMeter, { props });
+
+      expect(wrapper.html()).not.toMatch(/\sstyle=/);
+    });
+  });
+
+  it('is neither focusable nor described without a description', () => {
+    const wrapper = mount(I9kLevelMeter, { props: { value: 3, label: 'Level', description: ' ' } });
+
+    expect(wrapper.attributes('tabindex')).toBeUndefined();
+    expect(wrapper.attributes('aria-describedby')).toBeUndefined();
+    expect(wrapper.find('[role="tooltip"]').exists()).toBe(false);
   });
 
   it('warns when the accessible label is empty', () => {
