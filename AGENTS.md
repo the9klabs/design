@@ -85,8 +85,9 @@ plans behind this work live in `docs/superpowers/`.
   `{ viewBox, path }`. It is `aria-hidden` unless given a `title` or `desc`. Add icons to that JSON
   rather than inlining SVG in components.
 - `I9kNino` takes one-shot actions imperatively: hold a template ref and call
-  `play('wave' | 'jump' | 'nod' | 'shake')`, which resolves (and emits `action-end`) with
-  `{ action, completed }` — `completed` is false when a newer call or an unmount cut it off. Each
+  `play('wave' | 'jump' | 'nod' | 'shake')`, which resolves with `{ action, completed }` and emits
+  `action-end` with the same object; `completed` is false when a newer call cut it off, and an
+  unmount resolves `completed: false` without emitting. Each
   duration lives once, in `NINO_ACTION_DURATIONS` (`src/data/nino.ts`), and reaches the keyframes
   through `--i9k-nino-action-duration`. His SVG is layered (`stage` › `figure` › `upper` › arms and
   eyes) so that each animation owns one layer's transform; anything that lifts him moves `figure`,

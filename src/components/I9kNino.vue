@@ -85,6 +85,18 @@ watch(
   },
 );
 
+// Motion switched off mid-beat: the beat is over, and the face it was hiding
+// shows now rather than when the swap timer would have fired.
+watch(
+  () => props.animated,
+  (animated) => {
+    if (animated) return;
+    clearBeat();
+    beating.value = false;
+    shownExpression.value = props.expression;
+  },
+);
+
 const activeAction = ref<I9kNinoAction | null>(null);
 /** Re-keys the stage, so every play() starts its keyframes at frame 0, even a repeat. */
 const run = ref(0);
@@ -99,23 +111,23 @@ function endAction(completed: boolean, notify = true) {
   settle?.(completed, notify);
 }
 
+let playCalls = 0;
+
 /**
  * Plays one action. A newer call cuts the running one off (it settles with
  * completed: false), so every call settles exactly once and an await never
  * hangs. With motion off it moves nothing and reports completion at once.
  */
-let playCalls = 0;
-
 function play(action: I9kNinoAction): Promise<I9kNinoActionResult> {
   const call = ++playCalls;
   endAction(false);
 
   // Ending the cut-off call ran its action-end handler, which may already have
-  // started a newer action. That newer call wins, and this one never starts.
+  // started a newer action. That newer call wins, and this one never starts. It
+  // resolves without emitting: a handler that plays again on every action-end
+  // would answer this emit by cutting off its own action, without end.
   if (call !== playCalls) {
-    const result = { action, completed: false };
-    emit('action-end', result);
-    return Promise.resolve(result);
+    return Promise.resolve({ action, completed: false });
   }
 
   if (!motionAllowed()) {
@@ -131,8 +143,9 @@ function play(action: I9kNinoAction): Promise<I9kNinoActionResult> {
     run.value += 1;
     settleAction = (completed, notify) => {
       const result = { action, completed };
-      if (notify) emit('action-end', result);
+      // Resolve first: a throwing handler must not leave the await hanging.
       resolve(result);
+      if (notify) emit('action-end', result);
     };
     actionTimer = setTimeout(() => endAction(true), NINO_ACTION_DURATIONS[action]);
   });

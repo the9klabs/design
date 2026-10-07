@@ -17,7 +17,7 @@ Props:
 - talking?: boolean (default false) — flaps his mouth between its own shape and an open frame.
 - label?: string | null (default null) — the localized name, e.g. 'Nino' or 'نينو'.
 
-Emits: action-end with { action, completed } once per play() call.
+Emits: action-end with { action, completed } once per play() call, except a call still running when he unmounts, or one superseded by a call its own action-end handler made: those resolve with completed: false without emitting.
 Exposes: play(action: 'wave' | 'jump' | 'nod' | 'shake'): Promise<{ action, completed }>. Hold a template ref and call it from your own events, e.g. a wave when the login page opens, a jump on success, a shake on a wrong password. A newer call cuts the running one off, and the cut-off call settles with completed: false. With animated false or prefers-reduced-motion, play() moves nothing and resolves at once with completed: true.
 
 Accessibility: with a \`label\` he renders role="img" and a <title>; without one he is aria-hidden="true". Pass \`label\` only when the mascot is content the reader would miss.

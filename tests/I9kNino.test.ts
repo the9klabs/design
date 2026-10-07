@@ -447,6 +447,17 @@ describe('I9kNino mood beat', () => {
     expect(wrapper.classes()).not.toContain('i9k-nino--beat');
   });
 
+  it('shows the new mood at once when motion is switched off mid-beat', async () => {
+    const wrapper = mount(I9kNino, { props: { expression: 'idle' } });
+
+    await wrapper.setProps({ expression: 'happy' });
+    await wrapper.setProps({ animated: false });
+
+    expect(wrapper.classes()).toContain('i9k-nino--happy');
+    expect(wrapper.classes()).not.toContain('i9k-nino--beat');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('leaves no timer behind when it is unmounted mid-beat', async () => {
     const wrapper = mount(I9kNino, { props: { expression: 'idle' } });
 
@@ -634,12 +645,57 @@ describe('I9kNino actions', () => {
     await expect(wave).resolves.toEqual({ action: 'wave', completed: false });
     await expect(shake).resolves.toEqual({ action: 'shake', completed: false });
     expect(chainedResult).toEqual({ action: 'nod', completed: true });
+    // shake never started, so it resolves without an action-end of its own.
     expect(wrapper.emitted('action-end')).toEqual([
       [{ action: 'wave', completed: false }],
-      [{ action: 'shake', completed: false }],
       [{ action: 'nod', completed: true }],
     ]);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  // A handler that plays again on every action-end must not end up cutting off
+  // its own action, call after call.
+  it('stops when a handler replays on every action-end', async () => {
+    let replays = 0;
+    const wrapper: VueWrapper = mount(I9kNino, {
+      attrs: {
+        onActionEnd: () => {
+          replays += 1;
+          if (replays < 50) void ninoOf(wrapper).play('nod');
+        },
+      },
+    });
+
+    void ninoOf(wrapper).play('nod');
+    await advance(100);
+    const wave = ninoOf(wrapper).play('wave');
+
+    await expect(wave).resolves.toEqual({ action: 'wave', completed: false });
+    expect(replays).toBe(1);
+    await nextTick();
+    expect(wrapper.classes()).toContain('i9k-nino--action-nod');
+  });
+
+  it('settles even when an action-end handler throws', async () => {
+    let settled: I9kNinoActionResult | undefined;
+    const wrapper = mount(I9kNino, {
+      attrs: {
+        onActionEnd: () => {
+          throw new Error('handler failed');
+        },
+      },
+    });
+
+    void ninoOf(wrapper)
+      .play('wave')
+      .then((result) => {
+        settled = result;
+      });
+    // Vue rethrows a handler's error in development; it surfaces from the timer.
+    await vi.advanceTimersByTimeAsync(NINO_ACTION_DURATIONS.wave).catch(() => undefined);
+    await nextTick();
+
+    expect(settled).toEqual({ action: 'wave', completed: true });
   });
 
   it('settles a pending action quietly when unmounted', async () => {

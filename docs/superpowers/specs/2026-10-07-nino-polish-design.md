@@ -170,7 +170,8 @@ motion is allowed (§7):
    beat class flips between two identical phases (`--beat-even` / `--beat-odd`). The keyframes
    run once, so only a new animation name replays the blink for the second change.
 
-When motion is not allowed, `shownExpression` follows the prop synchronously. The initial render
+When motion is not allowed, `shownExpression` follows the prop synchronously. If `animated` turns false
+mid-beat, the beat ends at once and the pending face shows immediately. The initial render
 always uses the prop, including on the server.
 
 ### Talking
@@ -214,8 +215,9 @@ the resolve timer uses the same number.
 - **Interrupt:** a `play()` during an action ends the earlier one first. It emits and resolves
   `{ action: <old>, completed: false }`, then starts the new one.
 - **Re-entry:** ending the cut-off call runs its `action-end` handler synchronously. If that handler
-  calls `play()` itself, the handler's call wins: the outer call never starts, and it emits and
-  resolves `{ action, completed: false }`.
+  calls `play()` itself, the handler's call wins: the outer call never starts, and it resolves
+  `{ action, completed: false }` without emitting. Emitting there would let a handler that plays
+  again on every `action-end` cut off its own action, call after call.
 - **Motion off:** with `animated: false`, under reduced motion, or with no `window`, nothing
   animates. It emits `action-end` with `completed: true` and resolves on the next microtask.
 - **Unmount:** clears timers and resolves a pending action with `completed: false`, without
