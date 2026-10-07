@@ -4,7 +4,7 @@ export const I9kNinoSkyEntry: ShowcaseEntry = {
   name: 'I9kNinoSky',
   section: 'content',
   summary:
-    'A pixel night sky with Nino drifting through it: twinkling dotted stars, two dotted planets, eyes that follow the pointer, and a boop (a new face, a spin and a burst of sparkles) on click, tap, Enter or Space. Made for the band under a footer.',
+    'A pixel night sky with Nino drifting through it: twinkling dotted stars, two dotted planets, eyes that follow the pointer, and a boop (a new face, a spin and a burst of sparkles) on click, tap, Enter or Space. It has no background of its own and follows the page theme. Made for the space under a footer.',
   agentPrompt: `Use I9kNinoSky from @9klabs/design to end a page with a small moment of delight: a full-width pixel night sky with Nino floating in it.
 
 import { I9kNinoSky } from '@9klabs/design';
@@ -19,13 +19,13 @@ Emits:
 
 Slots: none.
 
-Behavior: the sky is a <canvas> (aria-hidden) drawn on a 4px grid; Nino is the real I9kNino inside a <button>. One animation loop, capped at 30 frames a second, runs only while the sky is on screen and the tab is visible, and never under reduced motion. Nothing the server renders carries a style attribute, so it works under a strict style-src CSP.
+Behavior: the sky is a transparent <canvas> (aria-hidden) drawn on a 4px grid in the page theme's colours, fading in from its top edge; Nino is the real I9kNino inside a <button>. One animation loop, capped at 30 frames a second, runs only while the sky is on screen and the tab is visible, and never under reduced motion. Nothing the server renders carries a style attribute, so it works under a strict style-src CSP.
 
 Usage, as a full-width band after the footer:
 <I9kFooter ... />
 <I9kNinoSky boop-label="Say hi to Nino" />`,
   gotchas: [
-    'The sky is always night, whatever the page theme: it pins its own colours and Nino’s, so it reads as a dark band under a light page too.',
+    'It has no background of its own and follows the page theme: light stars on a dark page, dark dots on a light one, fading in from its top edge. Put it on the page’s own background, not inside a card.',
     'Put it outside I9kContainer: the sky is a full-bleed band, and the container would cut it to the page column.',
     'It adds one tab stop (the boop button) with a visible focus ring.',
     'It makes no sound and tracks nothing; listen to `boop` if your page wants to.',

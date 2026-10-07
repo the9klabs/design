@@ -87,6 +87,7 @@ let mounted = false;
 let motionQuery: MediaQueryList | undefined;
 let resizeObserver: ResizeObserver | undefined;
 let intersectionObserver: IntersectionObserver | undefined;
+let themeObserver: MutationObserver | undefined;
 
 function motionAllowed() {
   return props.animated && !reducedMotion;
@@ -302,6 +303,18 @@ onMounted(() => {
     });
     intersectionObserver.observe(root.value);
   }
+  // The sky takes its colours from the page theme, a class on <html>. A
+  // running loop picks a new theme up on its next frame; a still sky needs
+  // drawing again.
+  if (typeof MutationObserver === 'function') {
+    themeObserver = new MutationObserver(() => {
+      if (!running()) draw(motionTime);
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  }
   document.addEventListener('visibilitychange', onVisibility);
   refresh();
 });
@@ -315,6 +328,7 @@ onBeforeUnmount(() => {
   lookTimer = undefined;
   resizeObserver?.disconnect();
   intersectionObserver?.disconnect();
+  themeObserver?.disconnect();
   motionQuery?.removeEventListener?.('change', onMotionChange);
   document.removeEventListener('visibilitychange', onVisibility);
 });
@@ -339,22 +353,19 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Always night, whatever the page theme: the sky and Nino's colours are pinned
-   here rather than read from the theme tokens, which turn light on a light
-   page. The canvas reads the star colours back from these properties. */
+/* No background of its own: the sky is drawn over whatever page sits behind
+   it, in the page theme's colours, so it reads as light stars on a dark page
+   and dark dots on a light one. The canvas reads the dot colours back from
+   these properties. */
 .i9k-nino-sky {
   --i9k-nino-sky-height: 18rem;
-  --i9k-nino-sky-bg: var(--dark-color);
-  --i9k-nino-sky-star: var(--white-color);
+  --i9k-nino-sky-star: var(--theme-text-color);
   --i9k-nino-sky-warm: var(--accent-color);
-  --i9k-nino-sky-cool: hsl(142 69% 58%);
-  --i9k-nino-sky-planet: var(--white-color);
-  --i9k-nino-sky-nino: hsl(143 58% 44%);
-  --i9k-nino-sky-focus: hsl(143 58% 60%);
+  --i9k-nino-sky-cool: var(--primary-text-color);
+  --i9k-nino-sky-planet: var(--theme-text-color);
   position: relative;
   overflow: hidden;
   block-size: var(--i9k-nino-sky-height);
-  background: var(--i9k-nino-sky-bg);
 }
 
 .i9k-nino-sky--sm {
@@ -371,6 +382,10 @@ onBeforeUnmount(() => {
   display: block;
   inline-size: 100%;
   block-size: 100%;
+  /* The stars and planets fade in from the top edge, so the sky has no line
+     where it begins. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
+  mask-image: linear-gradient(to bottom, transparent, #000 45%);
 }
 
 /* Centred by `translate`, so the drift the script writes to `transform`
@@ -395,16 +410,12 @@ onBeforeUnmount(() => {
 }
 
 .i9k-nino-sky__nino:focus-visible {
-  outline: 2px solid var(--i9k-nino-sky-focus);
+  outline: 2px solid var(--focus-color);
   outline-offset: 4px;
 }
 
 .i9k-nino-sky__nino :deep(.i9k-nino) {
   --i9k-nino-size: 5rem;
-  --i9k-nino-body: var(--i9k-nino-sky-nino);
-  --i9k-nino-screen: var(--dark-color);
-  --i9k-nino-eye: var(--accent-color);
-  --i9k-nino-mouth: var(--i9k-nino-sky-nino);
 }
 
 .i9k-nino-sky--animated .i9k-nino-sky__nino--spin {

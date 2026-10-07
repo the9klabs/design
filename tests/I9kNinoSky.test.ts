@@ -162,6 +162,34 @@ describe('I9kNinoSky', () => {
     expect(flight.style.transform).toBe('translate(0.0px, 0.0px) rotate(0.00deg)');
   });
 
+  it('redraws a still sky in the new colours when the page theme changes', async () => {
+    const fillRect = vi.fn();
+    const context = {
+      setTransform: vi.fn(),
+      clearRect: vi.fn(),
+      fillRect,
+      globalAlpha: 1,
+      fillStyle: '',
+    };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      context as unknown as CanvasRenderingContext2D,
+    );
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(600);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(192);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi', animated: false } });
+    expect(fillRect).toHaveBeenCalled();
+    fillRect.mockClear();
+
+    const html = document.documentElement;
+    const previous = html.className;
+    html.className = 'light';
+    await flushPromises();
+    html.className = previous;
+    wrapper.unmount();
+
+    expect(fillRect).toHaveBeenCalled();
+  });
+
   // A strict Content-Security-Policy (`style-src 'self'`) drops inline style
   // attributes, so nothing the server renders may carry one.
   it.each(['sm', 'md', 'lg'] as const)(
