@@ -7,7 +7,7 @@ import { build } from 'vite';
 import { nextTick } from 'vue';
 
 import I9kNino from '../src/components/I9kNino.vue';
-import { NINO_BEAT } from '../src/data/nino';
+import { NINO_BEAT, NINO_FACES, NINO_TALK_MOUTH } from '../src/data/nino';
 import { I9K_NINO_EXPRESSIONS } from '../src/types/components';
 
 async function buildComponentStylesheet(componentName: string): Promise<Root> {
@@ -418,5 +418,47 @@ describe('I9kNino mood beat', () => {
     await wrapper.setProps({ expression: 'happy' });
     wrapper.unmount();
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('I9kNino talking', () => {
+  it('adds an open-mouth frame while talking', () => {
+    const wrapper = mount(I9kNino, { props: { talking: true } });
+
+    expect(wrapper.classes()).toContain('i9k-nino--talking');
+    expect(wrapper.get('[data-nino-part="talk-mouth"]').attributes('d')).toBe(NINO_TALK_MOUTH);
+    expect(wrapper.findAll('[data-nino-part="mouth"]')).toHaveLength(1);
+  });
+
+  it('keeps one plain mouth when quiet', () => {
+    const wrapper = mount(I9kNino);
+
+    expect(wrapper.classes()).not.toContain('i9k-nino--talking');
+    expect(wrapper.find('[data-nino-part="talk-mouth"]').exists()).toBe(false);
+  });
+
+  it.each(I9K_NINO_EXPRESSIONS)('talks while %s and keeps the mouth of that mood', (expression) => {
+    const wrapper = mount(I9kNino, { props: { expression, talking: true } });
+
+    expect(wrapper.get('[data-nino-part="mouth"]').attributes('d')).toBe(
+      NINO_FACES[expression].mouth,
+    );
+    expect(wrapper.find('[data-nino-part="talk-mouth"]').exists()).toBe(true);
+  });
+
+  // With motion off, the talk keyframes never run, so the open frame must be
+  // hidden by default rather than shown by default.
+  it('keeps his ordinary mouth showing when talking cannot animate', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kNino');
+    const hidden: string[] = [];
+
+    stylesheet.walkDecls('visibility', (decl) => {
+      const rule = decl.parent as Rule;
+      if (rule.parent?.type === 'root' && decl.value === 'hidden') hidden.push(rule.selector);
+    });
+
+    expect(
+      hidden.some((selector) => /^\.i9k-nino__mouth--talk\[data-v-[\w-]+\]$/.test(selector)),
+    ).toBe(true);
   });
 });

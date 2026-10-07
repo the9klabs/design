@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
 
-import { NINO_BEAT, NINO_FACES } from '../data/nino';
+import { NINO_BEAT, NINO_FACES, NINO_TALK_MOUTH } from '../data/nino';
 import type { I9kNinoExpression, I9kNinoLook, I9kNinoSize } from '../types/components';
 
 const props = withDefaults(
@@ -15,6 +15,8 @@ const props = withDefaults(
      * prefers-reduced-motion media query, not a replacement for it.
      */
     animated?: boolean;
+    /** While true, the mouth flaps between its own shape and an open frame. */
+    talking?: boolean;
     /**
      * Nino's name is localized by the consumer ("Nino" / "نينو"). With a label
      * he is an image; without one he is decoration and stays out of the
@@ -22,7 +24,7 @@ const props = withDefaults(
      */
     label?: string | null;
   }>(),
-  { expression: 'idle', look: 'center', size: 'md', animated: true, label: null },
+  { expression: 'idle', look: 'center', size: 'md', animated: true, talking: false, label: null },
 );
 
 const titleId = `${useId()}-nino-title`;
@@ -77,6 +79,7 @@ const classes = computed(() => [
   `i9k-nino--${props.size}`,
   ...(props.animated ? ['i9k-nino--animated'] : []),
   ...(beating.value ? ['i9k-nino--beat'] : []),
+  ...(props.talking ? ['i9k-nino--talking'] : []),
 ]);
 </script>
 
@@ -168,6 +171,12 @@ const classes = computed(() => [
             </template>
           </g>
           <path class="i9k-nino__mouth" data-nino-part="mouth" :d="face.mouth" />
+          <path
+            v-if="talking"
+            class="i9k-nino__mouth i9k-nino__mouth--talk"
+            data-nino-part="talk-mouth"
+            :d="face.talkMouth ?? NINO_TALK_MOUTH"
+          />
         </g>
       </g>
     </g>
@@ -227,6 +236,12 @@ const classes = computed(() => [
 
 .i9k-nino__mouth {
   fill: var(--i9k-nino-mouth);
+}
+
+/* The open frame stays hidden unless the talk keyframes show it, so a still or
+   reduced-motion Nino who is talking keeps his ordinary mouth. */
+.i9k-nino__mouth--talk {
+  visibility: hidden;
 }
 
 .i9k-nino__cheek {
@@ -459,6 +474,37 @@ const classes = computed(() => [
   }
 }
 
+/* Talking swaps two mouth frames rather than scaling one, so it stays on the grid. */
+.i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth {
+  animation: i9k-nino-talk-closed 400ms steps(1, end) infinite;
+}
+
+.i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk {
+  animation: i9k-nino-talk-open 400ms steps(1, end) infinite;
+}
+
+@keyframes i9k-nino-talk-closed {
+  0%,
+  100% {
+    visibility: visible;
+  }
+
+  50% {
+    visibility: hidden;
+  }
+}
+
+@keyframes i9k-nino-talk-open {
+  0%,
+  100% {
+    visibility: hidden;
+  }
+
+  50% {
+    visibility: visible;
+  }
+}
+
 /* The expression lives in the markup, never in a keyframe, so switching motion
    off leaves the chosen face exactly as it was drawn. Every animated selector
    above is listed here; keep this block last. */
@@ -472,7 +518,9 @@ const classes = computed(() => [
   .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--beat .i9k-nino__eye,
-  .i9k-nino--animated.i9k-nino--beat .i9k-nino__figure {
+  .i9k-nino--animated.i9k-nino--beat .i9k-nino__figure,
+  .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth,
+  .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk {
     animation: none;
   }
 }
