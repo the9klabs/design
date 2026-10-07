@@ -49,6 +49,7 @@ export { default as I9kProfileMenu } from './components/I9kProfileMenu.vue';
 export { default as I9kBreadcrumb } from './components/I9kBreadcrumb.vue';
 export { default as I9kSidebarLayout } from './components/I9kSidebarLayout.vue';
 export { default as I9kNino } from './components/I9kNino.vue';
+export { default as I9kNinoSky } from './components/I9kNinoSky.vue';
 export { default as I9kProfileCard } from './components/I9kProfileCard.vue';
 export { default as I9kAvatar } from './components/I9kAvatar.vue';
 export { default as I9kSocialLinks } from './components/I9kSocialLinks.vue';
