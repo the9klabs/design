@@ -1,77 +1,8 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue';
 
+import { NINO_FACES } from '../data/nino';
 import type { I9kNinoExpression, I9kNinoLook, I9kNinoSize } from '../types/components';
-
-interface NinoRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface NinoFace {
-  eyes: [NinoRect, NinoRect];
-  brows?: [NinoRect, NinoRect];
-  /** Path data. Every expression owns a mouth; no expression borrows another's. */
-  mouth: string;
-}
-
-/**
- * Nino is drawn on a 16x16 pixel grid scaled to a 64-unit viewBox, so every
- * coordinate is a multiple of four and nothing blurs when he is rendered at
- * 16px. Expressions change only the eyes, the brows and the mouth: the head,
- * screen, arms and feet never move, which is what keeps one character
- * recognisable across six moods.
- */
-const FACES: Record<I9kNinoExpression, NinoFace> = {
-  idle: {
-    eyes: [
-      { x: 16, y: 12, width: 12, height: 12 },
-      { x: 36, y: 12, width: 12, height: 12 },
-    ],
-    mouth: 'M16 28H20V32H44V28H48V36H44V40H20V36H16V28Z',
-  },
-  happy: {
-    eyes: [
-      { x: 16, y: 16, width: 12, height: 8 },
-      { x: 36, y: 16, width: 12, height: 8 },
-    ],
-    mouth: 'M16 28H48V32H44V36H40V40H24V36H20V32H16V28Z',
-  },
-  thinking: {
-    eyes: [
-      { x: 16, y: 16, width: 12, height: 8 },
-      { x: 36, y: 12, width: 12, height: 12 },
-    ],
-    mouth: 'M32 28H44V36H32V28Z',
-  },
-  worried: {
-    eyes: [
-      { x: 16, y: 16, width: 8, height: 8 },
-      { x: 40, y: 16, width: 8, height: 8 },
-    ],
-    brows: [
-      { x: 16, y: 12, width: 12, height: 4 },
-      { x: 36, y: 12, width: 12, height: 4 },
-    ],
-    mouth: 'M16 40H20V36H44V40H48V32H44V28H20V32H16V40Z',
-  },
-  surprised: {
-    eyes: [
-      { x: 16, y: 8, width: 12, height: 16 },
-      { x: 36, y: 8, width: 12, height: 16 },
-    ],
-    mouth: 'M28 28H36V40H28V28Z',
-  },
-  'eyes-closed': {
-    eyes: [
-      { x: 16, y: 20, width: 12, height: 4 },
-      { x: 36, y: 20, width: 12, height: 4 },
-    ],
-    mouth: 'M20 28H24V32H40V28H44V36H40V40H24V36H20V28Z',
-  },
-};
 
 const props = withDefaults(
   defineProps<{
@@ -95,7 +26,7 @@ const props = withDefaults(
 );
 
 const titleId = `${useId()}-nino-title`;
-const face = computed(() => FACES[props.expression]);
+const face = computed(() => NINO_FACES[props.expression]);
 const classes = computed(() => [
   'i9k-nino',
   `i9k-nino--${props.expression}`,
@@ -116,36 +47,85 @@ const classes = computed(() => [
     :aria-labelledby="label ? titleId : undefined"
   >
     <title v-if="label" :id="titleId">{{ label }}</title>
-    <g class="i9k-nino__figure" data-nino-part="figure">
-      <rect class="i9k-nino__limb" data-nino-part="arm" x="0" y="20" width="8" height="16" />
-      <rect class="i9k-nino__limb" data-nino-part="arm" x="56" y="20" width="8" height="16" />
-      <rect class="i9k-nino__limb" data-nino-part="foot" x="16" y="48" width="12" height="8" />
-      <rect class="i9k-nino__limb" data-nino-part="foot" x="36" y="48" width="12" height="8" />
-      <rect class="i9k-nino__head" data-nino-part="head" x="8" y="4" width="48" height="44" />
-      <rect class="i9k-nino__screen" data-nino-part="screen" x="12" y="8" width="40" height="36" />
-      <rect
-        v-for="(brow, index) in face.brows"
-        :key="`brow-${index}`"
-        class="i9k-nino__brow"
-        data-nino-part="brow"
-        :x="brow.x"
-        :y="brow.y"
-        :width="brow.width"
-        :height="brow.height"
-      />
-      <g class="i9k-nino__eyes" data-nino-part="eyes">
-        <rect
-          v-for="(eye, index) in face.eyes"
-          :key="`eye-${index}`"
-          class="i9k-nino__eye"
-          data-nino-part="eye"
-          :x="eye.x"
-          :y="eye.y"
-          :width="eye.width"
-          :height="eye.height"
-        />
+    <!--
+      Layers, outermost first. Each animation moves exactly one layer, so two
+      motions never fight over the same transform: stage is re-created per
+      action, figure lifts the whole body, upper dips or slides the head and
+      arms, and eyes glances. (Kept inside the svg: a comment beside the root
+      would make the component a fragment in development builds.)
+    -->
+    <g class="i9k-nino__stage" data-nino-part="stage">
+      <rect class="i9k-nino__shadow" data-nino-part="shadow" x="14" y="58" width="36" height="2" />
+      <g class="i9k-nino__figure" data-nino-part="figure">
+        <rect class="i9k-nino__body" data-nino-part="leg" x="20" y="48" width="4" height="2" />
+        <rect class="i9k-nino__body" data-nino-part="leg" x="40" y="48" width="4" height="2" />
+        <rect class="i9k-nino__body" data-nino-part="foot" x="16" y="50" width="12" height="6" />
+        <rect class="i9k-nino__body" data-nino-part="foot" x="36" y="50" width="12" height="6" />
+        <g class="i9k-nino__upper" data-nino-part="upper">
+          <g class="i9k-nino__arm i9k-nino__arm--left">
+            <rect class="i9k-nino__body" data-nino-part="arm" x="2" y="24" width="6" height="14" />
+          </g>
+          <g class="i9k-nino__arm i9k-nino__arm--right">
+            <rect class="i9k-nino__body" data-nino-part="arm" x="56" y="24" width="6" height="14" />
+          </g>
+          <rect
+            class="i9k-nino__body"
+            data-nino-part="antenna-stem"
+            x="30"
+            y="4"
+            width="4"
+            height="4"
+          />
+          <rect
+            class="i9k-nino__antenna"
+            data-nino-part="antenna"
+            x="28"
+            y="0"
+            width="8"
+            height="4"
+          />
+          <path
+            class="i9k-nino__body"
+            data-nino-part="head"
+            d="M10 8H54V10H56V46H54V48H10V46H8V10H10Z"
+          />
+          <path
+            class="i9k-nino__screen"
+            data-nino-part="screen"
+            d="M14 12H50V14H52V42H50V44H14V42H12V14H14Z"
+          />
+          <path class="i9k-nino__glint" data-nino-part="glint" d="M14 14H18V16H16V18H14V14Z" />
+          <template v-if="face.cheeks">
+            <rect
+              class="i9k-nino__cheek"
+              data-nino-part="cheek"
+              x="14"
+              y="32"
+              width="4"
+              height="2"
+            />
+            <rect
+              class="i9k-nino__cheek"
+              data-nino-part="cheek"
+              x="46"
+              y="32"
+              width="4"
+              height="2"
+            />
+          </template>
+          <template v-for="(brow, index) in face.brows" :key="`brow-${index}`">
+            <path v-if="'d' in brow" class="i9k-nino__brow" data-nino-part="brow" :d="brow.d" />
+            <rect v-else class="i9k-nino__brow" data-nino-part="brow" v-bind="brow" />
+          </template>
+          <g class="i9k-nino__eyes" data-nino-part="eyes">
+            <template v-for="(eye, index) in face.eyes" :key="`eye-${index}`">
+              <path v-if="'d' in eye" class="i9k-nino__eye" data-nino-part="eye" :d="eye.d" />
+              <rect v-else class="i9k-nino__eye" data-nino-part="eye" v-bind="eye" />
+            </template>
+          </g>
+          <path class="i9k-nino__mouth" data-nino-part="mouth" :d="face.mouth" />
+        </g>
       </g>
-      <path class="i9k-nino__mouth" data-nino-part="mouth" :d="face.mouth" />
     </g>
   </svg>
 </template>
@@ -160,9 +140,13 @@ const classes = computed(() => [
   --i9k-nino-screen: var(--dark-color);
   --i9k-nino-eye: var(--accent-color);
   --i9k-nino-mouth: var(--primary-text-color);
+  --i9k-nino-cheek: color-mix(in srgb, var(--accent-color) 45%, transparent);
+  --i9k-nino-glint: color-mix(in srgb, var(--white-color) 22%, transparent);
   --i9k-nino-look-x: 0;
   --i9k-nino-look-y: 0;
   display: block;
+  /* A jump or a raised arm leaves the box on purpose. */
+  overflow: visible;
   inline-size: var(--i9k-nino-size);
   block-size: var(--i9k-nino-size);
 }
@@ -182,8 +166,7 @@ const classes = computed(() => [
   block-size: auto;
 }
 
-.i9k-nino__head,
-.i9k-nino__limb {
+.i9k-nino__body {
   fill: var(--i9k-nino-body);
 }
 
@@ -192,12 +175,28 @@ const classes = computed(() => [
 }
 
 .i9k-nino__eye,
-.i9k-nino__brow {
+.i9k-nino__brow,
+.i9k-nino__antenna {
   fill: var(--i9k-nino-eye);
 }
 
 .i9k-nino__mouth {
   fill: var(--i9k-nino-mouth);
+}
+
+.i9k-nino__cheek {
+  fill: var(--i9k-nino-cheek);
+}
+
+.i9k-nino__glint {
+  fill: var(--i9k-nino-glint);
+}
+
+.i9k-nino__shadow {
+  fill: currentColor;
+  opacity: 0.12;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 /* The glance moves the eye group; the blink scales each eye. Two elements, so
