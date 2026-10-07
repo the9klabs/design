@@ -97,6 +97,7 @@ const chatExports = [
 
 const levelMeterExports = [
   "export { default as I9kLevelMeter } from './components/I9kLevelMeter.vue';",
+  "export { default as I9kTooltip } from './components/I9kTooltip.vue';",
 ] as const;
 
 describe('shared component contracts', () => {

@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 
 import type { I9kComponentSize } from '../types/components';
+import I9kTooltip from './I9kTooltip.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -9,11 +10,17 @@ const props = withDefaults(
     label: string;
     max?: number;
     valueText?: string;
+    /**
+     * Who or what the level is for. Shown in a tooltip on hover, focus or tap,
+     * and the meter's accessible description; the meter becomes focusable.
+     */
+    description?: string;
     size?: I9kComponentSize;
   }>(),
   {
     max: 5,
     valueText: undefined,
+    description: undefined,
     size: 'md',
   },
 );
@@ -37,6 +44,7 @@ const filled = computed(() => {
 });
 
 const text = computed(() => props.valueText?.trim() || undefined);
+const description = computed(() => props.description?.trim() || undefined);
 
 // The steps are SVG rects sized by geometry attributes rather than an inline
 // style, because a strict Content-Security-Policy (`style-src 'self'`) drops
@@ -66,18 +74,42 @@ const rects = computed(() =>
     };
   }),
 );
+
+// With a description the meter sits inside a tooltip, which takes the
+// forwarded attributes, so a caller's class still lands on the outermost
+// element; the meter itself takes the focus and the description.
+const meterAttrs = computed(() => ({
+  class: ['i9k-level-meter', `i9k-level-meter--${props.size}`],
+  role: 'meter',
+  'aria-label': props.label,
+  'aria-valuemin': 0,
+  'aria-valuemax': steps.value,
+  'aria-valuenow': filled.value,
+  'aria-valuetext': text.value,
+}));
 </script>
 
 <template>
-  <span
-    :class="['i9k-level-meter', `i9k-level-meter--${size}`]"
-    role="meter"
-    :aria-label="label"
-    aria-valuemin="0"
-    :aria-valuemax="steps"
-    :aria-valuenow="filled"
-    :aria-valuetext="text"
-  >
+  <I9kTooltip v-if="description" :text="description">
+    <template #default="{ describedBy }">
+      <span v-bind="meterAttrs" tabindex="0" :aria-describedby="describedBy">
+        <svg class="i9k-level-meter__steps" :viewBox="viewBox" aria-hidden="true" focusable="false">
+          <rect
+            v-for="rect in rects"
+            :key="rect.step"
+            :class="['i9k-level-meter__step', { 'i9k-level-meter__step--filled': rect.filled }]"
+            :x="rect.x"
+            :y="rect.y"
+            :width="rect.width"
+            :height="rect.height"
+            rx="1"
+          />
+        </svg>
+        <span v-if="text" class="i9k-level-meter__text">{{ text }}</span>
+      </span>
+    </template>
+  </I9kTooltip>
+  <span v-else v-bind="meterAttrs">
     <svg class="i9k-level-meter__steps" :viewBox="viewBox" aria-hidden="true" focusable="false">
       <rect
         v-for="rect in rects"
@@ -154,5 +186,12 @@ const rects = computed(() =>
 
 .i9k-level-meter__text {
   white-space: nowrap;
+}
+
+/* Focusable only with a description, to open its tooltip from a keyboard. */
+.i9k-level-meter[tabindex]:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--primary-text-color);
+  outline-offset: 2px;
 }
 </style>
