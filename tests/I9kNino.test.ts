@@ -2,10 +2,12 @@ import { resolve } from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import postcss, { type AtRule, type Root, type Rule } from 'postcss';
 import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
+import { nextTick } from 'vue';
 
 import I9kNino from '../src/components/I9kNino.vue';
+import { NINO_BEAT } from '../src/data/nino';
 import { I9K_NINO_EXPRESSIONS } from '../src/types/components';
 
 async function buildComponentStylesheet(componentName: string): Promise<Root> {
@@ -87,6 +89,23 @@ function animationRules(stylesheet: Root) {
     if (!isReducedMotionRule(rule)) found.push({ selector: rule.selector, value: decl.value });
   });
   return found;
+}
+
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+// jsdom has never implemented window.matchMedia.
+function stubReducedMotion() {
+  vi.stubGlobal('matchMedia', (media: string) => ({
+    media,
+    matches: media === REDUCED_MOTION_QUERY,
+    addEventListener() {},
+    removeEventListener() {},
+  }));
+}
+
+async function advance(ms: number) {
+  await vi.advanceTimersByTimeAsync(ms);
+  await nextTick();
 }
 
 describe('I9kNino', () => {
@@ -332,5 +351,72 @@ describe('I9kNino ambient life', () => {
     });
 
     expect(flips.join(' ')).toContain('rtl');
+  });
+});
+
+describe('I9kNino mood beat', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('blinks the old face shut and swaps the new one in behind its eyes', async () => {
+    const wrapper = mount(I9kNino, { props: { expression: 'idle' } });
+
+    await wrapper.setProps({ expression: 'worried' });
+    expect(wrapper.classes()).toContain('i9k-nino--beat');
+    expect(wrapper.classes()).toContain('i9k-nino--idle');
+    expect(wrapper.findAll('[data-nino-part="brow"]')).toHaveLength(0);
+
+    await advance(NINO_BEAT.swapAt);
+    expect(wrapper.classes()).toContain('i9k-nino--worried');
+    expect(wrapper.findAll('[data-nino-part="brow"]')).toHaveLength(2);
+    expect(wrapper.classes()).toContain('i9k-nino--beat');
+
+    await advance(NINO_BEAT.duration - NINO_BEAT.swapAt);
+    expect(wrapper.classes()).not.toContain('i9k-nino--beat');
+  });
+
+  it('lands on the latest mood when moods change mid-beat', async () => {
+    const wrapper = mount(I9kNino, { props: { expression: 'idle' } });
+
+    await wrapper.setProps({ expression: 'worried' });
+    await advance(NINO_BEAT.swapAt / 2);
+    await wrapper.setProps({ expression: 'happy' });
+    await advance(NINO_BEAT.swapAt / 2);
+    expect(wrapper.classes()).toContain('i9k-nino--idle');
+
+    await advance(NINO_BEAT.swapAt / 2);
+    expect(wrapper.classes()).toContain('i9k-nino--happy');
+    expect(wrapper.classes()).not.toContain('i9k-nino--worried');
+  });
+
+  it('swaps at once when it is not animating', async () => {
+    const wrapper = mount(I9kNino, { props: { expression: 'idle', animated: false } });
+
+    await wrapper.setProps({ expression: 'happy' });
+    expect(wrapper.classes()).toContain('i9k-nino--happy');
+    expect(wrapper.classes()).not.toContain('i9k-nino--beat');
+  });
+
+  it('swaps at once for a visitor who prefers reduced motion', async () => {
+    stubReducedMotion();
+    const wrapper = mount(I9kNino, { props: { expression: 'idle' } });
+
+    await wrapper.setProps({ expression: 'happy' });
+    expect(wrapper.classes()).toContain('i9k-nino--happy');
+    expect(wrapper.classes()).not.toContain('i9k-nino--beat');
+  });
+
+  it('leaves no timer behind when it is unmounted mid-beat', async () => {
+    const wrapper = mount(I9kNino, { props: { expression: 'idle' } });
+
+    await wrapper.setProps({ expression: 'happy' });
+    wrapper.unmount();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

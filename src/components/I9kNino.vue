@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue';
+import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
 
-import { NINO_FACES } from '../data/nino';
+import { NINO_BEAT, NINO_FACES } from '../data/nino';
 import type { I9kNinoExpression, I9kNinoLook, I9kNinoSize } from '../types/components';
 
 const props = withDefaults(
@@ -26,13 +26,57 @@ const props = withDefaults(
 );
 
 const titleId = `${useId()}-nino-title`;
-const face = computed(() => NINO_FACES[props.expression]);
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+/**
+ * The CSS stills Nino through the animated class and the media query; this
+ * answers the same question for the timers and events, so they never disagree
+ * with what is on screen. On the server there is nothing to watch move.
+ */
+function motionAllowed() {
+  if (!props.animated || typeof window === 'undefined') return false;
+  return !(window.matchMedia?.(REDUCED_MOTION_QUERY).matches ?? false);
+}
+
+const shownExpression = ref<I9kNinoExpression>(props.expression);
+const beating = ref(false);
+let swapTimer: ReturnType<typeof setTimeout> | undefined;
+let beatTimer: ReturnType<typeof setTimeout> | undefined;
+
+function clearBeat() {
+  clearTimeout(swapTimer);
+  clearTimeout(beatTimer);
+}
+
+watch(
+  () => props.expression,
+  (next) => {
+    clearBeat();
+    if (!motionAllowed()) {
+      beating.value = false;
+      shownExpression.value = next;
+      return;
+    }
+    beating.value = true;
+    swapTimer = setTimeout(() => {
+      shownExpression.value = next;
+    }, NINO_BEAT.swapAt);
+    beatTimer = setTimeout(() => {
+      beating.value = false;
+    }, NINO_BEAT.duration);
+  },
+);
+
+onBeforeUnmount(clearBeat);
+
+const face = computed(() => NINO_FACES[shownExpression.value]);
 const classes = computed(() => [
   'i9k-nino',
-  `i9k-nino--${props.expression}`,
+  `i9k-nino--${shownExpression.value}`,
   `i9k-nino--look-${props.look}`,
   `i9k-nino--${props.size}`,
   ...(props.animated ? ['i9k-nino--animated'] : []),
+  ...(beating.value ? ['i9k-nino--beat'] : []),
 ]);
 </script>
 
@@ -383,6 +427,38 @@ const classes = computed(() => [
   }
 }
 
+/* Mood beat: the eyes shut and the body hops while the face is swapped behind
+   them. 240ms and the swap at 100ms are NINO_BEAT in src/data/nino.ts. */
+.i9k-nino--animated.i9k-nino--beat .i9k-nino__eye {
+  animation: i9k-nino-beat-blink 240ms steps(1, end);
+}
+
+.i9k-nino--animated.i9k-nino--beat .i9k-nino__figure {
+  animation: i9k-nino-beat-hop 240ms steps(1, end);
+}
+
+@keyframes i9k-nino-beat-blink {
+  0% {
+    transform: scaleY(0.15);
+  }
+
+  60%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes i9k-nino-beat-hop {
+  0% {
+    transform: translateY(-2px);
+  }
+
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
 /* The expression lives in the markup, never in a keyframe, so switching motion
    off leaves the chosen face exactly as it was drawn. Every animated selector
    above is listed here; keep this block last. */
@@ -394,7 +470,9 @@ const classes = computed(() => [
   .i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__eyes,
   .i9k-nino--animated.i9k-nino--happy .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure,
-  .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure {
+  .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure,
+  .i9k-nino--animated.i9k-nino--beat .i9k-nino__eye,
+  .i9k-nino--animated.i9k-nino--beat .i9k-nino__figure {
     animation: none;
   }
 }

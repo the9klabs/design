@@ -65,3 +65,10 @@ export const NINO_FACES: Record<I9kNinoExpression, NinoFace> = {
 
 /** The shared open-mouth frame Nino talks with. */
 export const NINO_TALK_MOUTH = 'M22 32H42V34H44V38H42V40H22V38H20V34H22Z';
+
+/**
+ * A change of mood plays as a beat rather than a cut: the eyes shut and the
+ * body hops for `duration` ms, and the new face swaps in at `swapAt`, while the
+ * eyes are closed. The CSS keyframes use the same 240ms.
+ */
+export const NINO_BEAT = { swapAt: 100, duration: 240 } as const;
