@@ -116,21 +116,26 @@ The template nests motion targets so that no two animations ever write the same 
 
 ```
 svg.i9k-nino
-├─ rect  shadow                 ← jump scales it
-└─ g     figure  (:key = run)   ← jump translates it
-   ├─ legs, feet
-   └─ g  upper                  ← breathe, nod, shake, mood hop, happy hop, thinking bob, worried shiver
-      ├─ g arm (x=2)            ← jump raises it
-      ├─ g arm (x=56)           ← wave, jump raise it
-      ├─ antenna stem, bulb     ← bulb pulses (opacity)
-      ├─ head, screen, glint, cheeks, brows
-      ├─ g eyes                 ← look (static translate) and look-around
-      │  └─ eye shapes          ← blink, mood blink (scaleY)
-      └─ mouth                  ← talking (frame swap)
+└─ g     stage  (:key = run)    ← re-created by every play(), so an action always starts at frame 0
+   ├─ rect  shadow              ← jump scales it
+   └─ g     figure              ← jump, mood hop, happy hop, thinking bob, worried shiver
+      ├─ legs, feet
+      └─ g  upper               ← breathe, nod, shake
+         ├─ g arm (x=2)         ← jump raises it
+         ├─ g arm (x=56)        ← wave, jump raise it
+         ├─ antenna stem, bulb  ← bulb pulses (opacity)
+         ├─ head, screen, glint, cheeks, brows
+         ├─ g eyes              ← look (static translate) and look-around
+         │  └─ eye shapes       ← blink, mood blink (scaleY)
+         └─ mouth               ← talking (frame swap)
 ```
 
-`upper` has several possible animations. Only one runs at a time, decided by precedence:
-**action > mood beat > expression motion > breathing**.
+Anything that lifts Nino moves `figure`, so his legs and feet come with him. Lifting `upper` alone
+would open a gap between his head and legs. `upper` only ever dips (breathing, nodding) or slides
+sideways (shaking), and both keep the head attached.
+
+Each layer has several possible animations. Only one runs on a layer at a time, decided by
+precedence: **action > mood beat > expression motion > breathing**.
 
 ## 5. Ambient life and mood beats
 
@@ -147,7 +152,7 @@ All of the following match only under `.i9k-nino--animated`.
   centre once per 9s cycle. Under `[dir='rtl']` "start" and "end" swap, as `look` already does.
   An explicit `look` disables it.
 
-### Expression motion (replaces breathing for that expression)
+### Expression motion (on `figure`, alongside breathing)
 
 - `thinking`: the existing bob, now `steps(1, end)` and 2 units.
 - `worried`: the existing shiver, now `steps(1, end)` and 2 units.
@@ -158,7 +163,7 @@ All of the following match only under `.i9k-nino--animated`.
 The component renders `shownExpression`, not the prop directly. When `expression` changes and
 motion is allowed (§7):
 
-1. Add `.i9k-nino--beat` for **240 ms**. The eyes squash to `scaleY(0.15)` and `upper` hops up
+1. Add `.i9k-nino--beat` for **240 ms**. The eyes squash to `scaleY(0.15)` and `figure` hops up
    2 units.
 2. At **100 ms**, set `shownExpression` to the new value. The face swaps while the eyes are shut.
 3. If `expression` changes again mid-beat, both timers restart and the latest value wins.
@@ -199,7 +204,7 @@ the resolve timer uses the same number.
 
 ### Contract
 
-- **Start:** `play(action)` sets the active action, increments `run`, which re-keys `figure` so
+- **Start:** `play(action)` sets the active action, increments `run`, which re-keys `stage` so
   the animation always starts at frame 0 (repeating the same action restarts it), and adds
   `.i9k-nino--action-<name>`.
 - **Finish:** after the duration it clears the action, emits `action-end` with
@@ -227,7 +232,9 @@ reduce)').matches`, with a missing `matchMedia` counting as "allowed". It gates 
 ## 8. Structure and accessibility
 
 - **`src/data/nino.ts`:** `NinoShape`, `NinoFace`, `NINO_FACES`, `NINO_TALK_MOUTH`,
-  `NINO_ACTION_DURATIONS` and the static part geometry. It is data only, with no Vue import.
+  `NINO_BEAT` and `NINO_ACTION_DURATIONS`. It is data only, with no Vue import. The static
+  body geometry (head, screen, arms, legs, antenna) is the same in every mood, so it stays
+  written in the template, as it is today.
 - **`src/types/components.ts`:** adds `I9K_NINO_ACTIONS`, `I9kNinoAction`,
   `I9kNinoActionResult` and `I9kNinoExposed`. All four are re-exported from `src/index.ts`.
 - **`src/components/I9kNino.vue`:** props (`talking` added), the `action-end` emit,
@@ -255,7 +262,7 @@ New tests:
   - Completion resolves and emits `{ completed: true }` after the action's duration.
   - It applies the action class and the duration property.
   - A second call emits `completed: false` for the first.
-  - Repeating the same action re-keys `figure`.
+  - Repeating the same action re-keys `stage`.
   - It resolves immediately when motion is off.
   - On unmount, a pending action resolves with `completed: false`.
 - **Look-around:** it applies only to `idle` with `look="center"`.
