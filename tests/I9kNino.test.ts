@@ -11,6 +11,7 @@ import { NINO_ACTION_DURATIONS, NINO_BEAT, NINO_FACES, NINO_TALK_MOUTH } from '.
 import {
   I9K_NINO_ACTIONS,
   I9K_NINO_EXPRESSIONS,
+  type I9kNinoActionResult,
   type I9kNinoExposed,
 } from '../src/types/components';
 
@@ -399,6 +400,36 @@ describe('I9kNino mood beat', () => {
     expect(wrapper.classes()).not.toContain('i9k-nino--worried');
   });
 
+  // The beat keyframes run once, so a second change must restart them, or the
+  // new face would swap in after the eyes have already reopened.
+  it('blinks again when a second mood arrives mid-beat', async () => {
+    const wrapper = mount(I9kNino, { props: { expression: 'idle' } });
+
+    await wrapper.setProps({ expression: 'thinking' });
+    const first = wrapper.classes().filter((name) => name.startsWith('i9k-nino--beat-'));
+    await advance(NINO_BEAT.swapAt + 20);
+    await wrapper.setProps({ expression: 'worried' });
+    const second = wrapper.classes().filter((name) => name.startsWith('i9k-nino--beat-'));
+
+    expect(first).toHaveLength(1);
+    expect(second).toHaveLength(1);
+    expect(second).not.toEqual(first);
+  });
+
+  it('runs a whole blink-and-hop for either beat phase', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kNino');
+    const rules = animationRules(stylesheet).map(({ selector }) => selector);
+
+    for (const phase of ['even', 'odd']) {
+      expect(rules.some((selector) => selector.includes(`--beat-${phase} .i9k-nino__eye`))).toBe(
+        true,
+      );
+      expect(rules.some((selector) => selector.includes(`--beat-${phase} .i9k-nino__figure`))).toBe(
+        true,
+      );
+    }
+  });
+
   it('swaps at once when it is not animating', async () => {
     const wrapper = mount(I9kNino, { props: { expression: 'idle', animated: false } });
 
@@ -576,6 +607,39 @@ describe('I9kNino actions', () => {
 
     expect(wrapper.classes()).not.toContain('i9k-nino--acting');
     await expect(done).resolves.toEqual({ action: 'jump', completed: true });
+  });
+
+  // A consumer that queues or retries actions plays again from action-end; that
+  // call must settle like any other and must not cut a later action short.
+  it('settles a call made from an action-end handler', async () => {
+    let chained: Promise<I9kNinoActionResult> | undefined;
+    let chainedResult: I9kNinoActionResult | undefined;
+    const wrapper: VueWrapper = mount(I9kNino, {
+      attrs: {
+        onActionEnd: (result: I9kNinoActionResult) => {
+          if (result.completed || chained) return;
+          chained = ninoOf(wrapper).play('nod');
+          void chained.then((settled) => {
+            chainedResult = settled;
+          });
+        },
+      },
+    });
+
+    const wave = ninoOf(wrapper).play('wave');
+    await advance(100);
+    const shake = ninoOf(wrapper).play('shake');
+    await advance(NINO_ACTION_DURATIONS.nod);
+
+    await expect(wave).resolves.toEqual({ action: 'wave', completed: false });
+    await expect(shake).resolves.toEqual({ action: 'shake', completed: false });
+    expect(chainedResult).toEqual({ action: 'nod', completed: true });
+    expect(wrapper.emitted('action-end')).toEqual([
+      [{ action: 'wave', completed: false }],
+      [{ action: 'shake', completed: false }],
+      [{ action: 'nod', completed: true }],
+    ]);
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('settles a pending action quietly when unmounted', async () => {

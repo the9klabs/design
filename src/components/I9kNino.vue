@@ -51,6 +51,12 @@ function motionAllowed() {
 
 const shownExpression = ref<I9kNinoExpression>(props.expression);
 const beating = ref(false);
+/**
+ * The beat keyframes run once, so a mood that arrives mid-beat flips to the
+ * other phase: a different animation name restarts the blink, and the new face
+ * still swaps in while the eyes are shut.
+ */
+const beatPhase = ref<'even' | 'odd'>('odd');
 let swapTimer: ReturnType<typeof setTimeout> | undefined;
 let beatTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -68,6 +74,7 @@ watch(
       shownExpression.value = next;
       return;
     }
+    beatPhase.value = beatPhase.value === 'even' ? 'odd' : 'even';
     beating.value = true;
     swapTimer = setTimeout(() => {
       shownExpression.value = next;
@@ -97,8 +104,19 @@ function endAction(completed: boolean, notify = true) {
  * completed: false), so every call settles exactly once and an await never
  * hangs. With motion off it moves nothing and reports completion at once.
  */
+let playCalls = 0;
+
 function play(action: I9kNinoAction): Promise<I9kNinoActionResult> {
+  const call = ++playCalls;
   endAction(false);
+
+  // Ending the cut-off call ran its action-end handler, which may already have
+  // started a newer action. That newer call wins, and this one never starts.
+  if (call !== playCalls) {
+    const result = { action, completed: false };
+    emit('action-end', result);
+    return Promise.resolve(result);
+  }
 
   if (!motionAllowed()) {
     const result = { action, completed: true };
@@ -141,7 +159,7 @@ const classes = computed(() => [
   `i9k-nino--look-${props.look}`,
   `i9k-nino--${props.size}`,
   ...(props.animated ? ['i9k-nino--animated'] : []),
-  ...(beating.value ? ['i9k-nino--beat'] : []),
+  ...(beating.value ? ['i9k-nino--beat', `i9k-nino--beat-${beatPhase.value}`] : []),
   ...(props.talking ? ['i9k-nino--talking'] : []),
   ...(activeAction.value ? ['i9k-nino--acting', `i9k-nino--action-${activeAction.value}`] : []),
 ]);
@@ -508,13 +526,23 @@ const classes = computed(() => [
 }
 
 /* Mood beat: the eyes shut and the body hops while the face is swapped behind
-   them. 240ms and the swap at 100ms are NINO_BEAT in src/data/nino.ts. */
-.i9k-nino--animated.i9k-nino--beat .i9k-nino__eye {
+   them. 240ms and the swap at 100ms are NINO_BEAT in src/data/nino.ts. The two
+   phases are identical; alternating between them restarts the keyframes when a
+   mood arrives mid-beat. */
+.i9k-nino--animated.i9k-nino--beat-even .i9k-nino__eye {
   animation: i9k-nino-beat-blink 240ms steps(1, end);
 }
 
-.i9k-nino--animated.i9k-nino--beat .i9k-nino__figure {
+.i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__eye {
+  animation: i9k-nino-beat-blink-again 240ms steps(1, end);
+}
+
+.i9k-nino--animated.i9k-nino--beat-even .i9k-nino__figure {
   animation: i9k-nino-beat-hop 240ms steps(1, end);
+}
+
+.i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__figure {
+  animation: i9k-nino-beat-hop-again 240ms steps(1, end);
 }
 
 @keyframes i9k-nino-beat-blink {
@@ -528,7 +556,29 @@ const classes = computed(() => [
   }
 }
 
+@keyframes i9k-nino-beat-blink-again {
+  0% {
+    transform: scaleY(0.15);
+  }
+
+  60%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+
 @keyframes i9k-nino-beat-hop {
+  0% {
+    transform: translateY(-2px);
+  }
+
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes i9k-nino-beat-hop-again {
   0% {
     transform: translateY(-2px);
   }
@@ -722,8 +772,10 @@ const classes = computed(() => [
   .i9k-nino--animated.i9k-nino--happy .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure,
-  .i9k-nino--animated.i9k-nino--beat .i9k-nino__eye,
-  .i9k-nino--animated.i9k-nino--beat .i9k-nino__figure,
+  .i9k-nino--animated.i9k-nino--beat-even .i9k-nino__eye,
+  .i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__eye,
+  .i9k-nino--animated.i9k-nino--beat-even .i9k-nino__figure,
+  .i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth,
   .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk,
   .i9k-nino--animated.i9k-nino--action-wave .i9k-nino__arm--right,

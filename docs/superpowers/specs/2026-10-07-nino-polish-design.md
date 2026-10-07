@@ -100,7 +100,7 @@ interface NinoFace {
 | ------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ | ------ |
 | `idle`        | `18,16,12,12`, `34,16,12,12`                                         | —                                                                | `M18 32H22V34H42V32H46V36H44V38H40V40H24V38H20V36H18Z` | —      |
 | `happy`       | arches `M20 20H28V22H30V28H26V24H22V28H18V22H20Z` and its +16 x twin | —                                                                | `M18 32H46V34H44V38H40V40H24V38H20V34H18Z`             | yes    |
-| `thinking`    | squint `18,22,12,4`, open `34,14,12,12`                              | `18,18,10,2`, `34,10,12,2`                                       | `M32 34H42V38H32Z`                                     | —      |
+| `thinking`    | squint `18,22,12,4`, open `34,16,12,12`                              | `18,18,10,2`, `34,12,12,2`                                       | `M32 34H42V38H32Z`                                     | —      |
 | `worried`     | `20,22,8,8`, `36,22,8,8`                                             | two-step slant: `18,18,4,2`+`22,16,6,2`, `36,16,6,2`+`42,18,4,2` | `M20 40V36H24V34H40V36H44V40H40V38H24V40Z`             | —      |
 | `surprised`   | `18,14,12,16`, `34,14,12,16`                                         | —                                                                | `M28 34H36V36H38V40H36V42H28V40H26V36H28Z`             | —      |
 | `eyes-closed` | lids `M18 22H20V24H28V22H30V26H18Z` and its +16 x twin               | —                                                                | `M22 34H26V36H38V34H42V38H38V40H26V38H22Z`             | yes    |
@@ -166,7 +166,9 @@ motion is allowed (§7):
 1. Add `.i9k-nino--beat` for **240 ms**. The eyes squash to `scaleY(0.15)` and `figure` hops up
    2 units.
 2. At **100 ms**, set `shownExpression` to the new value. The face swaps while the eyes are shut.
-3. If `expression` changes again mid-beat, both timers restart and the latest value wins.
+3. If `expression` changes again mid-beat, both timers restart, the latest value wins, and the
+   beat class flips between two identical phases (`--beat-even` / `--beat-odd`). The keyframes
+   run once, so only a new animation name replays the blink for the second change.
 
 When motion is not allowed, `shownExpression` follows the prop synchronously. The initial render
 always uses the prop, including on the server.
@@ -211,6 +213,9 @@ the resolve timer uses the same number.
   `{ action, completed: true }`, and resolves with the same object.
 - **Interrupt:** a `play()` during an action ends the earlier one first. It emits and resolves
   `{ action: <old>, completed: false }`, then starts the new one.
+- **Re-entry:** ending the cut-off call runs its `action-end` handler synchronously. If that handler
+  calls `play()` itself, the handler's call wins: the outer call never starts, and it emits and
+  resolves `{ action, completed: false }`.
 - **Motion off:** with `animated: false`, under reduced motion, or with no `window`, nothing
   animates. It emits `action-end` with `completed: true` and resolves on the next microtask.
 - **Unmount:** clears timers and resolves a pending action with `completed: false`, without
