@@ -84,6 +84,15 @@ plans behind this work live in `docs/superpowers/`.
 - `I9kIcon` renders from the local `src/icons/paths.json` set; entries are either a path string or
   `{ viewBox, path }`. It is `aria-hidden` unless given a `title` or `desc`. Add icons to that JSON
   rather than inlining SVG in components.
+- `I9kNino` takes one-shot actions imperatively: hold a template ref and call
+  `play('wave' | 'jump' | 'nod' | 'shake')`, which resolves with `{ action, completed }` and emits
+  `action-end` with the same object; `completed` is false when a newer call cut it off, and an
+  unmount resolves `completed: false` without emitting. Each
+  duration lives once, in `NINO_ACTION_DURATIONS` (`src/data/nino.ts`), and reaches the keyframes
+  through `--i9k-nino-action-duration`. His SVG is layered (`stage` › `figure` › `upper` › arms and
+  eyes) so that each animation owns one layer's transform; anything that lifts him moves `figure`,
+  so his feet come along. Every keyframe is `steps(1, end)` on the two-unit grid, and every
+  animated selector is repeated in the reduced-motion block at the end of the stylesheet.
 - `I9kSection variant="primary"` fills the section with the brand green and re-maps the theme
   tokens its header and body read (`--primary-color` becomes white, `--on-primary-color` green,
   and so on), so nested components stay visible without props of their own. It re-maps them on

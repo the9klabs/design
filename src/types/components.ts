@@ -53,6 +53,25 @@ export type I9kNinoLook = 'center' | 'up' | 'down' | 'start' | 'end';
  */
 export type I9kNinoSize = 'sm' | 'md' | 'lg' | 'auto';
 
+/**
+ * Nino's one-shot actions, played through the exposed `play()`. A runtime
+ * array for the same reason as I9K_NINO_EXPRESSIONS.
+ */
+export const I9K_NINO_ACTIONS = ['wave', 'jump', 'nod', 'shake'] as const;
+
+export type I9kNinoAction = (typeof I9K_NINO_ACTIONS)[number];
+
+/** How a `play()` call ended: `completed` is false when another action or an unmount cut it off. */
+export interface I9kNinoActionResult {
+  action: I9kNinoAction;
+  completed: boolean;
+}
+
+/** What a template ref to I9kNino exposes. */
+export interface I9kNinoExposed {
+  play: (action: I9kNinoAction) => Promise<I9kNinoActionResult>;
+}
+
 /** One destination in an I9kFooter column. */
 export interface I9kFooterLink {
   id: string;
