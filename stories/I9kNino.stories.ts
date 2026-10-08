@@ -19,6 +19,7 @@ const meta = {
     size: 'lg',
     animated: true,
     talking: false,
+    shadow: false,
     label: null,
   },
   argTypes: {
@@ -27,6 +28,7 @@ const meta = {
     size: { control: 'select', options: ['sm', 'md', 'lg', 'auto'] },
     animated: { control: 'boolean' },
     talking: { control: 'boolean' },
+    shadow: { control: 'boolean' },
     label: { control: 'text' },
   },
 } satisfies Meta<typeof I9kNino>;
