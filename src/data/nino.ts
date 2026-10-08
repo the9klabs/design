@@ -8,9 +8,10 @@ import type { I9kNinoAction, I9kNinoExpression } from '../types/components';
 export type NinoShape = { x: number; y: number; width: number; height: number } | { d: string };
 
 /**
- * One mood. Expressions change only the eyes, brows, cheeks and mouth; the
- * body never changes, which is what keeps one character recognisable across
- * six moods. Adding an expression is adding a row, never editing the template.
+ * One mood. Expressions change only the eyes, brows, cheeks and mouth, and may
+ * raise his hands to his face; the body never changes otherwise, which is what
+ * keeps one character recognisable across every mood. Adding an expression is
+ * adding a row, never editing the template.
  */
 export interface NinoFace {
   eyes: [NinoShape, NinoShape];
@@ -20,6 +21,11 @@ export interface NinoFace {
   mouth: string;
   /** The open frame while talking. Falls back to NINO_TALK_MOUTH. */
   talkMouth?: string;
+  /**
+   * Hands held over the screen, left then right as drawn. While they are up,
+   * the arms at his sides are hidden, so it reads as one pair of arms raised.
+   */
+  hands?: [NinoShape, NinoShape];
 }
 
 const box = (x: number, y: number, width: number, height: number): NinoShape => ({
@@ -60,6 +66,16 @@ export const NINO_FACES: Record<I9kNinoExpression, NinoFace> = {
     eyes: [{ d: 'M18 22H20V24H28V22H30V26H18Z' }, { d: 'M34 22H36V24H44V22H46V26H34Z' }],
     cheeks: true,
     mouth: 'M22 34H26V36H38V34H42V38H38V40H26V38H22Z',
+  },
+  // Hide and seek. The left eye is shut; the right one is open behind its hand,
+  // which only shows when that hand drops to peek.
+  hiding: {
+    eyes: [{ d: 'M18 22H20V24H28V22H30V26H18Z' }, box(34, 18, 12, 10)],
+    mouth: 'M26 34H28V36H36V34H38V38H26Z',
+    hands: [
+      { d: 'M16 14H18V18H20V14H22V18H24V14H26V18H28V14H30V30H16Z' },
+      { d: 'M34 14H36V18H38V14H40V18H42V14H44V18H46V14H48V30H34Z' },
+    ],
   },
 };
 
