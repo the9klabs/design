@@ -15,6 +15,7 @@ Props:
 - size?: 'sm' | 'md' | 'lg' | 'auto' (default 'md') — 2rem / 3rem / 4.5rem, or 'auto' to drop the component's own CSS sizing.
 - animated?: boolean (default true) — removes the class every animation rule hangs off when false.
 - talking?: boolean (default false) — flaps his mouth between its own shape and an open frame.
+- shadow?: boolean (default false) — a soft shadow under his feet, which shrinks while he jumps. Turn it on only where Nino stands on something; floating in a sky or sitting in a card, he has no ground to cast one on.
 - label?: string | null (default null) — the localized name, e.g. 'Nino' or 'نينو'.
 
 Emits: action-end with { action, completed } once per play() call, except a call still running when he unmounts, or one superseded by a call its own action-end handler made: those resolve with completed: false without emitting.
