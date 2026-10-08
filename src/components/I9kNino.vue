@@ -159,10 +159,15 @@ onBeforeUnmount(() => {
 const exposed: I9kNinoExposed = { play };
 defineExpose(exposed);
 
-const actionStyle = computed(() =>
+/**
+ * Bound as an attribute object rather than `:style`, so an idle Nino carries no
+ * style key at all: the server renders `:style="undefined"` as `style=""`, which
+ * a strict Content-Security-Policy reports.
+ */
+const actionAttrs = computed(() =>
   activeAction.value
-    ? { '--i9k-nino-action-duration': `${NINO_ACTION_DURATIONS[activeAction.value]}ms` }
-    : undefined,
+    ? { style: { '--i9k-nino-action-duration': `${NINO_ACTION_DURATIONS[activeAction.value]}ms` } }
+    : {},
 );
 
 const face = computed(() => NINO_FACES[shownExpression.value]);
@@ -181,7 +186,7 @@ const classes = computed(() => [
 <template>
   <svg
     :class="classes"
-    :style="actionStyle"
+    v-bind="actionAttrs"
     viewBox="0 0 64 64"
     shape-rendering="crispEdges"
     focusable="false"
