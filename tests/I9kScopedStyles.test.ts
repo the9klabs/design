@@ -13,6 +13,7 @@ const migratedComponents = [
   ['I9kSelect.vue', 'i9k-select'],
   ['I9kPhoneInput.vue', 'i9k-phone-input'],
   ['I9kTextarea.vue', 'i9k-textarea'],
+  ['I9kAnnouncementBar.vue', 'i9k-announcement-bar'],
   ['I9kToast.vue', 'i9k-toast'],
   ['I9kToaster.vue', 'i9k-toaster'],
   ['I9kModal.vue', 'i9k-modal'],

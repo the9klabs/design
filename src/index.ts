@@ -38,6 +38,7 @@ export {
   useI9kToastSource,
 } from './composables/i9kToaster';
 
+export { default as I9kAnnouncementBar } from './components/I9kAnnouncementBar.vue';
 export { default as I9kArticleHeader } from './components/I9kArticleHeader.vue';
 export { default as I9kAsciiEmoji } from './components/I9kAsciiEmoji.vue';
 export { default as I9kBlurredCircles } from './components/I9kBlurredCircles.vue';
