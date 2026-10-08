@@ -64,6 +64,10 @@ const containerExports = [
   "export { default as I9kContainer } from './components/I9kContainer.vue';",
 ] as const;
 
+const announcementBarExports = [
+  "export { default as I9kAnnouncementBar } from './components/I9kAnnouncementBar.vue';",
+] as const;
+
 const toasterExports = [
   "export type { I9kToastVariant } from './types/components';",
   `export type {
@@ -152,6 +156,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(containerExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(announcementBarExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 

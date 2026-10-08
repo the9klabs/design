@@ -1,3 +1,4 @@
+import { I9kAnnouncementBarEntry } from './I9kAnnouncementBar';
 import { I9kArticleHeaderEntry } from './I9kArticleHeader';
 import { I9kAsciiEmojiEntry } from './I9kAsciiEmoji';
 import { I9kAvatarEntry } from './I9kAvatar';
@@ -99,6 +100,7 @@ export const entries: ShowcaseEntry[] = [
   I9kToasterEntry,
   I9kTooltipEntry,
   I9kModalEntry,
+  I9kAnnouncementBarEntry,
   I9kNavigationEntry,
   I9kNavMenuEntry,
   I9kProfileMenuEntry,
