@@ -248,12 +248,21 @@ describe('I9kNino', () => {
   it.each(I9K_NINO_EXPRESSIONS)('keeps his body whole when %s', (expression) => {
     const wrapper = mount(I9kNino, { props: { expression } });
 
-    for (const part of ['antenna', 'antenna-stem', 'glint', 'shadow', 'head', 'screen']) {
+    for (const part of ['antenna', 'antenna-stem', 'glint', 'head', 'screen']) {
       expect(wrapper.findAll(`[data-nino-part="${part}"]`)).toHaveLength(1);
     }
     expect(wrapper.findAll('[data-nino-part="leg"]')).toHaveLength(2);
     expect(wrapper.findAll('[data-nino-part="foot"]')).toHaveLength(2);
     expect(wrapper.findAll('[data-nino-part="arm"]')).toHaveLength(2);
+  });
+
+  // A shadow needs ground: Nino floating in a sky must not drag one along, so
+  // it is opt-in.
+  it('draws no shadow unless asked', () => {
+    expect(mount(I9kNino).findAll('[data-nino-part="shadow"]')).toHaveLength(0);
+    expect(
+      mount(I9kNino, { props: { shadow: true } }).findAll('[data-nino-part="shadow"]'),
+    ).toHaveLength(1);
   });
 
   it('blushes only when happy or resting his eyes', () => {

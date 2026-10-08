@@ -25,13 +25,27 @@ const props = withDefaults(
     /** While true, the mouth flaps between its own shape and an open frame. */
     talking?: boolean;
     /**
+     * A soft shadow under his feet, for a Nino standing on something. Off by
+     * default: Nino floating in a sky or sitting in a card has no ground to
+     * cast one on.
+     */
+    shadow?: boolean;
+    /**
      * Nino's name is localized by the consumer ("Nino" / "نينو"). With a label
      * he is an image; without one he is decoration and stays out of the
      * accessibility tree entirely.
      */
     label?: string | null;
   }>(),
-  { expression: 'idle', look: 'center', size: 'md', animated: true, talking: false, label: null },
+  {
+    expression: 'idle',
+    look: 'center',
+    size: 'md',
+    animated: true,
+    talking: false,
+    shadow: false,
+    label: null,
+  },
 );
 
 const emit = defineEmits<{ 'action-end': [result: I9kNinoActionResult] }>();
@@ -206,7 +220,15 @@ const classes = computed(() => [
       would make the component a fragment in development builds.)
     -->
     <g :key="run" class="i9k-nino__stage" data-nino-part="stage">
-      <rect class="i9k-nino__shadow" data-nino-part="shadow" x="14" y="58" width="36" height="2" />
+      <rect
+        v-if="shadow"
+        class="i9k-nino__shadow"
+        data-nino-part="shadow"
+        x="14"
+        y="58"
+        width="36"
+        height="2"
+      />
       <g class="i9k-nino__figure" data-nino-part="figure">
         <rect class="i9k-nino__body" data-nino-part="leg" x="20" y="48" width="4" height="2" />
         <rect class="i9k-nino__body" data-nino-part="leg" x="40" y="48" width="4" height="2" />
