@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createSSRApp, h } from 'vue';
 
 import I9kNinoSky from '../src/components/I9kNinoSky.vue';
+import { NINO_BEAT } from '../src/data/nino';
 
 function stubMotion(reduce: boolean) {
   vi.stubGlobal('matchMedia', (query: string) => ({
@@ -43,14 +44,16 @@ describe('I9kNinoSky', () => {
   it('changes Nino’s face on each boop, emits it, and settles back to idle', async () => {
     const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Say hi to Nino' } });
 
+    // Nino swaps each face in behind his mood beat, so it shows a beat later.
     await wrapper.get('button').trigger('click');
     expect(wrapper.emitted('boop')).toEqual([['happy']]);
+    await vi.advanceTimersByTimeAsync(NINO_BEAT.duration);
     expect(nino(wrapper).classes()).toContain('i9k-nino--happy');
 
     await wrapper.get('button').trigger('click');
     expect(wrapper.emitted('boop')?.[1]).toEqual(['surprised']);
 
-    await vi.advanceTimersByTimeAsync(1500);
+    await vi.advanceTimersByTimeAsync(1500 + NINO_BEAT.duration);
     expect(nino(wrapper).classes()).toContain('i9k-nino--idle');
   });
 

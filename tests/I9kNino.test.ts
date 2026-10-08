@@ -2,9 +2,10 @@ import { resolve } from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import postcss, { type AtRule, type Root, type Rule } from 'postcss';
 import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
+import { renderToString } from '@vue/server-renderer';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
-import { nextTick } from 'vue';
+import { createSSRApp, h, nextTick } from 'vue';
 
 import I9kNino from '../src/components/I9kNino.vue';
 import { NINO_ACTION_DURATIONS, NINO_BEAT, NINO_FACES, NINO_TALK_MOUTH } from '../src/data/nino';
@@ -260,6 +261,15 @@ describe('I9kNino', () => {
       const cheeks = mount(I9kNino, { props: { expression } }).findAll('[data-nino-part="cheek"]');
       expect(cheeks).toHaveLength(expression === 'happy' || expression === 'eyes-closed' ? 2 : 0);
     }
+  });
+
+  // A strict Content-Security-Policy (`style-src 'self'`) drops inline style
+  // attributes, so an idle Nino must not render one, not even an empty one.
+  it('renders on the server without a style attribute', async () => {
+    const html = await renderToString(createSSRApp({ render: () => h(I9kNino) }));
+
+    expect(html).toContain('<svg');
+    expect(html).not.toMatch(/\sstyle=/);
   });
 });
 
