@@ -4,7 +4,8 @@ import postcss, { type AtRule, type Root, type Rule } from 'postcss';
 import { mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { build } from 'vite';
-import { nextTick } from 'vue';
+import { renderToString } from '@vue/server-renderer';
+import { createSSRApp, h, nextTick } from 'vue';
 
 import I9kNino from '../src/components/I9kNino.vue';
 import { NINO_ACTION_DURATIONS, NINO_BEAT, NINO_FACES, NINO_TALK_MOUTH } from '../src/data/nino';
@@ -542,6 +543,16 @@ describe('I9kNino actions', () => {
     expect(wrapper.classes()).not.toContain('i9k-nino--acting');
   });
 
+  it('clears the action duration once the action ends', async () => {
+    const wrapper = mount(I9kNino);
+    const done = ninoOf(wrapper).play('wave');
+    await advance(NINO_ACTION_DURATIONS.wave);
+    await done;
+    await nextTick();
+
+    expect(wrapper.attributes('style') ?? '').not.toContain('--i9k-nino-action-duration');
+  });
+
   it('cuts a running action off when another starts', async () => {
     const wrapper = mount(I9kNino);
     const wave = ninoOf(wrapper).play('wave');
@@ -707,4 +718,18 @@ describe('I9kNino actions', () => {
     expect(wrapper.emitted('action-end')).toBeUndefined();
     expect(vi.getTimerCount()).toBe(0);
   });
+});
+
+// A strict Content-Security-Policy (`style-src 'self'`) drops inline style
+// attributes, so the server must never render one, not even an empty one.
+describe('I9kNino on the server', () => {
+  it.each(['sm', 'md', 'lg', 'auto'] as const)(
+    'renders %s without a style attribute',
+    async (size) => {
+      const html = await renderToString(createSSRApp({ render: () => h(I9kNino, { size }) }));
+
+      expect(html).toContain('<svg');
+      expect(html).not.toMatch(/\sstyle=/);
+    },
+  );
 });

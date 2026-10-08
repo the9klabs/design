@@ -159,11 +159,19 @@ onBeforeUnmount(() => {
 const exposed: I9kNinoExposed = { play };
 defineExpose(exposed);
 
-const actionStyle = computed(() =>
-  activeAction.value
-    ? { '--i9k-nino-action-duration': `${NINO_ACTION_DURATIONS[activeAction.value]}ms` }
-    : undefined,
-);
+const root = ref<SVGSVGElement | null>(null);
+
+// The duration reaches the CSS through the element's style object, never a
+// `:style` binding: the server renders even an empty binding as `style=""`,
+// which a strict Content-Security-Policy (`style-src 'self'`) refuses.
+watch([activeAction, root], ([action, element]) => {
+  if (!element) return;
+  if (action) {
+    element.style.setProperty('--i9k-nino-action-duration', `${NINO_ACTION_DURATIONS[action]}ms`);
+  } else {
+    element.style.removeProperty('--i9k-nino-action-duration');
+  }
+});
 
 const face = computed(() => NINO_FACES[shownExpression.value]);
 const classes = computed(() => [
@@ -180,8 +188,8 @@ const classes = computed(() => [
 
 <template>
   <svg
+    ref="root"
     :class="classes"
-    :style="actionStyle"
     viewBox="0 0 64 64"
     shape-rendering="crispEdges"
     focusable="false"
