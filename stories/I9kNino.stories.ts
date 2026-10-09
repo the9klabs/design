@@ -120,12 +120,26 @@ export const Talking: Story = {
 };
 
 // Every mood with its ambient motion: breathing, blinking, the antenna, the
-// idle glance, the happy hop, the thinking bob and the worried shiver.
+// idle glance, the happy hop, the thinking bob, the worried shiver and the
+// hiding peek.
 export const AmbientLife: Story = {
   render: () => ({
     components: { I9kNino },
     setup: () => ({ expressions: I9K_NINO_EXPRESSIONS }),
     template: `<div style="${row}"><I9kNino v-for="expression in expressions" :key="expression" :expression="expression" size="lg" /></div>`,
+  }),
+};
+
+// Hide and seek: both hands over his eyes, with a peek over the right one
+// every few seconds. Waving drops his hands for the length of the wave.
+export const Hiding: Story = {
+  render: () => ({
+    components: { I9kNino },
+    setup() {
+      const nino = ref<I9kNinoExposed | null>(null);
+      return { nino };
+    },
+    template: `<div style="${row}"><I9kNino ref="nino" expression="hiding" size="lg" /><I9kNino expression="hiding" size="lg" :animated="false" /><button type="button" @click="nino?.play('wave')">wave</button></div>`,
   }),
 };
 

@@ -81,6 +81,34 @@ function verticalExtent(part: DOMWrapper<Element>): number {
   return Math.max(...ys) - Math.min(...ys);
 }
 
+/** The box a rect, or a path drawn with absolute M, H and V commands, covers. */
+function boundsOf(part: DOMWrapper<Element>) {
+  const d = part.attributes('d');
+  if (d === undefined) {
+    const [x, y, width, height] = coordinatesOf(part);
+    return { left: x, top: y, right: x + width, bottom: y + height };
+  }
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (const [, command, args] of d.matchAll(/([MHVZ])([^MHVZ]*)/g)) {
+    const numbers = args
+      .trim()
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .map(Number);
+    if (command === 'M') xs.push(numbers[0]);
+    if (command === 'M') ys.push(numbers[1]);
+    if (command === 'H') xs.push(numbers[0]);
+    if (command === 'V') ys.push(numbers[0]);
+  }
+  return {
+    left: Math.min(...xs),
+    top: Math.min(...ys),
+    right: Math.max(...xs),
+    bottom: Math.max(...ys),
+  };
+}
+
 function drawnParts(wrapper: VueWrapper) {
   return wrapper
     .findAll('[data-nino-part]')
@@ -272,6 +300,38 @@ describe('I9kNino', () => {
     }
   });
 
+  it('raises his hands only when hiding', () => {
+    for (const expression of I9K_NINO_EXPRESSIONS) {
+      const hands = mount(I9kNino, { props: { expression } }).findAll('[data-nino-part="hand"]');
+      expect(hands).toHaveLength(expression === 'hiding' ? 2 : 0);
+    }
+  });
+
+  it('covers each eye with a hand while hiding', () => {
+    const wrapper = mount(I9kNino, { props: { expression: 'hiding' } });
+    const eyes = wrapper.findAll('[data-nino-part="eye"]').map(boundsOf);
+    const hands = wrapper.findAll('[data-nino-part="hand"]').map(boundsOf);
+
+    eyes.forEach((eye, index) => {
+      const hand = hands[index];
+      expect(hand.left).toBeLessThanOrEqual(eye.left);
+      expect(hand.right).toBeGreaterThanOrEqual(eye.right);
+      // Below the fingertips, so the eye never shows between the fingers.
+      expect(hand.top + 4).toBeLessThanOrEqual(eye.top);
+      expect(hand.bottom).toBeGreaterThanOrEqual(eye.bottom);
+    });
+  });
+
+  it('peeks with the right-hand hand on screen', () => {
+    const hands = mount(I9kNino, { props: { expression: 'hiding' } }).findAll(
+      '[data-nino-part="hand"]',
+    );
+
+    expect(hands[0].classes()).not.toContain('i9k-nino__hand--peek');
+    expect(hands[1].classes()).toContain('i9k-nino__hand--peek');
+    expect(boundsOf(hands[1]).left).toBeGreaterThan(boundsOf(hands[0]).left);
+  });
+
   // A strict Content-Security-Policy (`style-src 'self'`) drops inline style
   // attributes, so an idle Nino must not render one, not even an empty one.
   it('renders on the server without a style attribute', async () => {
@@ -366,6 +426,48 @@ describe('I9kNino ambient life', () => {
       expect(selector).toContain('.i9k-nino--idle');
       expect(selector).toContain('.i9k-nino--look-center');
     }
+  });
+
+  it('peeks over one hand only while hiding', () => {
+    const peeks = animationRules(stylesheet).filter(({ value }) => value.includes('i9k-nino-peek'));
+
+    expect(peeks).toHaveLength(1);
+    expect(peeks[0].selector).toContain('.i9k-nino--hiding');
+    expect(peeks[0].selector).toContain('.i9k-nino__hand--peek');
+  });
+
+  it('lifts his arms off his sides to hide, and lowers his hands to act', () => {
+    const hidden: string[] = [];
+    stylesheet.walkDecls('visibility', (decl) => {
+      if (decl.value === 'hidden') hidden.push((decl.parent as Rule).selector);
+    });
+
+    expect(
+      hidden.some(
+        (selector) =>
+          selector.includes('.i9k-nino--hiding:not(.i9k-nino--acting)') &&
+          selector.includes('.i9k-nino__arm'),
+      ),
+    ).toBe(true);
+    expect(
+      hidden.some(
+        (selector) =>
+          selector.includes('.i9k-nino--hiding.i9k-nino--acting') &&
+          selector.includes('.i9k-nino__hand'),
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps his eyes behind his hands wherever he is asked to look', () => {
+    let held = false;
+    stylesheet.walkDecls('transform', (decl) => {
+      const selector = (decl.parent as Rule).selector;
+      if (selector.includes('.i9k-nino--hiding') && selector.includes('.i9k-nino__eyes')) {
+        held = decl.value === 'none';
+      }
+    });
+
+    expect(held).toBe(true);
   });
 
   it('glances the other way first on a right-to-left page', () => {

@@ -34,6 +34,7 @@ export const I9K_NINO_EXPRESSIONS = [
   'worried',
   'surprised',
   'eyes-closed',
+  'hiding',
 ] as const;
 
 export type I9kNinoExpression = (typeof I9K_NINO_EXPRESSIONS)[number];

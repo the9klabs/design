@@ -185,6 +185,11 @@ const actionAttrs = computed(() =>
 );
 
 const face = computed(() => NINO_FACES[shownExpression.value]);
+/** The right-hand hand on screen peeks, on every page: hands are drawn, not read. */
+const handClasses = (index: number) => [
+  'i9k-nino__hand',
+  ...(index === 1 ? ['i9k-nino__hand--peek'] : []),
+];
 const classes = computed(() => [
   'i9k-nino',
   `i9k-nino--${shownExpression.value}`,
@@ -300,6 +305,15 @@ const classes = computed(() => [
             data-nino-part="talk-mouth"
             :d="face.talkMouth ?? NINO_TALK_MOUTH"
           />
+          <template v-for="(hand, index) in face.hands" :key="`hand-${index}`">
+            <path
+              v-if="'d' in hand"
+              :class="handClasses(index)"
+              data-nino-part="hand"
+              :d="hand.d"
+            />
+            <rect v-else :class="handClasses(index)" data-nino-part="hand" v-bind="hand" />
+          </template>
         </g>
       </g>
     </g>
@@ -349,6 +363,22 @@ const classes = computed(() => [
 
 .i9k-nino__screen {
   fill: var(--i9k-nino-screen);
+}
+
+.i9k-nino__hand {
+  fill: var(--i9k-nino-body);
+}
+
+/* Hiding raises the arms to his face: the side arms go, the hands show. An
+   action lowers them again for its length, so a wave still has an arm. */
+.i9k-nino--hiding:not(.i9k-nino--acting) .i9k-nino__arm,
+.i9k-nino--hiding.i9k-nino--acting .i9k-nino__hand {
+  visibility: hidden;
+}
+
+/* A glance would slide his eyes out from behind his hands. */
+.i9k-nino--hiding .i9k-nino__eyes {
+  transform: none;
 }
 
 .i9k-nino__eye,
@@ -468,6 +498,12 @@ const classes = computed(() => [
   animation: i9k-nino-shiver 0.6s steps(1, end) infinite;
 }
 
+/* Hide and seek: now and then the right hand drops far enough for his open eye
+   to peek over it, then covers it again. */
+.i9k-nino--animated.i9k-nino--hiding .i9k-nino__hand--peek {
+  animation: i9k-nino-peek 5s steps(1, end) infinite;
+}
+
 @keyframes i9k-nino-breathe {
   0%,
   100% {
@@ -546,6 +582,18 @@ const classes = computed(() => [
 
   50% {
     transform: translateY(-2px);
+  }
+}
+
+@keyframes i9k-nino-peek {
+  0%,
+  88%,
+  100% {
+    transform: translateY(0);
+  }
+
+  76% {
+    transform: translateY(10px);
   }
 }
 
@@ -812,6 +860,7 @@ const classes = computed(() => [
   .i9k-nino--animated.i9k-nino--happy .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure,
+  .i9k-nino--animated.i9k-nino--hiding .i9k-nino__hand--peek,
   .i9k-nino--animated.i9k-nino--beat-even .i9k-nino__eye,
   .i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__eye,
   .i9k-nino--animated.i9k-nino--beat-even .i9k-nino__figure,
