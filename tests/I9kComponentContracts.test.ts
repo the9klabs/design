@@ -104,6 +104,10 @@ const levelMeterExports = [
   "export { default as I9kTooltip } from './components/I9kTooltip.vue';",
 ] as const;
 
+const stickerExports = [
+  "export { default as I9kSticker } from './components/I9kSticker.vue';",
+] as const;
+
 const ninoExports = [
   `export type {
   I9kNinoAction,
@@ -176,6 +180,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(levelMeterExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(stickerExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 
