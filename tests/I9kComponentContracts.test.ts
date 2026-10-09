@@ -50,6 +50,11 @@ const learningFrameExports = [
   "export { default as I9kSidebarLayout } from './components/I9kSidebarLayout.vue';",
 ] as const;
 
+const sideNavExports = [
+  "export type { I9kSideNavLink } from './types/components';",
+  "export { default as I9kSideNav } from './components/I9kSideNav.vue';",
+] as const;
+
 const glowExports = [
   "export type { I9kGlowPosition } from './types/components';",
   "export { default as I9kGlow } from './components/I9kGlow.vue';",
@@ -148,6 +153,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(learningFrameExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(sideNavExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 

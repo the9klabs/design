@@ -122,3 +122,12 @@ export interface I9kTabItem {
   /** Skipped by the arrow keys and cannot be selected. */
   disabled?: boolean;
 }
+
+/** One entry of I9kSideNav. The same shape as I9kNavigation's links, plus the page being shown. */
+export interface I9kSideNavLink {
+  id: string;
+  label: string;
+  href: string;
+  /** The section the reader is in: rendered with aria-current="page". */
+  current?: boolean;
+}
