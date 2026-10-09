@@ -75,3 +75,32 @@ describe('I9kSticker', () => {
     wrapper.unmount();
   });
 });
+
+describe('I9kSticker styles', () => {
+  // Every rule must stay scoped to the sticker. A `:global(...)` wrapping the
+  // front of a selector makes Vue drop the rest of it, which once shipped a
+  // bare `:focus-visible` animation and transform to every page.
+  it('scopes every compiled selector to the sticker', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const { compileStyle, parse } = await import('@vue/compiler-sfc');
+    const source = readFileSync(resolve(process.cwd(), 'src/components/I9kSticker.vue'), 'utf8');
+    const style = parse(source).descriptor.styles[0]!;
+    const { code } = compileStyle({
+      source: style.content,
+      id: 'data-v-test',
+      scoped: true,
+      filename: 'I9kSticker.vue',
+    });
+    const css = code.replace(/\/\*[\s\S]*?\*\//g, '');
+    const selectors = [...css.matchAll(/(^|[{}])\s*([^{}@]+?)\s*\{/g)]
+      .flatMap((match) => match[2]!.split(','))
+      .map((selector) => selector.trim())
+      .filter((selector) => selector && !/^(from|to|\d+%)$/.test(selector));
+
+    expect(selectors.length).toBeGreaterThan(0);
+    for (const selector of selectors) {
+      expect(selector, selector).toMatch(/i9k-sticker/);
+    }
+  });
+});

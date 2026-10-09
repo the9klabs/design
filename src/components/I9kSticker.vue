@@ -139,7 +139,7 @@ function onPointerLeave(event: PointerEvent) {
 }
 
 /* A keyboard user focusing a link around the sticker sees one sweep. */
-:global(:focus-visible) > .i9k-sticker .i9k-sticker__sheen {
+:focus-visible > .i9k-sticker .i9k-sticker__sheen {
   animation: i9k-sticker-sweep 0.9s ease-in-out;
 }
 
@@ -156,7 +156,7 @@ function onPointerLeave(event: PointerEvent) {
 /* Still foil: holographic at a fixed angle, with no slide and no sweep. */
 @media (prefers-reduced-motion: reduce) {
   .i9k-sticker__sheen,
-  :global(:focus-visible) > .i9k-sticker .i9k-sticker__sheen {
+  :focus-visible > .i9k-sticker .i9k-sticker__sheen {
     transform: translate(-30px, -12px);
     transition: none;
     animation: none;
