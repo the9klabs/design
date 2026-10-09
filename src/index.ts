@@ -88,6 +88,7 @@ export { default as I9kSection } from './components/I9kSection.vue';
 export { default as I9kSectionHeading } from './components/I9kSectionHeading.vue';
 export { default as I9kSelect } from './components/I9kSelect.vue';
 export { default as I9kStat } from './components/I9kStat.vue';
+export { default as I9kSticker } from './components/I9kSticker.vue';
 export { default as I9kTabs } from './components/I9kTabs.vue';
 export { default as I9kTextarea } from './components/I9kTextarea.vue';
 export { default as I9kText } from './components/I9kText.vue';
