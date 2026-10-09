@@ -48,7 +48,7 @@ describe('I9kSideNav', () => {
     const wrapper = mount(I9kSideNav, {
       props: {
         label: 'Admin sections',
-        links: links.map(({ current: _current, ...link }) => link),
+        links: links.map((link) => ({ ...link, current: undefined })),
       },
     });
 
