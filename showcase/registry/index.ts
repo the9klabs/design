@@ -45,6 +45,7 @@ import { I9kSectionEntry } from './I9kSection';
 import { I9kSectionHeadingEntry } from './I9kSectionHeading';
 import { I9kSelectEntry } from './I9kSelect';
 import { I9kSidebarLayoutEntry } from './I9kSidebarLayout';
+import { I9kSideNavEntry } from './I9kSideNav';
 import { I9kSocialLinksEntry } from './I9kSocialLinks';
 import { I9kStatEntry } from './I9kStat';
 import { I9kTabsEntry } from './I9kTabs';
@@ -108,6 +109,7 @@ export const entries: ShowcaseEntry[] = [
   I9kProfileMenuEntry,
   I9kBreadcrumbEntry,
   I9kSidebarLayoutEntry,
+  I9kSideNavEntry,
   I9kFooterEntry,
   I9kBrandWordmarkEntry,
   I9kSocialLinksEntry,
