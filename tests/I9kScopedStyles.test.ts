@@ -37,6 +37,7 @@ const migratedComponents = [
   ['I9kSection.vue', 'i9k-section'],
   ['I9kBreadcrumb.vue', 'i9k-breadcrumb'],
   ['I9kSidebarLayout.vue', 'i9k-sidebar-layout'],
+  ['I9kSideNav.vue', 'i9k-side-nav'],
   ['I9kGlow.vue', 'i9k-glow'],
   ['I9kTabs.vue', 'i9k-tabs'],
   ['I9kChat.vue', 'i9k-chat'],

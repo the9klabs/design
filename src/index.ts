@@ -10,6 +10,7 @@ export type { I9kTextVariant } from './types/components';
 export type { I9kToastVariant } from './types/components';
 export type { I9kCollapsibleVariant } from './types/components';
 export type { I9kBreadcrumbItem } from './types/components';
+export type { I9kSideNavLink } from './types/components';
 export type { I9kTabItem } from './types/components';
 export type { I9kFooterColumn, I9kFooterLink } from './types/components';
 export type {
@@ -56,6 +57,7 @@ export { default as I9kNavMenu } from './components/I9kNavMenu.vue';
 export { default as I9kProfileMenu } from './components/I9kProfileMenu.vue';
 export { default as I9kBreadcrumb } from './components/I9kBreadcrumb.vue';
 export { default as I9kSidebarLayout } from './components/I9kSidebarLayout.vue';
+export { default as I9kSideNav } from './components/I9kSideNav.vue';
 export { default as I9kNino } from './components/I9kNino.vue';
 export { default as I9kNinoSky } from './components/I9kNinoSky.vue';
 export { default as I9kProfileCard } from './components/I9kProfileCard.vue';
