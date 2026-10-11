@@ -78,7 +78,6 @@ const tag = computed(() => props.linkComponent ?? 'a');
 }
 
 .i9k-side-nav__link[aria-current='page'] {
-  border-inline-start-color: var(--primary-color);
   background: var(--theme-bg-color);
   color: var(--primary-text-color);
   font-weight: 600;
