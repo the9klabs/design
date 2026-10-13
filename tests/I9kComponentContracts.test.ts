@@ -113,6 +113,10 @@ const stickerExports = [
   "export { default as I9kSticker } from './components/I9kSticker.vue';",
 ] as const;
 
+const bandanaAvatarExports = [
+  "export { default as I9kBandanaAvatar } from './components/I9kBandanaAvatar.vue';",
+] as const;
+
 const ninoExports = [
   `export type {
   I9kNinoAction,
@@ -193,6 +197,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(stickerExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(bandanaAvatarExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 
