@@ -2,6 +2,7 @@ import { I9kAnnouncementBarEntry } from './I9kAnnouncementBar';
 import { I9kArticleHeaderEntry } from './I9kArticleHeader';
 import { I9kAsciiEmojiEntry } from './I9kAsciiEmoji';
 import { I9kAvatarEntry } from './I9kAvatar';
+import { I9kBandanaAvatarEntry } from './I9kBandanaAvatar';
 import { I9kBadgeEntry } from './I9kBadge';
 import { I9kBlurredCirclesEntry } from './I9kBlurredCircles';
 import { I9kBrandWordmarkEntry } from './I9kBrandWordmark';
@@ -76,6 +77,7 @@ export const entries: ShowcaseEntry[] = [
   I9kTimelineCardEntry,
   I9kProfileCardEntry,
   I9kAvatarEntry,
+  I9kBandanaAvatarEntry,
   I9kCollapsibleEntry,
   I9kSectionEntry,
   I9kFaqListEntry,
