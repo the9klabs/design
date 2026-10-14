@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
 }
 
 .i9k-modal::backdrop {
-  background: hsl(0 0% 0% / 0.5);
+  background: hsl(0 0% 0% / 0.75);
 }
 
 .i9k-modal__surface {
@@ -200,6 +200,9 @@ onBeforeUnmount(() => {
 .i9k-modal__after {
   flex: none;
   margin-block-start: var(--spacing-6);
+  /* On the backdrop, which is dark in both themes, so always light text
+     (links inherit it). */
+  color: var(--white-color);
   text-align: center;
 }
 
