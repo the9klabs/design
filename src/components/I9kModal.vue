@@ -145,23 +145,34 @@ onBeforeUnmount(() => {
            the page's toaster does, above the backdrop. -->
       <I9kToaster v-if="toaster" />
     </div>
+    <!-- Under the box, still inside the <dialog>: in the top layer and the
+         focus order, and above the backdrop, but not part of the dialog's
+         own card. For a way out of the dialog's task, such as "Forgot your
+         password?" under a sign-in form. -->
+    <div v-if="open && $slots.after" class="i9k-modal__after"><slot name="after" /></div>
   </dialog>
 </template>
 
 <style scoped>
+/* The <dialog> is only the frame: the card is .i9k-modal__surface, so the
+   `after` slot can sit under the card, on the backdrop. */
 .i9k-modal {
   --i9k-modal-width: 40rem;
 
   width: min(100% - 2 * var(--spacing-8), var(--i9k-modal-width));
   max-height: calc(100dvh - 2 * var(--spacing-8));
-  /* Borders sit outside max-height, so .i9k-modal__surface can inherit it and still fit. */
-  box-sizing: content-box;
+  overflow: visible;
   padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised-color);
-  box-shadow: var(--shadow-sm);
+  border: 0;
+  background: transparent;
   color: var(--text-color);
+}
+
+/* A column, so the card shrinks (and its body scrolls) to leave room for the
+   `after` slot. Only while open: a closed <dialog> must stay display: none. */
+.i9k-modal[open] {
+  display: flex;
+  flex-direction: column;
 }
 
 .i9k-modal--sm {
@@ -179,7 +190,17 @@ onBeforeUnmount(() => {
 .i9k-modal__surface {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  max-height: inherit;
+  min-height: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.i9k-modal__after {
+  flex: none;
+  margin-block-start: var(--spacing-6);
+  text-align: center;
 }
 
 .i9k-modal__header {

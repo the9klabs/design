@@ -316,4 +316,22 @@ describe('I9kModal toaster host', () => {
       expect(pageAlert()).toBe('');
     });
   });
+
+  it('renders the after slot inside the dialog, outside its card, only while open', async () => {
+    const wrapper = mountModal({}, { after: '<a href="#forgot">Forgot your password?</a>' });
+    expect(wrapper.find('a[href="#forgot"]').exists()).toBe(false);
+
+    await wrapper.setProps({ open: true });
+    await nextTick();
+    const link = wrapper.get('a[href="#forgot"]');
+    expect(link.element.closest('dialog')).toBe(wrapper.get('dialog').element);
+    expect(link.element.closest('.i9k-modal__surface')).toBeNull();
+    expect(link.element.closest('.i9k-modal__after')).not.toBeNull();
+  });
+
+  it('renders no after wrapper without the slot', async () => {
+    const wrapper = mountModal({ open: true });
+    await nextTick();
+    expect(wrapper.find('.i9k-modal__after').exists()).toBe(false);
+  });
 });
