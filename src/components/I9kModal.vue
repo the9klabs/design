@@ -37,7 +37,9 @@ function isShown(element: HTMLDialogElement) {
 
 function show() {
   const element = dialog.value;
-  if (!element || isShown(element)) return;
+  // A route change can take the dialog off the page before a queued show()
+  // runs, and showModal() throws on a disconnected element.
+  if (!element || !element.isConnected || isShown(element)) return;
   // Kept when the dialog is shown again after the browser closed it, so focus
   // still returns to the element that opened it, not to where focus landed.
   if (!returnFocus) {
