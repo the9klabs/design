@@ -743,6 +743,10 @@ const classes = computed(() => [
   animation: i9k-nino-shake var(--i9k-nino-action-duration) steps(1, end);
 }
 
+.i9k-nino--animated.i9k-nino--action-dizzy .i9k-nino__upper {
+  animation: i9k-nino-dizzy var(--i9k-nino-action-duration) steps(1, end);
+}
+
 @keyframes i9k-nino-wave {
   0%,
   28%,
@@ -848,6 +852,38 @@ const classes = computed(() => [
   }
 }
 
+/* Three small circles of the head and arms, then rest. */
+@keyframes i9k-nino-dizzy {
+  0%,
+  32%,
+  64% {
+    transform: translate(2px, 0);
+  }
+
+  8%,
+  40%,
+  72% {
+    transform: translate(0, 2px);
+  }
+
+  16%,
+  48%,
+  80% {
+    transform: translate(-2px, 0);
+  }
+
+  24%,
+  56%,
+  88% {
+    transform: translate(0, -2px);
+  }
+
+  96%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
 /* The expression lives in the markup, never in a keyframe, so switching motion
    off leaves the chosen face exactly as it was drawn. Every animated selector
    above is listed here; keep this block last. */
@@ -872,7 +908,8 @@ const classes = computed(() => [
   .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__arm,
   .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__shadow,
   .i9k-nino--animated.i9k-nino--action-nod .i9k-nino__upper,
-  .i9k-nino--animated.i9k-nino--action-shake .i9k-nino__upper {
+  .i9k-nino--animated.i9k-nino--action-shake .i9k-nino__upper,
+  .i9k-nino--animated.i9k-nino--action-dizzy .i9k-nino__upper {
     animation: none;
   }
 }
