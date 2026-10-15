@@ -5,17 +5,22 @@ import I9kNino from './I9kNino.vue';
 import {
   DIZZY_FACE_MS,
   DRAG_THRESHOLD,
+  RETURN_MS,
   SKY_GRID,
   boopExpression,
   clampPoint,
   createSkyStars,
   createSparkles,
   driftAt,
+  easeOutCubic,
   homeOffsetAt,
+  isSettled,
   lookToward,
   planetDots,
   recentSamples,
+  releaseVelocity,
   starAlpha,
+  stepBody,
   type NinoBody,
   type NinoBounds,
   type Point,
@@ -118,6 +123,8 @@ let swallowClick = false;
 let home: Point = { x: 0, y: 0 };
 let homeSince = 0;
 let dizzyTimer: ReturnType<typeof setTimeout> | undefined;
+let returnFrom: Point = { x: 0, y: 0 };
+let returnStart = 0;
 
 function motionAllowed() {
   return props.animated && !reducedMotion;
@@ -203,8 +210,11 @@ function place(now: number) {
 
 function frame(now: number) {
   frameId = 0;
-  motionTime += lastTick === undefined ? 0 : Math.min(now - lastTick, MAX_STEP_MS);
+  const step = lastTick === undefined ? 0 : Math.min(now - lastTick, MAX_STEP_MS);
+  motionTime += step;
   lastTick = now;
+  if (flightState === 'flying') fly(step);
+  else if (flightState === 'returning') swoop();
   if (now - lastDraw >= FRAME_MS) {
     lastDraw = now;
     draw(motionTime);
@@ -232,6 +242,11 @@ function stop() {
 
 /** Re-reads whether motion is allowed: the still frame, or the loop. */
 function refresh() {
+  // Motion went off mid-flight: he lands now, by the still rules, instead of freezing in the air.
+  if (!motionAllowed()) {
+    if (flightState === 'flying') land();
+    else if (flightState === 'returning') finishReturn();
+  }
   if (running()) {
     schedule();
     return;
@@ -354,10 +369,6 @@ function finishReturn() {
   refresh();
 }
 
-function snapBack() {
-  finishReturn();
-}
-
 /** Drifting again from where he stopped, easing home along his drift path. */
 function settleInSky(sky: DOMRect, element: HTMLElement) {
   flightState = 'drifting';
@@ -394,9 +405,62 @@ function land() {
   settleInSky(sky, element);
 }
 
-function throwNino() {
+/** Where the drift would draw him right now, in window coordinates. */
+function driftTarget(): Point & { tilt: number } {
+  const sky = root.value?.getBoundingClientRect();
+  const element = flight.value;
+  if (!sky || !element) return { x: body.x, y: body.y, tilt: 0 };
+  const { x, y, tilt } = driftAt(motionTime, skyWidth, skyHeight, button.value?.offsetHeight ?? 0);
+  return {
+    x: sky.left + sky.width / 2 + x - element.offsetWidth / 2,
+    y: sky.top + sky.height / 2 + y - element.offsetHeight / 2,
+    tilt,
+  };
+}
+
+function snapBack() {
+  home = { x: 0, y: 0 };
+  if (!motionAllowed()) {
+    finishReturn();
+    return;
+  }
+  returnFrom = { x: body.x, y: body.y };
+  returnStart = motionTime;
+  flightState = 'returning';
+  schedule();
+}
+
+/** The swoop: eased from where he stopped to his drift point, which keeps moving. */
+function swoop() {
+  const progress = (motionTime - returnStart) / RETURN_MS;
+  const eased = easeOutCubic(progress);
+  const target = driftTarget();
+  body = {
+    x: returnFrom.x + (target.x - returnFrom.x) * eased,
+    y: returnFrom.y + (target.y - returnFrom.y) * eased,
+    vx: 0,
+    vy: 0,
+  };
+  drawAirborne(target.tilt * eased);
+  if (progress >= 1) finishReturn();
+}
+
+function fly(step: number) {
+  body = stepBody(body, step, windowBounds());
+  // He leans into the throw; the lean never changes his bounds.
+  drawAirborne(Math.min(Math.max(body.vx * 8, -20), 20));
+  if (isSettled(body)) land();
+}
+
+function throwNino(velocity: { vx: number; vy: number }) {
   samples = [];
-  land();
+  if (!motionAllowed()) {
+    land();
+    return;
+  }
+  body = { ...body, ...velocity };
+  flightState = 'flying';
+  schedule();
 }
 
 function pickUp(start: Point) {
@@ -456,14 +520,14 @@ function onPointerUp(event: PointerEvent) {
   if (flightState !== 'dragging') return;
   const t = performance.now();
   samples.push({ t, x: body.x, y: body.y });
-  throwNino();
+  throwNino(releaseVelocity(samples, t));
 }
 
 /** pointercancel and lostpointercapture: let go where he is, without a throw. */
 function onPointerCancel(event: PointerEvent) {
   if (!pressed || event.pointerId !== pressed.id) return;
   pressed = undefined;
-  if (flightState === 'dragging') throwNino();
+  if (flightState === 'dragging') throwNino({ vx: 0, vy: 0 });
 }
 
 function onClick(event: MouseEvent) {

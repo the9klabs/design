@@ -415,3 +415,106 @@ describe('I9kNinoSky drag', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 });
+
+describe('I9kNinoSky throw', () => {
+  let frames: FrameRequestCallback[];
+  let clock: number;
+
+  beforeEach(() => {
+    frames = [];
+    clock = 0;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(1000);
+  });
+
+  /** Runs `count` animation frames, `ms` apart. */
+  async function runFrames(count: number, ms = 16) {
+    for (let index = 0; index < count; index += 1) {
+      clock += ms;
+      for (const callback of frames.splice(0)) callback(clock);
+    }
+    await nextTick();
+  }
+
+  const xOf = (wrapper: SkyWrapper) =>
+    Number(/translate\((-?[\d.]+)px/.exec(flightOf(wrapper).style.transform)?.[1]);
+
+  /** Nino drawn at (480, y) in the window, 0 × 0 as jsdom lays him out. */
+  function placeNino(wrapper: SkyWrapper, y: number) {
+    vi.spyOn(wrapper.get('button').element, 'getBoundingClientRect').mockReturnValue(
+      rect(480, y, 0, 0),
+    );
+  }
+
+  it('throws Nino the way the pointer moved, bounces him off the window edge, and lets him settle in the sky', async () => {
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi' } });
+    placeSky(wrapper);
+    placeNino(wrapper, 620);
+    await runFrames(1);
+
+    await press(wrapper, 480, 620);
+    await move(wrapper, 490, 620);
+    clock += 40;
+    await move(wrapper, 690, 620);
+    clock += 40;
+    await move(wrapper, 890, 620);
+    await release(wrapper, 890, 620);
+    expect(isAirborne(wrapper)).toBe(true);
+
+    const xs: number[] = [];
+    for (let index = 0; index < 60; index += 1) {
+      await runFrames(1);
+      if (isAirborne(wrapper)) xs.push(xOf(wrapper));
+    }
+    expect(Math.max(...xs)).toBe(1000);
+    expect(xs[xs.length - 1]).toBeLessThan(1000);
+
+    await runFrames(400);
+    expect(isAirborne(wrapper)).toBe(false);
+    expect(nino(wrapper).classes()).not.toContain('i9k-nino--dizzy');
+  });
+
+  it('swoops back into the sky and gets dizzy when a throw comes to rest above it', async () => {
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi' } });
+    placeSky(wrapper);
+    placeNino(wrapper, 100);
+    await runFrames(1);
+
+    await press(wrapper, 480, 100);
+    await move(wrapper, 490, 100);
+    clock += 200;
+    await release(wrapper, 490, 100);
+
+    await runFrames(2);
+    expect(isAirborne(wrapper)).toBe(true);
+
+    await runFrames(25);
+    expect(isAirborne(wrapper)).toBe(false);
+    await vi.advanceTimersByTimeAsync(NINO_BEAT.duration);
+    expect(nino(wrapper).classes()).toContain('i9k-nino--dizzy');
+  });
+
+  it('lands at once when motion is switched off mid-flight', async () => {
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi' } });
+    placeSky(wrapper);
+    placeNino(wrapper, 620);
+    await runFrames(1);
+
+    await press(wrapper, 480, 620);
+    await move(wrapper, 490, 620);
+    clock += 40;
+    await move(wrapper, 690, 620);
+    await release(wrapper, 690, 620);
+    await runFrames(2);
+    expect(isAirborne(wrapper)).toBe(true);
+
+    await wrapper.setProps({ animated: false });
+    expect(isAirborne(wrapper)).toBe(false);
+    expect(flightOf(wrapper).style.transform).toBe('');
+  });
+});
