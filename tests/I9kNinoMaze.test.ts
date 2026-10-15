@@ -162,6 +162,46 @@ describe('I9kNinoMaze', () => {
     expect(wrapper.find('[data-maze-next]').exists()).toBe(true);
   });
 
+  it('moves focus to Play again when the winning step came from a d-pad button', async () => {
+    const wrapper = mountMaze();
+    const path = solveNinoMaze(MAZE)!;
+    await play(wrapper, path.slice(0, -1));
+
+    const last = wrapper.get(`[data-direction="${path[path.length - 1]}"]`);
+    (last.element as HTMLButtonElement).focus();
+    await last.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.emitted('won')).toHaveLength(1);
+    expect(document.activeElement).toBe(wrapper.get('[data-maze-replay]').element);
+  });
+
+  it('reads W A S D by physical key, so they work on an Arabic keyboard layout', async () => {
+    const wrapper = mountMaze();
+    const codes: Record<NinoMazeDirection, string> = {
+      up: 'KeyW',
+      down: 'KeyS',
+      left: 'KeyA',
+      right: 'KeyD',
+    };
+
+    const event = press(wrapper, 'ص', { code: codes[OPEN] });
+    await wrapper.vm.$nextTick();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(ninoTile(wrapper)).toBe(`${target(OPEN).x},${target(OPEN).y}`);
+  });
+
+  it('falls back to the default for a label passed as undefined', async () => {
+    const wrapper = mountMaze({ labels: { moved: undefined, up: undefined } });
+
+    press(wrapper, KEYS[OPEN]);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('[data-maze-status]').text()).toBe('Nino moved. 1 move so far.');
+    expect(wrapper.get('[data-direction="up"]').attributes('aria-label')).toBe('Move Nino up');
+  });
+
   it('plays the same maze again and hands the keyboard back to the board', async () => {
     const wrapper = mountMaze();
     await play(wrapper, solveNinoMaze(MAZE)!);

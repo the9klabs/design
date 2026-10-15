@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useId, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, useId, watch } from 'vue';
 
 import { useI9kChiptune } from '../composables/i9kChiptune';
 import { NINO_MAZE_LABELS, NINO_MAZE_SOUNDS } from '../data/ninoMaze';
@@ -75,12 +75,27 @@ const KEYS: Record<string, NinoMazeDirection> = {
   A: 'left',
   D: 'right',
 };
+// W A S D are also read by physical key, so they work on layouts where those keys type other
+// letters, such as Arabic.
+const CODES: Record<string, NinoMazeDirection> = {
+  KeyW: 'up',
+  KeyS: 'down',
+  KeyA: 'left',
+  KeyD: 'right',
+};
 
 const titleId = `${useId()}-maze-title`;
+const root = ref<HTMLElement | null>(null);
 const board = ref<HTMLElement | null>(null);
 const ninoRef = ref<I9kNinoExposed | null>(null);
 
-const text = computed<I9kNinoMazeLabels>(() => ({ ...NINO_MAZE_LABELS, ...props.labels }));
+// A key passed as undefined (an i18n lookup that came back empty) keeps its default.
+const text = computed<I9kNinoMazeLabels>(() => {
+  const overrides = Object.fromEntries(
+    Object.entries(props.labels).filter(([, value]) => value !== undefined),
+  );
+  return { ...NINO_MAZE_LABELS, ...overrides };
+});
 
 // Seed and sound are controlled-or-uncontrolled: an internal copy follows the prop and is what
 // the bar's buttons change.
@@ -176,6 +191,13 @@ function step(direction: NinoMazeDirection) {
   if (next.lastEvent === 'won') {
     emit('won', result);
     void ninoRef.value?.play('jump');
+    // A win from a d-pad button disables the button that has focus, which would drop the keyboard
+    // to the top of the page; Play again is where it goes instead.
+    if (root.value?.querySelector('.i9k-nino-maze__pad')?.contains(document.activeElement)) {
+      void nextTick(() =>
+        root.value?.querySelector<HTMLElement>('.i9k-nino-maze__replay')?.focus(),
+      );
+    }
   } else if (next.lastEvent === 'caught') {
     emit('caught', result);
   } else if (next.lastEvent === 'blocked') {
@@ -185,7 +207,7 @@ function step(direction: NinoMazeDirection) {
 
 function onKeydown(event: KeyboardEvent) {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
-  const direction = KEYS[event.key];
+  const direction = KEYS[event.key] ?? CODES[event.code];
   if (!direction) return;
   // Without this the arrow keys scroll the page out from under the board.
   event.preventDefault();
@@ -218,7 +240,7 @@ function toggleMute() {
 </script>
 
 <template>
-  <div class="i9k-nino-maze" :class="`i9k-nino-maze--${difficulty}`">
+  <div ref="root" class="i9k-nino-maze" :class="`i9k-nino-maze--${difficulty}`">
     <div class="i9k-nino-maze__bar">
       <p class="i9k-nino-maze__meta">
         <span v-if="code" class="i9k-nino-maze__code" data-maze-code>
@@ -360,7 +382,13 @@ function toggleMute() {
     </p>
 
     <div v-if="state?.status === 'won'" class="i9k-nino-maze__win">
-      <I9kButton variant="primary" size="sm" data-maze-replay @click="replay">
+      <I9kButton
+        class="i9k-nino-maze__replay"
+        variant="primary"
+        size="sm"
+        data-maze-replay
+        @click="replay"
+      >
         {{ text.playAgain }}
       </I9kButton>
       <I9kButton variant="default" size="sm" data-maze-next @click="newMaze">
