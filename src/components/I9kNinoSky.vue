@@ -3,19 +3,28 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import I9kNino from './I9kNino.vue';
 import {
+  DIZZY_FACE_MS,
+  DRAG_THRESHOLD,
   SKY_GRID,
   boopExpression,
+  clampPoint,
   createSkyStars,
   createSparkles,
   driftAt,
+  homeOffsetAt,
   lookToward,
   planetDots,
+  recentSamples,
   starAlpha,
+  type NinoBody,
+  type NinoBounds,
+  type Point,
+  type PointerSample,
   type SkyDot,
   type SkyStar,
   type Sparkle,
 } from '../composables/i9kNinoSky';
-import type { I9kNinoExpression, I9kNinoLook } from '../types/components';
+import type { I9kNinoExposed, I9kNinoExpression, I9kNinoLook } from '../types/components';
 
 const props = withDefaults(
   defineProps<{
@@ -51,6 +60,9 @@ const root = ref<HTMLElement | null>(null);
 const canvas = ref<HTMLCanvasElement | null>(null);
 const flight = ref<HTMLElement | null>(null);
 const button = ref<HTMLButtonElement | null>(null);
+const ninoFigure = ref<I9kNinoExposed | null>(null);
+/** While true, Nino is drawn in window coordinates, outside the sky's clipping. */
+const airborne = ref(false);
 
 const expression = ref<I9kNinoExpression>('idle');
 const look = ref<I9kNinoLook>('center');
@@ -88,6 +100,24 @@ let motionQuery: MediaQueryList | undefined;
 let resizeObserver: ResizeObserver | undefined;
 let intersectionObserver: IntersectionObserver | undefined;
 let themeObserver: MutationObserver | undefined;
+
+/**
+ * Drifting in the sky, held by the pointer, flying after a throw, or swooping
+ * back after landing above the sky. Every state but drifting is airborne.
+ */
+type FlightState = 'drifting' | 'dragging' | 'flying' | 'returning';
+let flightState: FlightState = 'drifting';
+let body: NinoBody = { x: 0, y: 0, vx: 0, vy: 0 };
+/** Where the pointer holds him, from his top-left, so he never jumps to it. */
+let grab: Point = { x: 0, y: 0 };
+let pressed: (Point & { id: number }) | undefined;
+let samples: PointerSample[] = [];
+/** Set by a drag, so the pointer click that ends it does not boop. */
+let swallowClick = false;
+/** Where he landed against his drift path; it fades from homeSince. */
+let home: Point = { x: 0, y: 0 };
+let homeSince = 0;
+let dizzyTimer: ReturnType<typeof setTimeout> | undefined;
 
 function motionAllowed() {
   return props.animated && !reducedMotion;
@@ -167,7 +197,8 @@ function place(now: number) {
   const nino = button.value;
   if (!element || !nino) return;
   const { x, y, tilt } = driftAt(now, skyWidth, skyHeight, nino.offsetHeight);
-  element.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${tilt.toFixed(2)}deg)`;
+  const offset = homeOffsetAt(home, now - homeSince);
+  element.style.transform = `translate(${(x + offset.x).toFixed(1)}px, ${(y + offset.y).toFixed(1)}px) rotate(${tilt.toFixed(2)}deg)`;
 }
 
 function frame(now: number) {
@@ -177,13 +208,15 @@ function frame(now: number) {
   if (now - lastDraw >= FRAME_MS) {
     lastDraw = now;
     draw(motionTime);
-    place(motionTime);
+    if (flightState === 'drifting') place(motionTime);
   }
   schedule();
 }
 
 function running() {
-  return mounted && motionAllowed() && onScreen && document.visibilityState !== 'hidden';
+  if (!mounted || !motionAllowed() || document.visibilityState === 'hidden') return false;
+  // Airborne, he can be anywhere in the window, so the sky being off screen does not stop him.
+  return onScreen || flightState !== 'drifting';
 }
 
 function schedule() {
@@ -209,7 +242,8 @@ function refresh() {
   // and no sparkles left frozen mid-flight.
   motionTime = 0;
   sparkles = [];
-  flight.value?.style.removeProperty('transform');
+  // A Nino held by the pointer stays where the pointer has him.
+  if (flightState === 'drifting') flight.value?.style.removeProperty('transform');
   draw(motionTime);
 }
 
@@ -233,6 +267,8 @@ function onMotionChange(event: MediaQueryListEvent) {
 }
 
 function boop() {
+  clearTimeout(dizzyTimer);
+  dizzyTimer = undefined;
   expression.value = boopExpression(boops);
   boops += 1;
   emit('boop', expression.value);
@@ -263,6 +299,7 @@ function boop() {
 }
 
 function onPointerMove(event: PointerEvent) {
+  if (flightState !== 'drifting') return;
   if (event.pointerType === 'touch') return;
   const nino = button.value?.getBoundingClientRect();
   if (!nino) return;
@@ -276,6 +313,168 @@ function onPointerMove(event: PointerEvent) {
     lookTimer = undefined;
     look.value = 'center';
   }, LOOK_SETTLE_MS);
+}
+
+/** The room his top-left corner has in the window, scrollbar excluded. */
+function windowBounds(): NinoBounds {
+  const element = flight.value;
+  return {
+    width: document.documentElement.clientWidth - (element?.offsetWidth ?? 0),
+    height: window.innerHeight - (element?.offsetHeight ?? 0),
+  };
+}
+
+function drawAirborne(tilt = 0) {
+  const element = flight.value;
+  if (!element) return;
+  element.style.transform = `translate(${body.x.toFixed(1)}px, ${body.y.toFixed(1)}px) rotate(${tilt.toFixed(2)}deg)`;
+}
+
+function getDizzy() {
+  clearTimeout(boopTimer);
+  boopTimer = undefined;
+  spinning.value = false;
+  clearTimeout(dizzyTimer);
+  expression.value = 'dizzy';
+  void ninoFigure.value?.play('dizzy');
+  dizzyTimer = setTimeout(() => {
+    dizzyTimer = undefined;
+    expression.value = 'idle';
+  }, DIZZY_FACE_MS);
+}
+
+/** Back in the sky, drifting, and dizzy. */
+function finishReturn() {
+  flightState = 'drifting';
+  airborne.value = false;
+  home = { x: 0, y: 0 };
+  if (motionAllowed()) place(motionTime);
+  else flight.value?.style.removeProperty('transform');
+  getDizzy();
+  refresh();
+}
+
+function snapBack() {
+  finishReturn();
+}
+
+/** Drifting again from where he stopped, easing home along his drift path. */
+function settleInSky(sky: DOMRect, element: HTMLElement) {
+  flightState = 'drifting';
+  airborne.value = false;
+  expression.value = 'idle';
+  if (!motionAllowed()) {
+    home = { x: 0, y: 0 };
+    element.style.removeProperty('transform');
+    refresh();
+    return;
+  }
+  const clampTo = (value: number, room: number) => Math.min(Math.max(value, -room), room);
+  const roomX = Math.max(0, (sky.width - element.offsetWidth) / 2);
+  const roomY = Math.max(0, (sky.height - element.offsetHeight) / 2);
+  const drift = driftAt(motionTime, skyWidth, skyHeight, button.value?.offsetHeight ?? 0);
+  home = {
+    x: clampTo(body.x + element.offsetWidth / 2 - (sky.left + sky.width / 2), roomX) - drift.x,
+    y: clampTo(body.y + element.offsetHeight / 2 - (sky.top + sky.height / 2), roomY) - drift.y,
+  };
+  homeSince = motionTime;
+  place(motionTime);
+  refresh();
+}
+
+/** At rest: above the sky's top edge he goes back dizzy; anywhere else he drifts home. */
+function land() {
+  const sky = root.value?.getBoundingClientRect();
+  const element = flight.value;
+  if (!sky || !element) return;
+  if (body.y + element.offsetHeight / 2 < sky.top) {
+    snapBack();
+    return;
+  }
+  settleInSky(sky, element);
+}
+
+function throwNino() {
+  samples = [];
+  land();
+}
+
+function pickUp(start: Point) {
+  const element = flight.value;
+  const nino = button.value;
+  if (!element || !nino) return;
+  // From his centre, so a tilt or a spin does not shift him as he is picked up.
+  const box = nino.getBoundingClientRect();
+  body = {
+    x: box.left + box.width / 2 - element.offsetWidth / 2,
+    y: box.top + box.height / 2 - element.offsetHeight / 2,
+    vx: 0,
+    vy: 0,
+  };
+  grab = { x: start.x - body.x, y: start.y - body.y };
+  samples = [];
+  flightState = 'dragging';
+  airborne.value = true;
+  swallowClick = true;
+  clearTimeout(lookTimer);
+  lookTimer = undefined;
+  look.value = 'center';
+  clearTimeout(boopTimer);
+  boopTimer = undefined;
+  clearTimeout(dizzyTimer);
+  dizzyTimer = undefined;
+  spinning.value = false;
+  expression.value = 'surprised';
+  drawAirborne();
+  schedule();
+}
+
+function onPointerDown(event: PointerEvent) {
+  if (!event.isPrimary || event.button !== 0 || pressed || flightState !== 'drifting') return;
+  swallowClick = false;
+  pressed = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  button.value?.setPointerCapture?.(event.pointerId);
+}
+
+function onDragMove(event: PointerEvent) {
+  if (!pressed || event.pointerId !== pressed.id) return;
+  if (flightState === 'drifting') {
+    if (Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) <= DRAG_THRESHOLD) return;
+    pickUp(pressed);
+  }
+  if (flightState !== 'dragging') return;
+  const t = performance.now();
+  const at = clampPoint({ x: event.clientX - grab.x, y: event.clientY - grab.y }, windowBounds());
+  body = { ...at, vx: 0, vy: 0 };
+  samples = recentSamples([...samples, { t, ...at }], t);
+  drawAirborne();
+}
+
+function onPointerUp(event: PointerEvent) {
+  if (!pressed || event.pointerId !== pressed.id) return;
+  pressed = undefined;
+  if (flightState !== 'dragging') return;
+  const t = performance.now();
+  samples.push({ t, x: body.x, y: body.y });
+  throwNino();
+}
+
+/** pointercancel and lostpointercapture: let go where he is, without a throw. */
+function onPointerCancel(event: PointerEvent) {
+  if (!pressed || event.pointerId !== pressed.id) return;
+  pressed = undefined;
+  if (flightState === 'dragging') throwNino();
+}
+
+function onClick(event: MouseEvent) {
+  // The pointer click that ends a drag is not a boop. A keyboard click
+  // (detail 0, from Enter or Space) always is.
+  if (swallowClick && event.detail !== 0) {
+    swallowClick = false;
+    return;
+  }
+  if (flightState !== 'drifting') return;
+  boop();
 }
 
 watch(() => props.animated, refresh);
@@ -326,6 +525,9 @@ onBeforeUnmount(() => {
   clearTimeout(lookTimer);
   boopTimer = undefined;
   lookTimer = undefined;
+  clearTimeout(dizzyTimer);
+  dizzyTimer = undefined;
+  pressed = undefined;
   resizeObserver?.disconnect();
   intersectionObserver?.disconnect();
   themeObserver?.disconnect();
@@ -337,16 +539,31 @@ onBeforeUnmount(() => {
 <template>
   <div ref="root" :class="classes" @pointermove="onPointerMove">
     <canvas ref="canvas" class="i9k-nino-sky__canvas" aria-hidden="true" />
-    <div ref="flight" class="i9k-nino-sky__flight">
+    <div
+      ref="flight"
+      class="i9k-nino-sky__flight"
+      :class="{ 'i9k-nino-sky__flight--airborne': airborne }"
+    >
       <button
         ref="button"
         type="button"
         class="i9k-nino-sky__nino"
         :class="{ 'i9k-nino-sky__nino--spin': spinning }"
         :aria-label="boopLabel"
-        @click="boop"
+        @click="onClick"
+        @pointerdown="onPointerDown"
+        @pointermove="onDragMove"
+        @pointerup="onPointerUp"
+        @pointercancel="onPointerCancel"
+        @lostpointercapture="onPointerCancel"
       >
-        <I9kNino :expression="expression" :look="look" size="lg" :animated="animated" />
+        <I9kNino
+          ref="ninoFigure"
+          :expression="expression"
+          :look="look"
+          size="lg"
+          :animated="animated"
+        />
       </button>
     </div>
   </div>
@@ -399,19 +616,39 @@ onBeforeUnmount(() => {
   will-change: transform;
 }
 
+/* Airborne, Nino is placed in the window rather than the sky, so the sky's
+   overflow: hidden no longer clips him; the script writes his window position
+   to transform. Above the navigation (100) and its menus (200). An ancestor
+   with a transform, filter or contain: paint would bound him to itself
+   instead of the window. */
+.i9k-nino-sky__flight--airborne {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 300;
+  translate: none;
+}
+
 .i9k-nino-sky__nino {
   display: block;
   padding: 0.25rem;
   border: 0;
   border-radius: 0.5rem;
   background: none;
-  cursor: pointer;
+  cursor: grab;
+  /* A drag that starts on Nino moves him instead of scrolling the page. */
+  touch-action: none;
+  user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
 .i9k-nino-sky__nino:focus-visible {
   outline: 2px solid var(--focus-color);
   outline-offset: 4px;
+}
+
+.i9k-nino-sky__flight--airborne .i9k-nino-sky__nino {
+  cursor: grabbing;
 }
 
 .i9k-nino-sky__nino :deep(.i9k-nino) {
