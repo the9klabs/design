@@ -30,17 +30,17 @@ provably winnable.
 
 ## 2. Files
 
-| File | Role |
-| --- | --- |
-| `src/utils/ninoMaze.ts` | Pure rules: seeded PRNG, generator, solvability check, state, turns |
-| `src/utils/chiptune.ts` | Web Audio square-wave synth, ported from 9k.school unchanged in behavior |
-| `src/composables/i9kChiptune.ts` | Wires the synth to a component: unlock on first gesture, dispose on unmount |
-| `src/components/I9kNinoMaze.vue` | The game UI |
-| `src/types/components.ts` | `I9kNinoMazeDifficulty`, `I9kNinoMazeLabels`, `I9kNinoMazeResult` |
-| `src/icons/paths.json` | Adds `arrowLeft`, `arrowRight`, `dice`, `volumeOn`, `volumeOff` |
-| `src/index.ts` | Exports the component, types and `generateNinoMaze` |
-| `stories/I9kNinoMaze.stories.ts`, `showcase/registry/I9kNinoMaze.ts` | Workshop and showcase |
-| `tests/ninoMaze.test.ts`, `tests/chiptune.test.ts`, `tests/I9kNinoMaze.test.ts` | Tests |
+| File                                                                            | Role                                                                                   |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `src/utils/ninoMaze.ts`                                                         | Pure rules: seeded PRNG, generator, solvability check, state, turns                    |
+| `src/utils/chiptune.ts`                                                         | Web Audio square-wave synth, ported from 9k.school unchanged in behavior               |
+| `src/composables/i9kChiptune.ts`                                                | Wires the synth to a component: unlock on first gesture, dispose on unmount            |
+| `src/components/I9kNinoMaze.vue`                                                | The game UI                                                                            |
+| `src/types/components.ts`                                                       | `I9kNinoMazeDifficulty`, `I9kNinoMazeLabels`, `I9kNinoMazeResult`                      |
+| `src/icons/paths.json`                                                          | Adds `arrowLeft`, `arrowRight`, `dice`, `volumeOn`, `volumeOff`                        |
+| `src/index.ts`                                                                  | Exports the component, its types, and `formatI9kNinoMazeSeed` / `parseI9kNinoMazeSeed` |
+| `stories/I9kNinoMaze.stories.ts`, `showcase/registry/I9kNinoMaze.ts`            | Workshop and showcase                                                                  |
+| `tests/ninoMaze.test.ts`, `tests/chiptune.test.ts`, `tests/I9kNinoMaze.test.ts` | Tests                                                                                  |
 
 ## 3. Rules (unchanged from 9k.school)
 
@@ -67,10 +67,10 @@ solvability check relies on this.
 2. **Dimensions.** Cells form a grid inside an odd tile grid with a wall border:
 
    | difficulty | tiles | cells | bugs |
-   | --- | --- | --- | --- |
-   | easy | 11×9 | 5×4 | 1 |
-   | normal | 15×11 | 7×5 | 2 |
-   | hard | 21×13 | 10×6 | 3 |
+   | ---------- | ----- | ----- | ---- |
+   | easy       | 11×9  | 5×4   | 1    |
+   | normal     | 15×11 | 7×5   | 2    |
+   | hard       | 21×13 | 10×6  | 3    |
 
 3. **Carve** a perfect maze with an iterative depth-first backtracker from a random corner cell,
    which becomes Nino's start.
@@ -78,8 +78,9 @@ solvability check relies on this.
    to a neighbouring cell, so the maze has loops and a bug can be avoided by another route.
 5. **Home** is the floor tile farthest from the start by breadth-first distance, ties broken by
    scan order.
-6. **Bugs.** Collect straight horizontal and vertical runs of floor tiles at least 3 long. Discard
-   tiles on home or within Manhattan distance 3 of the start. Pick runs without replacement (no two
+6. **Bugs.** Collect straight horizontal and vertical runs of floor tiles at least 3 long; a bug
+   patrols exactly one run. Discard runs that pass through the start, and tiles on home or within
+   Manhattan distance 3 of the start. Pick runs without replacement (no two
    bugs on one run) and a random tile and heading along each.
 7. **Check.** Breadth-first search over `(tile, turn)`: the set of tiles Nino can occupy after `t`
    turns without being caught, where bug positions at turn `t` are simulated from the start.
@@ -92,8 +93,10 @@ solvability check relies on this.
 The returned `NinoMaze` carries `seed` (the normalized number), `difficulty`, `width`, `height`,
 `rows` (strings using `#` and `.`), `start`, `home` and `bugs` (start position and heading).
 
-`formatNinoMazeSeed(seed)` renders a seed as an uppercase base-36 code (`4KQ2X`), and
-`parseNinoMazeSeed(code)` reverses it, so a code typed back in reproduces the maze.
+`formatI9kNinoMazeSeed(seed)` renders a seed as an uppercase base-36 code (`4KQ2X`), and
+`parseI9kNinoMazeSeed(code)` reverses it (returning `null` for anything that is not a code), so a
+code typed back in reproduces the maze. A string passed as `seed` is always hashed, never parsed;
+a consumer reading a code from a URL parses it first. The generator itself stays internal.
 
 ## 5. Component API
 
@@ -117,8 +120,9 @@ the prop when the prop changes, and emits the update. Changing `seed` or `diffic
 game on the new maze.
 
 `I9kNinoMazeLabels` has plain strings for `board` (the board group's accessible name, which carries
-the instructions), `ninoName`, `newMaze`, `playAgain`, `mute`, `unmute`, `up`, `down`, `left`,
-`right`, `start`, `blocked`, `loading`, and functions for the counted messages:
+the instructions), `mazeDescription` (the SVG's title), `ninoName`, `newMaze`, `playAgain`, `mute`
+(a toggle button's constant name; its state is `aria-pressed`), `up`, `down`, `left`, `right`,
+`start`, `blocked`, `loading`, and functions for the counted messages:
 `moved({ moves })`, `caught({ caught })`, `won({ moves })`, `mazeCode({ code })`,
 `moveCount({ moves })`. Partial labels are merged over the English defaults.
 
