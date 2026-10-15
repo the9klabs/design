@@ -59,6 +59,10 @@ Nino's flight element is in exactly one of four states:
 - If the pointer goes up before moving 4 px, it was a tap, and the `click` that follows boops him as
   today.
 - After a real drag, the `click` that follows the `pointerup` is swallowed, so a drag never boops.
+- A press on Nino while he is `flying` or `returning` catches him straight away, with no threshold:
+  he becomes `dragging` from where he is, and his flight stops.
+- A mouse move that arrives with no button held (the release happened outside the window) lets
+  go of him, like `pointercancel`.
 - The button gets `touch-action: none`, so a drag that starts on Nino does not scroll the page on
   a phone. Swipes anywhere else in the sky still scroll.
 
