@@ -92,6 +92,12 @@ plans behind this work live in `docs/superpowers/`.
   eyes) so that each animation owns one layer's transform; anything that lifts him moves `figure`,
   so his feet come along. Every keyframe is `steps(1, end)` on the two-unit grid, and every
   animated selector is repeated in the reduced-motion block at the end of the stylesheet.
+- `I9kNinoMaze` is the 404 game. Its rules and generator live in `src/utils/ninoMaze.ts` and are
+  pure: a seed (a string is hashed) always builds the same maze, and `generateNinoMaze` only
+  returns mazes its `(tile, turn)` search proves winnable, so the unit suite can test the game.
+  Sound is `src/utils/chiptune.ts` through `useI9kChiptune`, which never creates an AudioContext
+  while muted or before the visitor interacts. Without a seed it server-renders an empty board and
+  picks the seed on mount.
 - `I9kNinoSky` lets a visitor drag Nino and throw him around the window. The physics (release
   velocity, air drag, bounces off the window's edges, the home offset) lives as pure functions in
   `src/composables/i9kNinoSky.ts`, which also holds every tuning constant. The component only runs

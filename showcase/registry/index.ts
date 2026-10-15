@@ -34,6 +34,7 @@ import { I9kModalEntry } from './I9kModal';
 import { I9kNavigationEntry } from './I9kNavigation';
 import { I9kNavMenuEntry } from './I9kNavMenu';
 import { I9kNinoEntry } from './I9kNino';
+import { I9kNinoMazeEntry } from './I9kNinoMaze';
 import { I9kNinoSkyEntry } from './I9kNinoSky';
 import { I9kPageContainerEntry } from './I9kPageContainer';
 import { I9kPageHeaderEntry } from './I9kPageHeader';
@@ -85,6 +86,7 @@ export const entries: ShowcaseEntry[] = [
   I9kIconEntry,
   I9kAsciiEmojiEntry,
   I9kNinoEntry,
+  I9kNinoMazeEntry,
   I9kNinoSkyEntry,
   I9kChatEntry,
   I9kChatBubbleEntry,

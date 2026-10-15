@@ -129,6 +129,16 @@ const ninoExports = [
   "export { I9K_NINO_ACTIONS, I9K_NINO_EXPRESSIONS } from './types/components';",
 ] as const;
 
+const ninoMazeExports = [
+  `export type {
+  I9kNinoMazeDifficulty,
+  I9kNinoMazeLabels,
+  I9kNinoMazeResult,
+} from './types/components';`,
+  "export { formatI9kNinoMazeSeed, parseI9kNinoMazeSeed } from './utils/ninoMaze';",
+  "export { default as I9kNinoMaze } from './components/I9kNinoMaze.vue';",
+] as const;
+
 describe('shared component contracts', () => {
   it('exports the common component types', () => {
     expect(indexSource).toContain(
@@ -205,6 +215,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(ninoExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(ninoMazeExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 
