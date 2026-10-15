@@ -131,3 +131,41 @@ export interface I9kSideNavLink {
   /** The section the reader is in: rendered with aria-current="page". */
   current?: boolean;
 }
+
+/** How big I9kNinoMaze's maze is and how many bugs patrol it. */
+export type I9kNinoMazeDifficulty = 'easy' | 'normal' | 'hard';
+
+/** What I9kNinoMaze's `won` and `caught` events carry. */
+export interface I9kNinoMazeResult {
+  seed: number;
+  moves: number;
+  caught: number;
+}
+
+/**
+ * Every string I9kNinoMaze shows or announces. The counted messages are functions so a consumer
+ * can hand them to its own i18n (`moved: ({ moves }) => t('maze.moved', { moves })`).
+ */
+export interface I9kNinoMazeLabels {
+  /** The board's accessible name; it carries the instructions. */
+  board: string;
+  /** The SVG's title. */
+  mazeDescription: string;
+  ninoName: string;
+  newMaze: string;
+  playAgain: string;
+  /** A toggle's constant name; whether sound is off is its aria-pressed state. */
+  mute: string;
+  up: string;
+  down: string;
+  left: string;
+  right: string;
+  start: string;
+  blocked: string;
+  loading: string;
+  moved: (count: { moves: number }) => string;
+  caught: (count: { caught: number }) => string;
+  won: (count: { moves: number }) => string;
+  mazeCode: (code: { code: string }) => string;
+  moveCount: (count: { moves: number }) => string;
+}
