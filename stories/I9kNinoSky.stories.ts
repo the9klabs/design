@@ -30,3 +30,13 @@ export const Arabic: Story = {
     template: `<div dir="rtl" lang="ar"><I9kNinoSky v-bind="args" /></div>`,
   }),
 };
+
+// Page content above the sky, so a drop above it has somewhere to land: drag
+// Nino up into the text and let go, or throw him at the window's edges.
+export const UnderAPage: Story = {
+  render: (args) => ({
+    components: { I9kNinoSky },
+    setup: () => ({ args }),
+    template: `<div><div style="min-block-size: 70vh; padding: 2rem"><h2>Page content</h2><p>Drag Nino up here and let go: he swoops back to his sky, dizzy. Throw him and he bounces off the window's edges.</p></div><I9kNinoSky v-bind="args" /></div>`,
+  }),
+};

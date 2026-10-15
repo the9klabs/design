@@ -4,13 +4,13 @@ export const I9kNinoEntry: ShowcaseEntry = {
   name: 'I9kNino',
   section: 'content',
   summary:
-    'Nino, the 9k pixel mascot: an inline-SVG character with seven expressions (one of them hide and seek), stepped ambient life, a reaction beat on mood changes, one-shot actions (wave, jump, nod, shake), a talking state, a logical gaze direction, and motion that switches itself off for reduced-motion visitors.',
+    'Nino, the 9k pixel mascot: an inline-SVG character with eight expressions (one of them hide and seek, one dizzy), stepped ambient life, a reaction beat on mood changes, one-shot actions (wave, jump, nod, shake, dizzy), a talking state, a logical gaze direction, and motion that switches itself off for reduced-motion visitors.',
   agentPrompt: `Use I9kNino from @9klabs/design to put the 9k mascot on a page. He is drawn entirely from rectangles and paths on a 32x32 pixel grid, so there is no image to load and nothing blurs at small sizes. Every motion is stepped like a sprite.
 
 import { I9kNino, I9K_NINO_EXPRESSIONS, I9K_NINO_ACTIONS, type I9kNinoExposed } from '@9klabs/design';
 
 Props:
-- expression?: 'idle' | 'happy' | 'thinking' | 'worried' | 'surprised' | 'eyes-closed' | 'hiding' (default 'idle'). Only the eyes, brows, cheeks and mouth change, except 'hiding', where he covers his eyes with both hands for hide and seek and now and then peeks over the right one. A change plays a 240ms beat: his eyes shut, he hops, and the new face swaps in at 100ms.
+- expression?: 'idle' | 'happy' | 'thinking' | 'worried' | 'surprised' | 'eyes-closed' | 'hiding' | 'dizzy' (default 'idle'). Only the eyes, brows, cheeks and mouth change, except 'hiding', where he covers his eyes with both hands for hide and seek and now and then peeks over the right one. 'dizzy' swirls his eyes into spirals and wobbles his mouth. A change plays a 240ms beat: his eyes shut, he hops, and the new face swaps in at 100ms.
 - look?: 'center' | 'up' | 'down' | 'start' | 'end' (default 'center') — moves the eyes only. 'start' and 'end' follow the reading direction and swap under [dir="rtl"]. An idle Nino left at 'center' glances around on his own.
 - size?: 'sm' | 'md' | 'lg' | 'auto' (default 'md') — 2rem / 3rem / 4.5rem, or 'auto' to drop the component's own CSS sizing.
 - animated?: boolean (default true) — removes the class every animation rule hangs off when false.
@@ -19,7 +19,7 @@ Props:
 - label?: string | null (default null) — the localized name, e.g. 'Nino' or 'نينو'.
 
 Emits: action-end with { action, completed } once per play() call, except a call still running when he unmounts, or one superseded by a call its own action-end handler made: those resolve with completed: false without emitting.
-Exposes: play(action: 'wave' | 'jump' | 'nod' | 'shake'): Promise<{ action, completed }>. Hold a template ref and call it from your own events, e.g. a wave when the login page opens, a jump on success, a shake on a wrong password. A newer call cuts the running one off, and the cut-off call settles with completed: false. With animated false or prefers-reduced-motion, play() moves nothing and resolves at once with completed: true.
+Exposes: play(action: 'wave' | 'jump' | 'nod' | 'shake' | 'dizzy'): Promise<{ action, completed }>. Hold a template ref and call it from your own events, e.g. a wave when the login page opens, a jump on success, a shake on a wrong password, a dizzy sway after a tumble. A newer call cuts the running one off, and the cut-off call settles with completed: false. With animated false or prefers-reduced-motion, play() moves nothing and resolves at once with completed: true.
 
 Accessibility: with a \`label\` he renders role="img" and a <title>; without one he is aria-hidden="true". Pass \`label\` only when the mascot is content the reader would miss.
 
@@ -51,6 +51,7 @@ await nino.value.play('wave');`,
   <I9kNino expression="surprised" />
   <I9kNino expression="eyes-closed" />
   <I9kNino expression="hiding" />
+  <I9kNino expression="dizzy" />
 </div>`,
     },
     {
@@ -84,6 +85,7 @@ await nino.value.play('wave');`,
   <I9kButton size="sm" @click="$refs.nino.play('jump')">Jump</I9kButton>
   <I9kButton size="sm" @click="$refs.nino.play('nod')">Nod</I9kButton>
   <I9kButton size="sm" @click="$refs.nino.play('shake')">Shake</I9kButton>
+  <I9kButton size="sm" @click="$refs.nino.play('dizzy')">Dizzy</I9kButton>
 </div>`,
     },
     {

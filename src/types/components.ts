@@ -35,6 +35,7 @@ export const I9K_NINO_EXPRESSIONS = [
   'surprised',
   'eyes-closed',
   'hiding',
+  'dizzy',
 ] as const;
 
 export type I9kNinoExpression = (typeof I9K_NINO_EXPRESSIONS)[number];
@@ -58,7 +59,7 @@ export type I9kNinoSize = 'sm' | 'md' | 'lg' | 'auto';
  * Nino's one-shot actions, played through the exposed `play()`. A runtime
  * array for the same reason as I9K_NINO_EXPRESSIONS.
  */
-export const I9K_NINO_ACTIONS = ['wave', 'jump', 'nod', 'shake'] as const;
+export const I9K_NINO_ACTIONS = ['wave', 'jump', 'nod', 'shake', 'dizzy'] as const;
 
 export type I9kNinoAction = (typeof I9K_NINO_ACTIONS)[number];
 

@@ -332,6 +332,21 @@ describe('I9kNino', () => {
     expect(boundsOf(hands[1]).left).toBeGreaterThan(boundsOf(hands[0]).left);
   });
 
+  it('swirls a mirrored pair of eyes in the open eyes’ boxes when dizzy', () => {
+    const [left, right] = mount(I9kNino, { props: { expression: 'dizzy' } })
+      .findAll('[data-nino-part="eye"]')
+      .map(boundsOf);
+
+    expect(left).toEqual({ left: 18, top: 16, right: 30, bottom: 28 });
+    expect(right).toEqual({ left: 34, top: 16, right: 46, bottom: 28 });
+    expect(NINO_FACES.dizzy.eyes[1]).toEqual({
+      d: (NINO_FACES.dizzy.eyes[0] as { d: string }).d.replace(
+        /([MH])(\d+)/g,
+        (_, command: string, x: string) => `${command}${64 - Number(x)}`,
+      ),
+    });
+  });
+
   // A strict Content-Security-Policy (`style-src 'self'`) drops inline style
   // attributes, so an idle Nino must not render one, not even an empty one.
   it('renders on the server without a style attribute', async () => {
@@ -477,6 +492,39 @@ describe('I9kNino ambient life', () => {
     });
 
     expect(flips.join(' ')).toContain('rtl');
+  });
+
+  it('sways only his head and arms when dizzy', () => {
+    const dizzy = animationRules(stylesheet).filter(({ selector }) =>
+      selector.includes('action-dizzy'),
+    );
+
+    expect(dizzy).toHaveLength(1);
+    expect(dizzy[0].selector).toContain('.i9k-nino__upper');
+    expect(dizzy[0].value).toContain('i9k-nino-dizzy');
+  });
+
+  it('sways in two-unit steps and ends the dizzy spell at rest', () => {
+    const frames: { at: string; numbers: number[] }[] = [];
+    stylesheet.walkAtRules(/keyframes$/, (atRule) => {
+      // Scoped styles suffix keyframe names with the component's id.
+      if (!atRule.params.startsWith('i9k-nino-dizzy')) return;
+      atRule.walkDecls('transform', (decl) => {
+        frames.push({
+          at: (decl.parent as Rule).selector,
+          numbers: (decl.value.match(/-?\d+(\.\d+)?/g) ?? []).map(Number),
+        });
+      });
+    });
+
+    expect(frames.length).toBeGreaterThan(4);
+    for (const { numbers } of frames) {
+      expect(numbers.filter((value) => value % 2 !== 0)).toEqual([]);
+    }
+    const last = frames.find(({ at }) =>
+      at.split(',').some((part) => ['to', '100%'].includes(part.trim())),
+    );
+    expect(last?.numbers.every((value) => value === 0)).toBe(true);
   });
 });
 
