@@ -257,6 +257,9 @@ function refresh() {
   // and no sparkles left frozen mid-flight.
   motionTime = 0;
   sparkles = [];
+  // The home offset fades on the motion clock, which just restarted.
+  home = { x: 0, y: 0 };
+  homeSince = 0;
   // A Nino held by the pointer stays where the pointer has him.
   if (flightState === 'drifting') flight.value?.style.removeProperty('transform');
   draw(motionTime);
@@ -475,7 +478,13 @@ function pickUp(start: Point) {
     vx: 0,
     vy: 0,
   };
+  hold(start);
+}
+
+/** Into the pointer's hand, wherever he is, from where the pointer has him. */
+function hold(start: Point) {
   grab = { x: start.x - body.x, y: start.y - body.y };
+  body = { ...body, vx: 0, vy: 0 };
   samples = [];
   flightState = 'dragging';
   airborne.value = true;
@@ -494,14 +503,21 @@ function pickUp(start: Point) {
 }
 
 function onPointerDown(event: PointerEvent) {
-  if (!event.isPrimary || event.button !== 0 || pressed || flightState !== 'drifting') return;
+  if (!event.isPrimary || event.button !== 0 || pressed || flightState === 'dragging') return;
   swallowClick = false;
   pressed = { id: event.pointerId, x: event.clientX, y: event.clientY };
   button.value?.setPointerCapture?.(event.pointerId);
+  // Caught in mid-air: he is already out of the sky, so no threshold.
+  if (flightState !== 'drifting') hold(pressed);
 }
 
 function onDragMove(event: PointerEvent) {
   if (!pressed || event.pointerId !== pressed.id) return;
+  // A mouse released outside the window never sends pointerup; let go here.
+  if (event.pointerType === 'mouse' && event.buttons === 0) {
+    onPointerCancel(event);
+    return;
+  }
   if (flightState === 'drifting') {
     if (Math.hypot(event.clientX - pressed.x, event.clientY - pressed.y) <= DRAG_THRESHOLD) return;
     pickUp(pressed);

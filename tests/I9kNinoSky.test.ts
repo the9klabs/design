@@ -214,12 +214,14 @@ function pointer(
   type: string,
   x: number,
   y: number,
-  init: { id?: number; button?: number; primary?: boolean } = {},
+  init: { id?: number; button?: number; buttons?: number; primary?: boolean } = {},
 ) {
   const event = new MouseEvent(type, {
     clientX: x,
     clientY: y,
     button: init.button ?? 0,
+    // A pressed mouse reports its button as held on every move.
+    buttons: init.buttons ?? 1,
     bubbles: true,
   });
   Object.defineProperty(event, 'pointerId', { value: init.id ?? 1 });
@@ -397,6 +399,21 @@ describe('I9kNinoSky drag', () => {
     expect(isAirborne(wrapper)).toBe(false);
   });
 
+  it('lets go when a move arrives with no mouse button held', async () => {
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi', animated: false } });
+    placeSky(wrapper);
+
+    await press(wrapper, 0, 0);
+    await move(wrapper, 0, 650);
+    expect(isAirborne(wrapper)).toBe(true);
+
+    // The release happened in another window, so no pointerup ever came.
+    await move(wrapper, 300, 650, { buttons: 0 });
+    expect(isAirborne(wrapper)).toBe(false);
+    await move(wrapper, 400, 700);
+    expect(isAirborne(wrapper)).toBe(false);
+  });
+
   it('lets go of every timer and frame when it unmounts mid-drag', async () => {
     const cancel = vi.fn();
     vi.stubGlobal(
@@ -516,5 +533,50 @@ describe('I9kNinoSky throw', () => {
     await wrapper.setProps({ animated: false });
     expect(isAirborne(wrapper)).toBe(false);
     expect(flightOf(wrapper).style.transform).toBe('');
+  });
+
+  it('drifts on his usual path after motion goes off and on again', async () => {
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi' } });
+    placeSky(wrapper);
+    placeNino(wrapper, 620);
+    await runFrames(1);
+
+    // Dropped still, far from the sky's centre, so his home offset is large.
+    await press(wrapper, 480, 620);
+    await move(wrapper, 100, 700);
+    clock += 200;
+    await release(wrapper, 100, 700);
+    await runFrames(3);
+    expect(isAirborne(wrapper)).toBe(false);
+    expect(xOf(wrapper)).toBeLessThan(-300);
+
+    await wrapper.setProps({ animated: false });
+    await wrapper.setProps({ animated: true });
+    await runFrames(4);
+
+    expect(Math.abs(xOf(wrapper))).toBeLessThan(50);
+  });
+
+  it('can be caught in mid-air and held still', async () => {
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi' } });
+    placeSky(wrapper);
+    placeNino(wrapper, 620);
+    await runFrames(1);
+
+    await press(wrapper, 480, 620);
+    await move(wrapper, 490, 620);
+    clock += 40;
+    await move(wrapper, 690, 620);
+    await release(wrapper, 690, 620);
+    await runFrames(2);
+    const caughtAt = xOf(wrapper);
+
+    await press(wrapper, caughtAt, 620);
+    await runFrames(5);
+    expect(isAirborne(wrapper)).toBe(true);
+    expect(xOf(wrapper)).toBe(caughtAt);
+
+    await move(wrapper, caughtAt + 50, 620);
+    expect(xOf(wrapper)).toBe(caughtAt + 50);
   });
 });
