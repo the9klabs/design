@@ -139,6 +139,8 @@ describe('I9kModal with a native dialog', () => {
     Object.defineProperty(prototype, 'showModal', {
       configurable: true,
       value: vi.fn(function (this: HTMLDialogElement) {
+        if (!this.isConnected)
+          throw new DOMException('Element is not connected', 'InvalidStateError');
         this.setAttribute('open', '');
       }),
     });
@@ -208,6 +210,14 @@ describe('I9kModal with a native dialog', () => {
     await wrapper.setProps({ open: false });
     await wrapper.vm.$nextTick();
     expect(document.activeElement).toBe(opener);
+  });
+
+  it('does not show a dialog that left the page before the queued show ran', async () => {
+    const wrapper = mountModal({ open: false });
+    (wrapper.get('dialog').element as HTMLDialogElement).remove();
+    await wrapper.setProps({ open: true });
+    await wrapper.vm.$nextTick();
+    expect(prototype.showModal).not.toHaveBeenCalled();
   });
 
   it('ignores a stale close queued before the parent reopened the dialog', async () => {
