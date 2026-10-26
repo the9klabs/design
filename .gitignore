@@ -6,6 +6,8 @@ storybook-static/
 .DS_Store
 .playwright-mcp/
 showcase-dist/
-showcase/.ssr/
-# Local state from `wrangler pages dev`, the way to verify showcase/public/_headers.
+# Local state from `wrangler pages dev`, the way to verify showcase/pages/public/_headers.
 .wrangler/
+# VitePress dev cache and build scratch for the docs site.
+showcase/.vitepress/cache/
+showcase/.vitepress/.temp/

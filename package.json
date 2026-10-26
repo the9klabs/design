@@ -32,9 +32,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "storybook": "storybook dev -p 6006",
-    "showcase": "vite --config showcase/vite.config.ts",
+    "showcase": "vitepress dev showcase",
     "build-storybook": "storybook build",
-    "build:showcase": "vite build --config showcase/vite.config.ts && vite build --config showcase/vite.config.ts --ssr entry-server.ts --outDir .ssr && node showcase/prerender.mjs",
+    "build:showcase": "vitepress build showcase",
     "check": "npm test && npm run format:check && npm run lint && npm run typecheck && npm run build && npm run build-storybook && npm run build:showcase",
     "prepare": "npm run build"
   },
@@ -52,6 +52,7 @@
     "@storybook/vue3-vite": "^10.5.9",
     "@types/node": "^26.2.0",
     "@vitejs/plugin-vue": "latest",
+    "@vue/compiler-dom": "^3.5.41",
     "@vue/server-renderer": "^3.5.41",
     "@vue/test-utils": "^2.4.11",
     "dom-accessibility-api": "^0.6.3",
@@ -65,6 +66,7 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.67.0",
     "vite": "latest",
+    "vitepress": "^1.6.4",
     "vitest": "^4.1.11",
     "vue": "latest",
     "vue-tsc": "latest"

@@ -8,7 +8,7 @@ import { renderToString } from '@vue/server-renderer';
 
 import { I9kBadge } from '../src';
 import { extractComponent } from '../showcase/extract/props';
-import { compileDemo } from '../showcase/components/compileDemo';
+import { compileDemo } from '../showcase/.vitepress/theme/components/compileDemo';
 import { entries } from '../showcase/registry';
 import { mergeRegistry } from '../showcase/registry/merge';
 

@@ -3,12 +3,12 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-// The showcase is a static Vite build, so `showcase/public/` is the only source
+// The showcase is a static VitePress build, so `showcase/pages/public/` is the only source
 // for files that must appear verbatim at the site root. Cloudflare Pages serves
 // `.txt` from there as `text/plain` with a 200, which is what RFC 9309 asks of
 // `/robots.txt`. If this file moves or is dropped, crawlers get a 404 instead —
 // hence the guard.
-const source = resolve('showcase/public/robots.txt');
+const source = resolve('showcase/pages/public/robots.txt');
 const text = readFileSync(source, 'utf8');
 
 /** One `User-agent:` run plus the rules that follow it, per RFC 9309 section 2.2.1. */

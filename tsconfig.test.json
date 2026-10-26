@@ -10,6 +10,9 @@
     "src/**/*.vue",
     "tests/**/*.ts",
     "showcase/**/*.ts",
-    "showcase/**/*.vue"
-  ]
+    "showcase/**/*.vue",
+    "showcase/.vitepress/**/*.ts",
+    "showcase/.vitepress/**/*.vue"
+  ],
+  "exclude": ["showcase/.vitepress/cache", "showcase/.vitepress/.temp"]
 }

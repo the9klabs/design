@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { extractComponent } from '../showcase/extract/props';
-import { buildLlmsTxt, buildManifest } from '../showcase/manifest';
+import { buildManifest } from '../showcase/manifest';
 import { entries } from '../showcase/registry';
 import { mergeRegistry } from '../showcase/registry/merge';
 import { RULES } from '../showcase/registry/rules';
@@ -42,13 +42,6 @@ describe('showcase manifest', () => {
 
   it('serialises to JSON without loss', () => {
     expect(() => JSON.parse(JSON.stringify(manifest))).not.toThrow();
-  });
-
-  it('writes an llms.txt naming the package, every rule, and every component', () => {
-    const text = buildLlmsTxt(manifest);
-    expect(text).toContain('@9klabs/design');
-    for (const rule of RULES) expect(text).toContain(rule);
-    for (const component of manifest.components) expect(text).toContain(component.name);
   });
 
   it('reports a version that matches package.json when built from it', () => {

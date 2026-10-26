@@ -139,20 +139,41 @@ plans behind this work live in `docs/superpowers/`.
   is per app, never a module singleton, so server renders never share notifications. `I9kToast`
   alone stays for standing status in the page flow.
 
-## Component showcase
+## Documentation site (the showcase)
 
-`showcase/` is an agent-friendly, server-rendered page that documents each public component: a
-summary, a copy-paste-ready agent prompt, gotchas, live demos, and a props/emits/slots table
-extracted from the component's own source. `npm run showcase` serves it in dev; `npm run
-build:showcase` server-renders it to static HTML in `showcase-dist/` and also emits
-`components.json` and `llms.txt` there for machine consumption. `npm run check` runs
+`showcase/` is the documentation site at https://design.the9klabs.com, built with VitePress 1 and
+themed to the 9k design language. It is for people and agents both: a page per component (live
+demos, gotchas, a props/emits/slots table extracted from the component's own source, and a
+copy-paste agent prompt), plus foundations and guides, and a Markdown twin of every page. `npm run
+showcase` serves it in dev; `npm run build:showcase` writes static HTML to `showcase-dist/`
+together with each page's twin at `<path>.md`, `llms.txt` (an llmstxt.org index of the twins that
+opens with the rules), `llms-full.txt`, `components.json` and `sitemap.xml`. `npm run check` runs
 `build:showcase` as part of its full pipeline.
 
-The showcase is hand-authored per component, not fully automatic: every component exported from
-`src/index.ts` needs a matching entry in `showcase/registry/<Name>.ts` (summary, agent prompt,
+Where things live:
+
+- `showcase/.vitepress/config.ts` — nav, sidebar, search, head links, the ` ```vue demo ` fence,
+  and the `buildEnd` hook that writes the machine-readable files (a dev middleware serves the same
+  files).
+- `showcase/.vitepress/theme/` — the default theme extended: `style.css` maps every `--vp-*`
+  variable onto a 9k token, and the `Docs*` components are the demo frame, page actions, RTL demo
+  toggle, Nino hero and the widgets pages place by name. VitePress ships Vue's runtime-only build,
+  so `compileDemo.ts` compiles demo templates with `@vue/compiler-dom` itself. Demos sit in
+  `.vp-raw`, which `postcssIsolateStyles` keeps VitePress's prose styles out of; a theme rule of
+  ours that targets `.vp-doc` content must skip `.vp-raw` the same way.
+- `showcase/pages/` — the Markdown pages. Every guide is listed in sidebar order in
+  `showcase/site/pages.ts` (`GUIDE_GROUPS`) and needs `title` and `description` front matter;
+  `tests/showcaseSite.test.ts` fails when a file and the list disagree. A `<DocsX />` widget on a
+  page needs a Markdown form in `WIDGETS` (`showcase/site/markdown.ts`), or the build fails.
+  Static files such as `_headers` and `robots.txt` live in `showcase/pages/public/`.
+- `showcase/pages/components/[slug].paths.ts` generates every component page from the registry
+  through `showcase/site/componentPage.ts`; there is no Markdown file per component.
+
+Component pages are hand-authored per component, not fully automatic: every component exported
+from `src/index.ts` needs a matching entry in `showcase/registry/<Name>.ts` (summary, agent prompt,
 gotchas, demos), and `tests/showcaseRegistry.test.ts` enforces this — it fails whenever an exported
 component has no registry entry. Adding a component to `src/index.ts` therefore always requires
-adding its showcase entry in the same change; do not assume the showcase covers a component just
+adding its registry entry in the same change; do not assume the docs cover a component just
 because the component itself exists — check the registry, or run the test, rather than trusting a
 list here that would go stale.
 
