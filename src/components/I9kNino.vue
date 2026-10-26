@@ -64,13 +64,12 @@ function motionAllowed() {
 }
 
 const shownExpression = ref<I9kNinoExpression>(props.expression);
-const beating = ref(false);
 /**
- * The beat keyframes run once, so a mood that arrives mid-beat flips to the
- * other phase: a different animation name restarts the blink, and the new face
- * still swaps in while the eyes are shut.
+ * The two phases of a mood change. shut squashes every face part closed and
+ * holds it; open grows the new face from closed. Parts that only the new face
+ * has mount during open, so they start closed too.
  */
-const beatPhase = ref<'even' | 'odd'>('odd');
+const beatPhase = ref<'shut' | 'open' | null>(null);
 let swapTimer: ReturnType<typeof setTimeout> | undefined;
 let beatTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -84,17 +83,17 @@ watch(
   (next) => {
     clearBeat();
     if (!motionAllowed()) {
-      beating.value = false;
+      beatPhase.value = null;
       shownExpression.value = next;
       return;
     }
-    beatPhase.value = beatPhase.value === 'even' ? 'odd' : 'even';
-    beating.value = true;
+    beatPhase.value = 'shut';
     swapTimer = setTimeout(() => {
       shownExpression.value = next;
+      beatPhase.value = 'open';
     }, NINO_BEAT.swapAt);
     beatTimer = setTimeout(() => {
-      beating.value = false;
+      beatPhase.value = null;
     }, NINO_BEAT.duration);
   },
 );
@@ -106,14 +105,54 @@ watch(
   (animated) => {
     if (animated) return;
     clearBeat();
-    beating.value = false;
+    beatPhase.value = null;
     shownExpression.value = props.expression;
   },
 );
 
 const activeAction = ref<I9kNinoAction | null>(null);
-/** Re-keys the stage, so every play() starts its keyframes at frame 0, even a repeat. */
+/**
+ * Re-keys the stage, but only when an action is on screen, or gone for less
+ * than a frame: a replay (the same action again, or a cut-off chain from an
+ * action-end handler) then starts its keyframes at frame 0, while a play() from
+ * rest keeps every element, so the hiding arms and hands cross-fade and the
+ * ambient loops keep their phase.
+ */
 const run = ref(0);
+/**
+ * The action the stage is showing. It stays set after the class leaves the
+ * DOM until the browser has drawn a frame without it: a CSS animation restarts
+ * only when a style recalculation sees its name leave and return, so a replay
+ * before that (chained from play()'s promise, from nextTick, or from a timer
+ * in the same frame) must still re-key. The first frame callback runs before
+ * that frame's style pass, the second after it.
+ */
+let renderedAction: I9kNinoAction | null = null;
+let restFrame: number | undefined;
+
+function cancelRestFrame() {
+  if (restFrame === undefined) return;
+  cancelAnimationFrame(restFrame);
+  restFrame = undefined;
+}
+
+watch(
+  activeAction,
+  (action) => {
+    cancelRestFrame();
+    if (action || typeof requestAnimationFrame !== 'function') {
+      renderedAction = action;
+      return;
+    }
+    restFrame = requestAnimationFrame(() => {
+      restFrame = requestAnimationFrame(() => {
+        restFrame = undefined;
+        renderedAction = null;
+      });
+    });
+  },
+  { flush: 'post' },
+);
 let actionTimer: ReturnType<typeof setTimeout> | undefined;
 let settleAction: ((completed: boolean, notify: boolean) => void) | undefined;
 
@@ -154,7 +193,7 @@ function play(action: I9kNinoAction): Promise<I9kNinoActionResult> {
 
   return new Promise((resolve) => {
     activeAction.value = action;
-    run.value += 1;
+    if (renderedAction) run.value += 1;
     settleAction = (completed, notify) => {
       const result = { action, completed };
       // Resolve first: a throwing handler must not leave the await hanging.
@@ -168,6 +207,7 @@ function play(action: I9kNinoAction): Promise<I9kNinoActionResult> {
 onBeforeUnmount(() => {
   clearBeat();
   endAction(false, false);
+  cancelRestFrame();
 });
 
 const exposed: I9kNinoExposed = { play };
@@ -196,7 +236,7 @@ const classes = computed(() => [
   `i9k-nino--look-${props.look}`,
   `i9k-nino--${props.size}`,
   ...(props.animated ? ['i9k-nino--animated'] : []),
-  ...(beating.value ? ['i9k-nino--beat', `i9k-nino--beat-${beatPhase.value}`] : []),
+  ...(beatPhase.value ? ['i9k-nino--beat', `i9k-nino--beat-${beatPhase.value}`] : []),
   ...(props.talking ? ['i9k-nino--talking'] : []),
   ...(activeAction.value ? ['i9k-nino--acting', `i9k-nino--action-${activeAction.value}`] : []),
 ]);
@@ -216,10 +256,12 @@ const classes = computed(() => [
     <title v-if="label" :id="titleId">{{ label }}</title>
     <!--
       Layers, outermost first. Each animation moves exactly one layer, so two
-      motions never fight over the same transform: stage is re-created per
-      action, figure lifts the whole body, upper dips or slides the head and
-      arms, and eyes glances. (Kept inside the svg: a comment beside the root
-      would make the component a fragment in development builds.)
+      motions never fight over the same transform: stage is re-created when an
+      action replaces one already on screen, figure lifts the whole body, upper
+      dips or slides the head and arms, and eyes glances, with glance inside it
+      carrying the idle look-around so the look's transition never meets an
+      animation. (Kept inside the svg: a comment beside the root would make the
+      component a fragment in development builds.)
     -->
     <g :key="run" class="i9k-nino__stage" data-nino-part="stage">
       <rect
@@ -293,10 +335,12 @@ const classes = computed(() => [
             <rect v-else class="i9k-nino__brow" data-nino-part="brow" v-bind="brow" />
           </template>
           <g class="i9k-nino__eyes" data-nino-part="eyes">
-            <template v-for="(eye, index) in face.eyes" :key="`eye-${index}`">
-              <path v-if="'d' in eye" class="i9k-nino__eye" data-nino-part="eye" :d="eye.d" />
-              <rect v-else class="i9k-nino__eye" data-nino-part="eye" v-bind="eye" />
-            </template>
+            <g class="i9k-nino__glance" data-nino-part="glance">
+              <template v-for="(eye, index) in face.eyes" :key="`eye-${index}`">
+                <path v-if="'d' in eye" class="i9k-nino__eye" data-nino-part="eye" :d="eye.d" />
+                <rect v-else class="i9k-nino__eye" data-nino-part="eye" v-bind="eye" />
+              </template>
+            </g>
           </g>
           <path class="i9k-nino__mouth" data-nino-part="mouth" :d="face.mouth" />
           <path
@@ -370,10 +414,17 @@ const classes = computed(() => [
 }
 
 /* Hiding raises the arms to his face: the side arms go, the hands show. An
-   action lowers them again for its length, so a wave still has an arm. */
+   action lowers them again for its length, so a wave still has an arm. Hidden
+   by opacity rather than visibility, so the change fades both ways: a play()
+   from rest keeps the stage (see run), so the fade has elements to run on. */
 .i9k-nino--hiding:not(.i9k-nino--acting) .i9k-nino__arm,
 .i9k-nino--hiding.i9k-nino--acting .i9k-nino__hand {
-  visibility: hidden;
+  opacity: 0;
+}
+
+.i9k-nino--animated .i9k-nino__arm,
+.i9k-nino--animated .i9k-nino__hand {
+  transition: opacity 120ms ease-in-out;
 }
 
 /* A glance would slide his eyes out from behind his hands. */
@@ -412,13 +463,26 @@ const classes = computed(() => [
   transform-origin: center;
 }
 
-/* The glance moves the eye group; the blink scales each eye. Two elements, so
-   the two transforms never overwrite one another. */
+/* The look moves the eye group, the idle glance slides the glance group inside
+   it, and the blink scales each eye: three layers (eyes › glance › eye), so no
+   two transforms overwrite one another. */
 .i9k-nino__eyes {
   transform: translate(calc(var(--i9k-nino-look-x) * 4px), calc(var(--i9k-nino-look-y) * 4px));
 }
 
-.i9k-nino__eye {
+/* The look glides to its new place. The ambient glance lives one layer in, on
+   .i9k-nino__glance: a transition cannot hand over to an animation created or
+   cancelled in the same style change, so the two never share an element. */
+.i9k-nino--animated .i9k-nino__eyes {
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* The parts that scale do so about their own centre: the blink and the talk
+   now, and the mood beat's squash of every one of them. */
+.i9k-nino__eye,
+.i9k-nino__brow,
+.i9k-nino__mouth,
+.i9k-nino__hand {
   transform-box: fill-box;
   transform-origin: center;
 }
@@ -456,332 +520,404 @@ const classes = computed(() => [
   --i9k-nino-dir: -1;
 }
 
-/* Motion is stepped, never eased: every keyframe lands on the two-unit grid,
-   so Nino moves like a sprite and never blurs between device pixels. A layer
-   with several possible animations takes the last matching rule, so the rules
-   below run from the most ambient to the most deliberate, and the
-   reduced-motion block stays last. Anything that lifts him moves the figure,
-   so his feet come along; upper only dips or slides. */
+/* Motion is eased, on four curves with four jobs: the settle,
+   cubic-bezier(0.23, 1, 0.32, 1), for anything that arrives and stops (an eye
+   opening, a glance reaching its fixation, a hop rising); ease-in for anything
+   that shuts or falls; ease-in-out for anything that sways (breath, bob,
+   antenna, talk, peek); and linear for the tremor. linear is also the
+   shorthand's placeholder on the blink, the hop, the wave and the jump's three
+   lists, whose frames each name the curve of their own segment. Every stop
+   that is held still lands on the two-unit grid, so a resting Nino is as crisp
+   as a sprite, and parts leave it only while travelling between cells; the two
+   exceptions are the worried tremor (within ±1 unit, never held) and the
+   jump's shadow (a soft hint, not a pixel). A layer with several possible
+   animations takes the last matching rule, so the rules below run
+   ambient → expression → talking → beat → actions, and the reduced-motion block
+   stays last. Anything that lifts him moves the figure, so his feet come
+   along; upper only dips or slides. */
 
 /* Ambient life */
 .i9k-nino--animated .i9k-nino__upper {
-  animation: i9k-nino-breathe 2.4s steps(1, end) infinite;
+  animation: i9k-nino-breathe 2.4s ease-in-out infinite alternate;
 }
 
 .i9k-nino--animated .i9k-nino__antenna {
-  animation: i9k-nino-antenna 3.2s steps(1, end) infinite;
+  animation: i9k-nino-antenna 3.2s ease-in-out infinite;
 }
 
 .i9k-nino--animated.i9k-nino--thinking .i9k-nino__antenna {
-  animation: i9k-nino-antenna 1.2s steps(1, end) infinite;
+  animation: i9k-nino-antenna 1.2s ease-in-out infinite;
 }
 
 .i9k-nino--animated:not(.i9k-nino--eyes-closed) .i9k-nino__eye {
-  animation: i9k-nino-blink 13s steps(1, end) infinite;
+  animation: i9k-nino-blink 13s linear infinite;
 }
 
 /* Only an idle Nino with nowhere to look glances about; a caller's look wins. */
-.i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__eyes {
-  animation: i9k-nino-look-around 9s steps(1, end) infinite;
+.i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__glance {
+  animation: i9k-nino-look-around 9s cubic-bezier(0.23, 1, 0.32, 1) infinite;
 }
 
 /* Expression motion */
 .i9k-nino--animated.i9k-nino--happy .i9k-nino__figure {
-  animation: i9k-nino-hop 3.2s steps(1, end) infinite;
+  animation: i9k-nino-hop 3.2s linear infinite;
 }
 
 .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure {
-  animation: i9k-nino-bob 2.4s steps(1, end) infinite;
+  animation: i9k-nino-bob 1.2s ease-in-out infinite alternate;
 }
 
 .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure {
-  animation: i9k-nino-shiver 0.6s steps(1, end) infinite;
+  animation: i9k-nino-tremor 160ms linear infinite;
 }
 
 /* Hide and seek: now and then the right hand drops far enough for his open eye
    to peek over it, then covers it again. */
 .i9k-nino--animated.i9k-nino--hiding .i9k-nino__hand--peek {
-  animation: i9k-nino-peek 5s steps(1, end) infinite;
+  animation: i9k-nino-peek 5s ease-in-out infinite;
 }
 
 @keyframes i9k-nino-breathe {
-  0%,
-  100% {
+  from {
     transform: translateY(0);
   }
 
-  50% {
+  to {
     transform: translateY(2px);
   }
 }
 
 @keyframes i9k-nino-antenna {
   0%,
-  90%,
+  78%,
+  88%,
   100% {
     opacity: 1;
   }
 
-  82% {
+  83% {
     opacity: 0.3;
   }
 }
 
-/* Two single blinks and a double one per cycle, so it never feels metronomic. */
+/* Two single blinks and a double one per cycle, so it never feels metronomic.
+   Each shuts in 65ms and opens in 105ms: an open stop's curve carries the shut
+   that follows it, a shut stop's curve the opening. */
 @keyframes i9k-nino-blink {
   0%,
-  31%,
-  63%,
-  93%,
-  95.5%,
+  30%,
+  31.3%,
+  62%,
+  63.3%,
+  92%,
+  93.3%,
+  94.6%,
   100% {
     transform: scaleY(1);
+    animation-timing-function: ease-in;
   }
 
-  30%,
-  62%,
-  92%,
-  94.5% {
-    transform: scaleY(0.15);
+  30.5%,
+  62.5%,
+  92.5%,
+  93.8% {
+    transform: scaleY(0.1);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 }
 
+/* Three fixations, each held and reached by a 100ms flick. */
 @keyframes i9k-nino-look-around {
   0%,
-  78%,
+  60%,
+  77.1%,
   100% {
     transform: translateX(0);
   }
 
-  62% {
+  61.1%,
+  68% {
     transform: translateX(calc(var(--i9k-nino-dir) * -4px));
   }
 
-  70% {
+  69.1%,
+  76% {
     transform: translateX(calc(var(--i9k-nino-dir) * 4px));
   }
 }
 
+/* The rise settles, the fall eases in. */
 @keyframes i9k-nino-hop {
   0%,
-  90%,
+  84%,
+  93%,
   100% {
     transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  85% {
-    transform: translateY(-2px);
+  88% {
+    transform: translateY(-4px);
+    animation-timing-function: ease-in;
   }
 }
 
 @keyframes i9k-nino-bob {
-  0%,
-  100% {
+  from {
     transform: translateY(0);
   }
 
-  50% {
+  to {
     transform: translateY(-2px);
+  }
+}
+
+/* Off the grid, one of the two exceptions the header names: four offsets
+   within a unit of centre, never held, so he shivers in place rather than
+   hopping between cells. */
+@keyframes i9k-nino-tremor {
+  0%,
+  100% {
+    transform: translate(1px, -0.5px);
+  }
+
+  25% {
+    transform: translate(-1px, 0.5px);
+  }
+
+  50% {
+    transform: translate(0.5px, 1px);
+  }
+
+  75% {
+    transform: translate(-0.5px, -1px);
   }
 }
 
 @keyframes i9k-nino-peek {
   0%,
+  72%,
   88%,
   100% {
     transform: translateY(0);
   }
 
-  76% {
+  76%,
+  84% {
     transform: translateY(10px);
   }
 }
 
-@keyframes i9k-nino-shiver {
-  0%,
-  50%,
-  100% {
-    transform: translateX(0);
-  }
-
-  25% {
-    transform: translateX(-2px);
-  }
-
-  75% {
-    transform: translateX(2px);
-  }
-}
-
-/* Mood beat: the eyes shut and the body hops while the face is swapped behind
-   them. 240ms and the swap at 100ms are NINO_BEAT in src/data/nino.ts. The two
-   phases are identical; alternating between them restarts the keyframes when a
-   mood arrives mid-beat. */
-.i9k-nino--animated.i9k-nino--beat-even .i9k-nino__eye {
-  animation: i9k-nino-beat-blink 240ms steps(1, end);
-}
-
-.i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__eye {
-  animation: i9k-nino-beat-blink-again 240ms steps(1, end);
-}
-
-.i9k-nino--animated.i9k-nino--beat-even .i9k-nino__figure {
-  animation: i9k-nino-beat-hop 240ms steps(1, end);
-}
-
-.i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__figure {
-  animation: i9k-nino-beat-hop-again 240ms steps(1, end);
-}
-
-@keyframes i9k-nino-beat-blink {
-  0% {
-    transform: scaleY(0.15);
-  }
-
-  60%,
-  100% {
-    transform: scaleY(1);
-  }
-}
-
-@keyframes i9k-nino-beat-blink-again {
-  0% {
-    transform: scaleY(0.15);
-  }
-
-  60%,
-  100% {
-    transform: scaleY(1);
-  }
-}
-
-@keyframes i9k-nino-beat-hop {
-  0% {
-    transform: translateY(-2px);
-  }
-
-  60%,
-  100% {
-    transform: translateY(0);
-  }
-}
-
-@keyframes i9k-nino-beat-hop-again {
-  0% {
-    transform: translateY(-2px);
-  }
-
-  60%,
-  100% {
-    transform: translateY(0);
-  }
-}
-
-/* Talking swaps two mouth frames rather than scaling one, so it stays on the grid. */
+/* Talking trades heights between the mood's mouth and the open frame: as one
+   squashes the other grows, so the lips never cut between two drawings. */
 .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth {
-  animation: i9k-nino-talk-closed 400ms steps(1, end) infinite;
+  animation: i9k-nino-talk-closed 400ms ease-in-out infinite;
 }
 
 .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk {
-  animation: i9k-nino-talk-open 400ms steps(1, end) infinite;
+  animation: i9k-nino-talk-open 400ms ease-in-out infinite;
 }
 
 @keyframes i9k-nino-talk-closed {
   0%,
   100% {
-    visibility: visible;
+    transform: scaleY(1);
   }
 
   50% {
-    visibility: hidden;
+    transform: scaleY(0.2);
   }
 }
 
 @keyframes i9k-nino-talk-open {
   0%,
   100% {
-    visibility: hidden;
+    transform: scaleY(0.2);
+    visibility: visible;
   }
 
   50% {
+    transform: scaleY(1);
     visibility: visible;
+  }
+}
+
+/* Mood beat: a change of mood is a two-phase morph, and the body hops through
+   both. In shut, every face part squashes closed and the cheeks fade; the face
+   then swaps behind them, and in open the new parts grow from closed. Two
+   phases rather than one keyframe because the parts themselves change at the
+   swap: brows, cheeks and hands that only the new face has mount during open,
+   so they start closed too, and those that only the old face had are already
+   shut when they leave. The shut keyframes fill forwards, so the face stays
+   closed until the JS timer swaps it, however late that timer fires. The hop's
+   40% stop is NINO_BEAT.swapAt; 120ms, 180ms and 300ms are NINO_BEAT in
+   src/data/nino.ts. */
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__eye,
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__brow,
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__mouth,
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__hand {
+  animation: i9k-nino-beat-shut 120ms ease-in forwards;
+}
+
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__cheek {
+  animation: i9k-nino-beat-fade 120ms ease-in forwards;
+}
+
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__eye,
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__brow,
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__mouth,
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__hand {
+  animation: i9k-nino-beat-open 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__cheek {
+  animation: i9k-nino-beat-unfade 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.i9k-nino--animated.i9k-nino--beat .i9k-nino__figure {
+  animation: i9k-nino-beat-hop 300ms;
+}
+
+@keyframes i9k-nino-beat-shut {
+  to {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes i9k-nino-beat-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes i9k-nino-beat-open {
+  from {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes i9k-nino-beat-unfade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes i9k-nino-beat-hop {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  40% {
+    transform: translateY(-2px);
+    animation-timing-function: ease-in;
+  }
+
+  100% {
+    transform: translateY(0);
   }
 }
 
 /* Actions: one-shots from play(). Each pauses the ambient motion of the layers
    it shares, and its length comes from NINO_ACTION_DURATIONS through
-   --i9k-nino-action-duration. The look-center part of the eyes selector only
-   matches the look-around rule's specificity. */
+   --i9k-nino-action-duration. Every one starts and ends at rest (the shadow at
+   scaleX(1), its resting width), so the stage re-key that restarts an action
+   and the class removal that ends one never cut a part off mid-air. The nod,
+   shake and dizzy sway on ease-in-out; the wave and the jump's three lists
+   (jump, jump-arms and jump-shadow) name the curve of each segment at its stop,
+   so their shorthand's linear is a placeholder. The look-center part of the
+   glance selector only matches the look-around rule's specificity. */
 .i9k-nino--animated.i9k-nino--acting .i9k-nino__upper,
 .i9k-nino--animated.i9k-nino--acting .i9k-nino__figure,
-.i9k-nino--animated.i9k-nino--acting.i9k-nino--look-center .i9k-nino__eyes {
+.i9k-nino--animated.i9k-nino--acting.i9k-nino--look-center .i9k-nino__glance {
   animation: none;
 }
 
 /* The wave uses the right-hand arm on every page: arms are drawn, not read. */
 .i9k-nino--animated.i9k-nino--action-wave .i9k-nino__arm--right {
-  animation: i9k-nino-wave var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-wave var(--i9k-nino-action-duration) linear;
 }
 
 .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__figure {
-  animation: i9k-nino-jump var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-jump var(--i9k-nino-action-duration) linear;
 }
 
 .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__arm {
-  animation: i9k-nino-jump-arms var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-jump-arms var(--i9k-nino-action-duration) linear;
 }
 
 .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__shadow {
-  animation: i9k-nino-jump-shadow var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-jump-shadow var(--i9k-nino-action-duration) linear;
 }
 
 .i9k-nino--animated.i9k-nino--action-nod .i9k-nino__upper {
-  animation: i9k-nino-nod var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-nod var(--i9k-nino-action-duration) ease-in-out;
 }
 
 .i9k-nino--animated.i9k-nino--action-shake .i9k-nino__upper {
-  animation: i9k-nino-shake var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-shake var(--i9k-nino-action-duration) ease-in-out;
 }
 
 .i9k-nino--animated.i9k-nino--action-dizzy .i9k-nino__upper {
-  animation: i9k-nino-dizzy var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-dizzy var(--i9k-nino-action-duration) ease-in-out;
 }
 
+/* The arm rises and settles, wiggles three times, holds, and eases back down. */
 @keyframes i9k-nino-wave {
-  0%,
-  28%,
-  56% {
-    transform: translate(0, -16px);
+  0% {
+    transform: translate(0, 0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   14%,
-  42%,
-  70% {
-    transform: translate(-2px, -18px);
+  34%,
+  54%,
+  74% {
+    transform: translate(0, -16px);
+    animation-timing-function: ease-in-out;
   }
 
-  86%,
+  24%,
+  44%,
+  64% {
+    transform: translate(-2px, -18px);
+    animation-timing-function: ease-in-out;
+  }
+
+  86% {
+    transform: translate(0, -16px);
+    animation-timing-function: ease-in;
+  }
+
   100% {
     transform: translate(0, 0);
   }
 }
 
+/* A crouch, a rise that settles at the top, a fall that eases in, and a landing
+   crouch that settles back to standing. */
 @keyframes i9k-nino-jump {
-  0%,
-  70% {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: ease-in-out;
+  }
+
+  12% {
     transform: translateY(2px);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  15%,
-  55% {
-    transform: translateY(-6px);
-  }
-
-  30% {
+  40% {
     transform: translateY(-12px);
+    animation-timing-function: ease-in;
   }
 
-  82%,
+  65% {
+    transform: translateY(2px);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  80%,
   100% {
     transform: translateY(0);
   }
@@ -789,46 +925,64 @@ const classes = computed(() => [
 
 @keyframes i9k-nino-jump-arms {
   0%,
-  70%,
+  12% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  30%,
+  55% {
+    transform: translateY(-14px);
+    animation-timing-function: ease-in;
+  }
+
+  75%,
   100% {
     transform: translateY(0);
   }
-
-  15% {
-    transform: translateY(-14px);
-  }
 }
 
-/* The shadow is the one part off the grid: it is a soft hint, not a pixel. */
+/* Off the grid, the other exception the header names: the shadow is a soft
+   hint, not a pixel. */
 @keyframes i9k-nino-jump-shadow {
-  0%,
-  70% {
+  0% {
+    transform: scaleX(1);
+    animation-timing-function: ease-in-out;
+  }
+
+  12% {
     transform: scaleX(1.1);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  15%,
-  55% {
-    transform: scaleX(0.8);
-  }
-
-  30% {
+  40% {
     transform: scaleX(0.6);
+    animation-timing-function: ease-in;
   }
 
-  82%,
+  65% {
+    transform: scaleX(1.1);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  80%,
   100% {
     transform: scaleX(1);
   }
 }
 
 @keyframes i9k-nino-nod {
-  0%,
-  40% {
+  0% {
+    transform: translateY(0);
+  }
+
+  15%,
+  50% {
     transform: translateY(4px);
   }
 
-  20%,
-  60%,
+  35%,
+  70%,
   100% {
     transform: translateY(0);
   }
@@ -836,73 +990,81 @@ const classes = computed(() => [
 
 @keyframes i9k-nino-shake {
   0%,
-  33%,
-  66% {
-    transform: translateX(-2px);
-  }
-
-  16%,
-  50% {
-    transform: translateX(2px);
-  }
-
-  83%,
+  90%,
   100% {
     transform: translateX(0);
   }
+
+  12%,
+  44%,
+  76% {
+    transform: translateX(-2px);
+  }
+
+  28%,
+  60% {
+    transform: translateX(2px);
+  }
 }
 
-/* Three small circles of the head and arms, then rest. */
+/* Three small circles of the head and arms, then home. */
 @keyframes i9k-nino-dizzy {
   0%,
-  32%,
-  64% {
+  100% {
+    transform: translate(0, 0);
+  }
+
+  6%,
+  38%,
+  70% {
     transform: translate(2px, 0);
   }
 
-  8%,
-  40%,
-  72% {
+  14%,
+  46%,
+  78% {
     transform: translate(0, 2px);
   }
 
-  16%,
-  48%,
-  80% {
+  22%,
+  54%,
+  86% {
     transform: translate(-2px, 0);
   }
 
-  24%,
-  56%,
-  88% {
+  30%,
+  62%,
+  94% {
     transform: translate(0, -2px);
-  }
-
-  96%,
-  100% {
-    transform: translate(0, 0);
   }
 }
 
 /* The expression lives in the markup, never in a keyframe, so switching motion
-   off leaves the chosen face exactly as it was drawn. Every animated selector
-   above is listed here; keep this block last. */
+   off leaves the chosen face exactly as it was drawn. Every animated or
+   transitioned selector above is listed here; keep this block last. */
 @media (prefers-reduced-motion: reduce) {
   .i9k-nino--animated .i9k-nino__upper,
   .i9k-nino--animated .i9k-nino__antenna,
   .i9k-nino--animated.i9k-nino--thinking .i9k-nino__antenna,
   .i9k-nino--animated:not(.i9k-nino--eyes-closed) .i9k-nino__eye,
-  .i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__eyes,
+  .i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__glance,
   .i9k-nino--animated.i9k-nino--happy .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--hiding .i9k-nino__hand--peek,
-  .i9k-nino--animated.i9k-nino--beat-even .i9k-nino__eye,
-  .i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__eye,
-  .i9k-nino--animated.i9k-nino--beat-even .i9k-nino__figure,
-  .i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth,
   .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__eye,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__brow,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__mouth,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__hand,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__cheek,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__eye,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__brow,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__mouth,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__hand,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__cheek,
+  .i9k-nino--animated.i9k-nino--beat .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--action-wave .i9k-nino__arm--right,
   .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__arm,
@@ -911,6 +1073,12 @@ const classes = computed(() => [
   .i9k-nino--animated.i9k-nino--action-shake .i9k-nino__upper,
   .i9k-nino--animated.i9k-nino--action-dizzy .i9k-nino__upper {
     animation: none;
+  }
+
+  .i9k-nino--animated .i9k-nino__eyes,
+  .i9k-nino--animated .i9k-nino__arm,
+  .i9k-nino--animated .i9k-nino__hand {
+    transition: none;
   }
 }
 </style>

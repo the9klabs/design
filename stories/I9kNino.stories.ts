@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
-import { ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import I9kNino from '../src/components/I9kNino.vue';
 import {
   I9K_NINO_ACTIONS,
@@ -119,14 +119,36 @@ export const Talking: Story = {
   }),
 };
 
-// Every mood with its ambient motion: breathing, blinking, the antenna, the
-// idle glance, the happy hop, the thinking bob, the worried shiver and the
-// hiding peek.
+// Every mood with its ambient motion: continuous breathing, eased blinks, the
+// antenna, the idle glance, the happy hop, the thinking bob, the worried tremor
+// and the hiding peek.
 export const AmbientLife: Story = {
   render: () => ({
     components: { I9kNino },
     setup: () => ({ expressions: I9K_NINO_EXPRESSIONS }),
     template: `<div style="${row}"><I9kNino v-for="expression in expressions" :key="expression" :expression="expression" size="lg" /></div>`,
+  }),
+};
+
+// The face morph, on a loop: every 1.6s the mood moves on, so the two phases
+// (squash shut, swap, open) can be watched and recorded without the controls.
+export const MoodMorph: Story = {
+  render: () => ({
+    components: { I9kNino },
+    setup() {
+      const index = ref(0);
+      const paused = ref(false);
+      const expression = computed(() => I9K_NINO_EXPRESSIONS[index.value]);
+      let timer: ReturnType<typeof setInterval> | undefined;
+      onMounted(() => {
+        timer = setInterval(() => {
+          if (!paused.value) index.value = (index.value + 1) % I9K_NINO_EXPRESSIONS.length;
+        }, 1600);
+      });
+      onBeforeUnmount(() => clearInterval(timer));
+      return { expression, paused };
+    },
+    template: `<div style="${row}"><I9kNino :expression="expression" size="lg" /><output>{{ expression }}</output><button type="button" @click="paused = !paused">{{ paused ? 'resume' : 'pause' }}</button></div>`,
   }),
 };
 

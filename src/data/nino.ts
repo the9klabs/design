@@ -93,11 +93,12 @@ export const NINO_FACES: Record<I9kNinoExpression, NinoFace> = {
 export const NINO_TALK_MOUTH = 'M22 32H42V34H44V38H42V40H22V38H20V34H22Z';
 
 /**
- * A change of mood plays as a beat rather than a cut: the eyes shut and the
- * body hops for `duration` ms, and the new face swaps in at `swapAt`, while the
- * eyes are closed. The CSS keyframes use the same 240ms.
+ * A change of mood plays as a two-phase morph rather than a cut: every face
+ * part squashes shut over `swapAt` ms and holds, the new face swaps in behind
+ * the closed parts, and they open over the rest of `duration`. The CSS uses
+ * the same 120ms, 180ms and 300ms.
  */
-export const NINO_BEAT = { swapAt: 100, duration: 240 } as const;
+export const NINO_BEAT = { swapAt: 120, duration: 300 } as const;
 
 /**
  * The one place an action's length lives. The component writes it to
