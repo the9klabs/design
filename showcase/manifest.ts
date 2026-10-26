@@ -39,27 +39,3 @@ export const buildManifest = (components: ShowcaseComponent[], version: string):
     prompt: component.agentPrompt,
   })),
 });
-
-export const buildLlmsTxt = (manifest: Manifest): string => {
-  const lines = [
-    `# ${manifest.package}`,
-    '',
-    `Vue 3 design system, version ${manifest.version}.`,
-    `Import the stylesheet once at your app entry: ${manifest.styleImport}`,
-    '',
-    'Full machine-readable reference: /components.json',
-    '',
-    '## Rules',
-    '',
-    ...manifest.rules.map((rule) => `- ${rule}`),
-    '',
-    '## Components',
-    '',
-  ];
-
-  for (const component of manifest.components) {
-    lines.push(`### ${component.name}`, '', component.summary, '', component.prompt, '');
-  }
-
-  return lines.join('\n');
-};

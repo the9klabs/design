@@ -1,0 +1,210 @@
+/*
+ * The VitePress default theme, dressed in the 9k design language.
+ *
+ * Every VitePress variable is mapped onto a token from src/styles/tokens.css or theme.css, so the
+ * docs change when the system does. The theme tokens already switch on `html.dark`, which is the
+ * class VitePress toggles, so most of these need no dark-mode twin. `:root:root` outranks the
+ * default theme's own `:root` and `.dark` blocks whatever order the stylesheets load in.
+ */
+:root:root {
+  /* Brand: the green, with the darker shades for hover and press. */
+  --vp-c-brand-1: var(--primary-text-color);
+  --vp-c-brand-2: var(--primary-hover-color);
+  --vp-c-brand-3: var(--primary-color);
+  --vp-c-brand-soft: var(--selected-bg-color);
+
+  /* Surfaces: the page canvas, the sunken sidebar, the raised overlays. */
+  --vp-c-bg: var(--theme-bg-color);
+  --vp-c-bg-alt: var(--surface-sunken-color);
+  --vp-c-bg-elv: var(--surface-raised-color);
+  --vp-c-bg-soft: var(--surface-sunken-color);
+  --vp-c-border: var(--control-border-color);
+  --vp-c-divider: var(--border-color);
+  --vp-c-gutter: var(--border-color);
+
+  --vp-c-text-1: var(--theme-text-color);
+  --vp-c-text-2: var(--text-color-light);
+  --vp-c-text-3: var(--text-color-light);
+
+  --vp-c-default-soft: var(--surface-hover-color);
+
+  /* Status, from the same tokens the components use. */
+  --vp-c-tip-1: var(--primary-text-color);
+  --vp-c-tip-2: var(--primary-hover-color);
+  --vp-c-tip-3: var(--primary-color);
+  --vp-c-tip-soft: var(--selected-bg-color);
+  --vp-c-warning-1: var(--warning-color);
+  --vp-c-warning-soft: var(--warning-bg-color);
+  --vp-c-danger-1: var(--error-color);
+  --vp-c-danger-soft: var(--error-bg-color);
+
+  --vp-font-family-base: var(--font-sans);
+  --vp-font-family-mono:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+
+  --vp-code-bg: var(--code-bg);
+  --vp-code-color: var(--theme-text-color);
+  --vp-code-block-bg: var(--surface-sunken-color);
+  --vp-code-copy-code-bg: var(--surface-color);
+  --vp-code-copy-code-hover-bg: var(--surface-hover-color);
+
+  --vp-button-brand-bg: var(--primary-color);
+  --vp-button-brand-border: var(--primary-color);
+  --vp-button-brand-text: var(--on-primary-color);
+  --vp-button-brand-hover-bg: var(--primary-hover-color);
+  --vp-button-brand-hover-border: var(--primary-hover-color);
+  --vp-button-brand-hover-text: var(--on-primary-color);
+  --vp-button-brand-active-bg: var(--primary-pressed-color);
+  --vp-button-brand-active-border: var(--primary-pressed-color);
+  --vp-button-brand-active-text: var(--on-primary-color);
+  --vp-button-alt-bg: var(--surface-color);
+  --vp-button-alt-border: var(--control-border-color);
+  --vp-button-alt-text: var(--theme-text-color);
+  --vp-button-alt-hover-bg: var(--surface-hover-color);
+  --vp-button-alt-hover-border: var(--control-border-color);
+  --vp-button-alt-hover-text: var(--theme-text-color);
+
+  --vp-nav-bg-color: var(--theme-bg-color);
+  --vp-sidebar-bg-color: var(--surface-sunken-color);
+  --vp-local-search-bg: var(--theme-bg-color);
+  --vp-local-search-result-bg: var(--surface-color);
+  --vp-local-search-result-border: var(--border-color);
+  --vp-local-search-highlight-bg: var(--primary-color);
+  --vp-local-search-highlight-text: var(--on-primary-color);
+
+  --vp-home-hero-name-color: var(--primary-text-color);
+  --vp-home-hero-name-background: none;
+  --vp-home-hero-image-background-image: none;
+
+  --vp-custom-block-tip-bg: var(--selected-bg-color);
+  --vp-custom-block-tip-border: transparent;
+  --vp-custom-block-info-bg: var(--surface-sunken-color);
+  --vp-custom-block-warning-bg: var(--warning-bg-color);
+  --vp-custom-block-danger-bg: var(--error-bg-color);
+}
+
+/* Arabic pages and demos take the system's Arabic families, as the components do. */
+:lang(ar) {
+  --vp-font-family-base: var(--font-arabic-sans);
+}
+
+/* ---- Typography ------------------------------------------------------- */
+
+/* Every prose rule skips `.vp-raw`, where live demos and widgets render their own styles. */
+
+.vp-doc h1:not(:where(.vp-raw *)) {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.vp-doc h2:not(:where(.vp-raw *)) {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.vp-doc a:not(:where(.vp-raw *)) {
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+  text-underline-position: from-font;
+}
+
+.vp-doc a:not(:where(.vp-raw *)):hover {
+  text-decoration-color: var(--accent-color);
+}
+
+/* The lede under a page title, as I9kText variant="lede" sets it. */
+.vp-doc .docs-lede {
+  margin-block: var(--spacing-6) 0;
+  color: var(--vp-c-text-2);
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.vp-doc :not(pre) > code:not(:where(.vp-raw *)) {
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Shapes: the system's radii on the theme's surfaces ---------------- */
+
+.vp-doc div[class*='language-'],
+.vp-doc .custom-block,
+.VPFeature,
+.VPLocalSearchBox .shell,
+.VPLocalSearchBox .result {
+  border-radius: var(--radius-md);
+}
+
+.VPButton {
+  border-radius: var(--radius-sm) !important;
+  font-weight: 600 !important;
+}
+
+.VPFeature {
+  border: 1px solid var(--vp-c-divider);
+  background: var(--surface-color);
+  transition: var(--transition);
+}
+
+.VPFeature.link:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(var(--lift));
+  box-shadow: var(--shadow-md);
+}
+
+/* A demo's code block sits flush under its stage, as one framed example. */
+.vp-doc .docs-demo + div[class*='language-'] {
+  margin-block-start: 0;
+  border: 1px solid var(--vp-c-divider);
+  border-block-start: 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+}
+
+.vp-doc div[class*='language-'] {
+  border: 1px solid var(--vp-c-divider);
+}
+
+/* Sidebar: the selected page reads as the system's selected state. */
+.VPSidebarItem.is-active > .item > .link > .text {
+  font-weight: 600;
+}
+
+.VPSidebarItem.level-0 > .item > .text {
+  color: var(--vp-c-text-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The wordmark in the nav bar. */
+.VPNavBarTitle .title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Tables carry the API reference; give long type unions room to wrap. */
+.vp-doc table code:not(:where(.vp-raw *)) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Below 640px VitePress runs code blocks to the screen's edges. Follow it: drop the side borders
+ * and corners, and run each demo stage edge to edge too, so it stays flush with its code.
+ */
+@media (max-width: 639px) {
+  .vp-doc div[class*='language-'],
+  .vp-doc .docs-demo + div[class*='language-'] {
+    border-inline: 0;
+    border-radius: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .VPFeature.link:hover {
+    transform: none;
+  }
+}

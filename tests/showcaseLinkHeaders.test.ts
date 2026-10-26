@@ -3,12 +3,12 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { SITE_PAGES, SITE_URL } from '../showcase/site';
+import { MACHINE_PATHS, SITE_URL } from '../showcase/site/config';
 
 // Cloudflare Pages reads `_headers` from the build output root and applies it to
-// responses; Vite copies it there from `showcase/public/`. It is config, never
+// responses; VitePress copies it there from `showcase/pages/public/`. It is config, never
 // served, so the only way it can be wrong is silently.
-const text = readFileSync(resolve('showcase/public/_headers'), 'utf8');
+const text = readFileSync(resolve('showcase/pages/public/_headers'), 'utf8');
 
 /**
  * Link relation types this file is allowed to use, each registered in the IANA
@@ -17,8 +17,8 @@ const text = readFileSync(resolve('showcase/public/_headers'), 'utf8');
  */
 const REGISTERED_RELATIONS = new Set(['canonical', 'service-desc', 'service-doc', 'describedby']);
 
-/** Every URL the site serves, so a link cannot point at something absent. */
-const KNOWN_PATHS = new Set<string>([...SITE_PAGES, '/sitemap.xml']);
+/** URLs the site always serves, so a link cannot point at something absent. */
+const KNOWN_PATHS = new Set<string>(['/', ...MACHINE_PATHS, '/sitemap.xml']);
 
 interface Rule {
   pattern: string;

@@ -3,11 +3,15 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { SITE_PAGES, SITE_URL } from '../showcase/site';
+import { MACHINE_PATHS, SITE_URL, sitePaths } from '../showcase/site/config';
 import { buildSitemap } from '../showcase/sitemap';
 
+// A fixed set of pages, so these tests check the XML rather than the site's current contents;
+// tests/showcaseSite.test.ts checks that the real sitemap lists every page.
+const SITE_PAGES = sitePaths(['/', '/components', '/components/button']);
+
 const LASTMOD = '2026-09-01T16:24:03+03:00';
-const xml = buildSitemap(LASTMOD);
+const xml = buildSitemap(SITE_PAGES, LASTMOD);
 
 /** All `<loc>` values, in document order. */
 const locs = [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((match) => match[1]);
@@ -44,6 +48,12 @@ describe('showcase sitemap', () => {
     expect(locs).toEqual(SITE_PAGES.map((path) => `${SITE_URL}${path}`));
   });
 
+  it('lists the machine-readable files after the pages', () => {
+    expect(locs.slice(-MACHINE_PATHS.length)).toEqual(
+      MACHINE_PATHS.map((path) => `${SITE_URL}${path}`),
+    );
+  });
+
   it('never lists the sitemap or robots.txt as content', () => {
     for (const loc of locs) {
       expect(loc).not.toMatch(/\/sitemap\.xml$/);
@@ -60,13 +70,13 @@ describe('showcase sitemap', () => {
   });
 
   it('is pure: the same inputs render byte-identical XML', () => {
-    expect(buildSitemap(LASTMOD)).toBe(xml);
+    expect(buildSitemap(SITE_PAGES, LASTMOD)).toBe(xml);
   });
 
   it('escapes XML reserved characters', () => {
-    // SITE_PAGES holds no reserved characters today, so drive the escaper
-    // through the one caller-supplied field rather than leaving it untested.
-    const escaped = buildSitemap(`2026-01-01<&">'`);
+    // Page paths hold no reserved characters, so drive the escaper through
+    // the caller-supplied lastmod rather than leaving it untested.
+    const escaped = buildSitemap(SITE_PAGES, `2026-01-01<&">'`);
     expect(escaped).toContain('<lastmod>2026-01-01&lt;&amp;&quot;&gt;&apos;</lastmod>');
     // Every surviving ampersand must open a real entity reference.
     expect(escaped).not.toMatch(/&(?!(amp|lt|gt|quot|apos);)/);
@@ -77,7 +87,7 @@ describe('showcase sitemap', () => {
 });
 
 describe('sitemap and robots.txt agree', () => {
-  const robots = readFileSync(resolve('showcase/public/robots.txt'), 'utf8');
+  const robots = readFileSync(resolve('showcase/pages/public/robots.txt'), 'utf8');
   const declared = [...robots.matchAll(/^\s*Sitemap:\s*(\S+)\s*$/gim)].map((match) => match[1]);
 
   it('advertises exactly one sitemap, at the generated location', () => {

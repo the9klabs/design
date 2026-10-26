@@ -1,0 +1,44 @@
+# robots.txt for the @9klabs/design component showcase
+# Format: RFC 9309 - https://www.rfc-editor.org/rfc/rfc9309
+#
+# This site is public documentation for a Vue 3 design system. Nothing here is
+# private, so every path is crawlable. Machine-readable copies of the same
+# content are published alongside the HTML:
+#
+#   /llms.txt         an index of every page's Markdown, for LLM context
+#   /llms-full.txt    every page's Markdown in one file
+#   /components.json  full props, emits, slots and agent prompts per component
+#   <page>.md         any page as Markdown, e.g. /components/button.md
+
+# Default group: applies to any crawler without a more specific group below.
+User-agent: *
+Allow: /
+Allow: /assets/
+Allow: /components.json
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow:
+
+# AI and agent crawlers. Called out by name so the intent is explicit rather
+# than inherited: this documentation exists to be read by agents.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-User
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: meta-externalagent
+User-agent: CCBot
+Allow: /
+Allow: /components.json
+Allow: /llms.txt
+Allow: /llms-full.txt
+Disallow:
+
+# Sitemap. Written by the VitePress build on every publish; the origin here
+# is pinned to SITE_URL in showcase/site/config.ts and tests keep the two in step.
+Sitemap: https://design.the9klabs.com/sitemap.xml

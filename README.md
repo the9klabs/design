@@ -1,6 +1,11 @@
 # @9klabs/design
 
-Reusable Vue 3 primitives from [ismail9k.com](https://ismail9k.com/design-system/).
+Vue 3 components, design tokens and guidance for the 9k products.
+
+**Documentation: [design.the9klabs.com](https://design.the9klabs.com)**: a page per component
+with live demos and an API reference read from source, plus foundations and guides. Every page is
+also Markdown at its URL plus `.md`, and
+[`llms.txt`](https://design.the9klabs.com/llms.txt) indexes them for AI agents.
 
 ## Install
 
@@ -26,39 +31,10 @@ The package is framework-agnostic within Vue 3. `I9kButton` uses a normal anchor
 
 ## Exports
 
-- `I9kButton`
-- `I9kButtonGroup`
-- `I9kBadge`
-- `I9kCluster`
-- `I9kContainer`, the shared page column the site chrome and page sections sit in
-- `I9kField`
-- `I9kGrid`
-- `I9kIconButton`
-- `I9kInput`
-- `I9kLinkCard`
-- `I9kPageContainer`
-- `I9kPageHeader`
-- `I9kPanel`
-- `I9kRadioGroup`
-- `I9kSectionHeading`
-- `I9kSelect`
-- `I9kStat`
-- `I9kTextarea`
-- `I9kText`
-- `I9kTimelineCard`
-- `I9kArticleHeader`
-- `I9kAsciiEmoji`
-- `I9kBlurredCircles`
-- `I9kBrandWordmark`
-- `I9kFaqList`
-- `I9kFooter`
-- `I9kIcon`, a curated local set of brand, social, contact, and navigation SVG icons
-- `I9kLanguageSwitcher`
-- `I9kNavigation`
-- `I9kSocialLinks`
-- `I9kThemeSwitcher`
-- `I9kToast`
-- design tokens and primitive CSS via `@9klabs/design/style.css`
+Every component and type is exported from the package root, alongside the design tokens and
+primitive CSS in `@9klabs/design/style.css`. The
+[components index](https://design.the9klabs.com/components) lists them all by purpose. It is
+built from the docs registry, which a test keeps in step with `src/index.ts`.
 
 ## Component sizes and styles
 
@@ -258,9 +234,15 @@ npm run lint
 npm run typecheck
 npm run build
 npm run build-storybook
+npm run showcase
+npm run build:showcase
 npm pack --dry-run
 ```
 
-`npm test` runs Vitest once; `npm run test:watch` reruns affected unit tests while developing. `npm run check` runs tests, formatting, linting, TypeScript checks, the library build, and the static Storybook build in one command.
+`npm test` runs Vitest once; `npm run test:watch` reruns affected unit tests while developing. `npm run check` runs tests, formatting, linting, TypeScript checks, the library build, the static Storybook build, and the docs site build in one command.
+
+`npm run showcase` serves the documentation site (VitePress, in `showcase/`) with live reload;
+`npm run build:showcase` writes it, with its Markdown twins, `llms.txt`, `llms-full.txt` and
+`components.json`, to `showcase-dist/`.
 
 Storybook provides isolated component documentation, light and dark theme previews, and accessibility checks. It is development tooling only and is excluded from the published npm tarball.
