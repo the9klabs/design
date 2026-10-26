@@ -42,7 +42,10 @@ function isShown(element: HTMLDialogElement) {
 
 function show() {
   const element = dialog.value;
-  if (unmounting || !element || isShown(element)) return;
+  // The dialog can also leave the document while the modal stays mounted (a
+  // removed subtree, a page cached by <KeepAlive>), and showModal() throws on a
+  // disconnected element.
+  if (unmounting || !element || !element.isConnected || isShown(element)) return;
   // Kept when the dialog is shown again after the browser closed it, so focus
   // still returns to the element that opened it, not to where focus landed.
   if (!returnFocus) {

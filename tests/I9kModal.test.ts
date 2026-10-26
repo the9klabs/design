@@ -213,6 +213,14 @@ describe('I9kModal with a native dialog', () => {
     expect(document.activeElement).toBe(opener);
   });
 
+  it('does not show a dialog that left the page before the queued show ran', async () => {
+    const wrapper = mountModal({ open: false });
+    (wrapper.get('dialog').element as HTMLDialogElement).remove();
+    await wrapper.setProps({ open: true });
+    await wrapper.vm.$nextTick();
+    expect(prototype.showModal).not.toHaveBeenCalled();
+  });
+
   // A route change in an app: the old page stays mounted under <Suspense>
   // while the next one loads, and re-rendering the modal then (here its
   // `dismissible` coming back once a save ends) leaves Vue a ref update that
