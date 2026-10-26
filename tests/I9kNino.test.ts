@@ -439,13 +439,38 @@ describe('I9kNino ambient life', () => {
     stylesheet = await buildComponentStylesheet('I9kNino');
   });
 
-  it('moves like a sprite: every animation is stepped, never eased', () => {
-    const moving = animationRules(stylesheet).filter(({ value }) => value !== 'none');
+  it('breathes and bobs continuously rather than in steps', () => {
+    const rules = animationRules(stylesheet);
+    const valueFor = (fragment: string) =>
+      rules.find(({ selector }) => selector.includes(fragment))?.value ?? '';
 
-    expect(moving.length).toBeGreaterThan(0);
-    for (const { selector, value } of moving) {
-      // The build minifies steps(1, end) to its keyword, step-end.
-      expect(value, selector).toMatch(/steps\(1,\s*end\)|step-end/);
+    expect(valueFor('.i9k-nino--animated .i9k-nino__upper')).toContain('alternate');
+    expect(valueFor('.i9k-nino--animated .i9k-nino__upper')).toContain('ease-in-out');
+    expect(valueFor('.i9k-nino--thinking .i9k-nino__figure')).toContain('alternate');
+    expect(valueFor('.i9k-nino--worried .i9k-nino__figure')).toContain('linear');
+  });
+
+  it('eases each blink shut and open', () => {
+    const timings: string[] = [];
+    stylesheet.walkAtRules(/keyframes$/, (atRule) => {
+      if (!atRule.params.startsWith('i9k-nino-blink')) return;
+      atRule.walkDecls('animation-timing-function', (decl) => {
+        timings.push(decl.value);
+      });
+    });
+
+    expect(timings).toContain('ease-in');
+    expect(timings.some((value) => /cubic-bezier\(0?\.23,\s*1,\s*0?\.32,\s*1\)/.test(value))).toBe(
+      true,
+    );
+  });
+
+  // Task 4 makes this file-wide once the beat and the actions are eased too.
+  it('keeps the ambient motion it had, now eased', () => {
+    const pending = /--beat|--action-/;
+    for (const { selector, value } of animationRules(stylesheet)) {
+      if (pending.test(selector)) continue;
+      expect(value, selector).not.toMatch(/steps\(|step-end|step-start/);
     }
   });
 
@@ -717,6 +742,33 @@ describe('I9kNino talking', () => {
 
     expect(
       hidden.some((selector) => /^\.i9k-nino__mouth--talk\[data-v-[\w-]+\]$/.test(selector)),
+    ).toBe(true);
+  });
+
+  it('trades mouth heights instead of cutting between frames', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kNino');
+    const frames: { name: string; prop: string; value: string }[] = [];
+    stylesheet.walkAtRules(/keyframes$/, (atRule) => {
+      if (!atRule.params.startsWith('i9k-nino-talk-')) return;
+      atRule.walkDecls((decl) => {
+        frames.push({ name: atRule.params, prop: decl.prop, value: decl.value });
+      });
+    });
+
+    const open = frames.filter(({ name }) => name.startsWith('i9k-nino-talk-open'));
+    expect(
+      open.filter(({ prop }) => prop === 'visibility').every(({ value }) => value === 'visible'),
+    ).toBe(true);
+    expect(
+      open.some(({ prop, value }) => prop === 'transform' && /scaleY\(0?\.2\)/.test(value)),
+    ).toBe(true);
+    expect(
+      frames.some(
+        ({ name, prop, value }) =>
+          name.startsWith('i9k-nino-talk-closed') &&
+          prop === 'transform' &&
+          /scaleY\(0?\.2\)/.test(value),
+      ),
     ).toBe(true);
   });
 });

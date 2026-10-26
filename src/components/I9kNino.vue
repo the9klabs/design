@@ -429,7 +429,12 @@ const classes = computed(() => [
   transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.i9k-nino__eye {
+/* The parts that scale do so about their own centre: the blink and the talk
+   now, and the mood beat's squash of every one of them. */
+.i9k-nino__eye,
+.i9k-nino__brow,
+.i9k-nino__mouth,
+.i9k-nino__hand {
   transform-box: fill-box;
   transform-origin: center;
 }
@@ -467,160 +472,221 @@ const classes = computed(() => [
   --i9k-nino-dir: -1;
 }
 
-/* Motion is stepped, never eased: every keyframe lands on the two-unit grid,
-   so Nino moves like a sprite and never blurs between device pixels. A layer
-   with several possible animations takes the last matching rule, so the rules
-   below run from the most ambient to the most deliberate, and the
-   reduced-motion block stays last. Anything that lifts him moves the figure,
-   so his feet come along; upper only dips or slides. */
+/* Motion is eased, on four curves with four jobs: the settle,
+   cubic-bezier(0.23, 1, 0.32, 1), for anything that arrives and stops (an eye
+   opening, a glance reaching its fixation, a hop rising); ease-in for anything
+   that shuts or falls; ease-in-out for anything that sways (breath, bob,
+   antenna, talk, peek); and linear for the tremor. Every stop that is held
+   still lands on the two-unit grid, so a resting Nino is as crisp as a sprite,
+   and parts leave it only while travelling between cells. A layer with several
+   possible animations takes the last matching rule, so the rules below run
+   ambient → expression → talking → beat → actions, and the reduced-motion block
+   stays last. Anything that lifts him moves the figure, so his feet come
+   along; upper only dips or slides. */
 
 /* Ambient life */
 .i9k-nino--animated .i9k-nino__upper {
-  animation: i9k-nino-breathe 2.4s steps(1, end) infinite;
+  animation: i9k-nino-breathe 2.4s ease-in-out infinite alternate;
 }
 
 .i9k-nino--animated .i9k-nino__antenna {
-  animation: i9k-nino-antenna 3.2s steps(1, end) infinite;
+  animation: i9k-nino-antenna 3.2s ease-in-out infinite;
 }
 
 .i9k-nino--animated.i9k-nino--thinking .i9k-nino__antenna {
-  animation: i9k-nino-antenna 1.2s steps(1, end) infinite;
+  animation: i9k-nino-antenna 1.2s ease-in-out infinite;
 }
 
+/* linear is a placeholder: every blink frame names the curve of its own segment. */
 .i9k-nino--animated:not(.i9k-nino--eyes-closed) .i9k-nino__eye {
-  animation: i9k-nino-blink 13s steps(1, end) infinite;
+  animation: i9k-nino-blink 13s linear infinite;
 }
 
 /* Only an idle Nino with nowhere to look glances about; a caller's look wins. */
 .i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__glance {
-  animation: i9k-nino-look-around 9s steps(1, end) infinite;
+  animation: i9k-nino-look-around 9s cubic-bezier(0.23, 1, 0.32, 1) infinite;
 }
 
 /* Expression motion */
 .i9k-nino--animated.i9k-nino--happy .i9k-nino__figure {
-  animation: i9k-nino-hop 3.2s steps(1, end) infinite;
+  animation: i9k-nino-hop 3.2s linear infinite;
 }
 
 .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure {
-  animation: i9k-nino-bob 2.4s steps(1, end) infinite;
+  animation: i9k-nino-bob 1.2s ease-in-out infinite alternate;
 }
 
 .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure {
-  animation: i9k-nino-shiver 0.6s steps(1, end) infinite;
+  animation: i9k-nino-tremor 160ms linear infinite;
 }
 
 /* Hide and seek: now and then the right hand drops far enough for his open eye
    to peek over it, then covers it again. */
 .i9k-nino--animated.i9k-nino--hiding .i9k-nino__hand--peek {
-  animation: i9k-nino-peek 5s steps(1, end) infinite;
+  animation: i9k-nino-peek 5s ease-in-out infinite;
 }
 
 @keyframes i9k-nino-breathe {
-  0%,
-  100% {
+  from {
     transform: translateY(0);
   }
 
-  50% {
+  to {
     transform: translateY(2px);
   }
 }
 
 @keyframes i9k-nino-antenna {
   0%,
-  90%,
+  78%,
+  88%,
   100% {
     opacity: 1;
   }
 
-  82% {
+  83% {
     opacity: 0.3;
   }
 }
 
-/* Two single blinks and a double one per cycle, so it never feels metronomic. */
+/* Two single blinks and a double one per cycle, so it never feels metronomic.
+   Each shuts in 65ms and opens in 105ms: an open stop's curve carries the shut
+   that follows it, a shut stop's curve the opening. */
 @keyframes i9k-nino-blink {
   0%,
-  31%,
-  63%,
-  93%,
-  95.5%,
+  30%,
+  31.3%,
+  62%,
+  63.3%,
+  92%,
+  93.3%,
+  94.6%,
   100% {
     transform: scaleY(1);
+    animation-timing-function: ease-in;
   }
 
-  30%,
-  62%,
-  92%,
-  94.5% {
-    transform: scaleY(0.15);
+  30.5%,
+  62.5%,
+  92.5%,
+  93.8% {
+    transform: scaleY(0.1);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 }
 
+/* Three fixations, each held and reached by a 100ms flick. */
 @keyframes i9k-nino-look-around {
   0%,
-  78%,
+  60%,
+  77.1%,
   100% {
     transform: translateX(0);
   }
 
-  62% {
+  61.1%,
+  68% {
     transform: translateX(calc(var(--i9k-nino-dir) * -4px));
   }
 
-  70% {
+  69.1%,
+  76% {
     transform: translateX(calc(var(--i9k-nino-dir) * 4px));
   }
 }
 
+/* The rise settles, the fall eases in. */
 @keyframes i9k-nino-hop {
   0%,
-  90%,
+  84%,
+  93%,
   100% {
     transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  85% {
-    transform: translateY(-2px);
+  88% {
+    transform: translateY(-4px);
+    animation-timing-function: ease-in;
   }
 }
 
 @keyframes i9k-nino-bob {
-  0%,
-  100% {
+  from {
     transform: translateY(0);
   }
 
-  50% {
+  to {
     transform: translateY(-2px);
+  }
+}
+
+/* The one motion off the grid: four offsets within a unit of centre, never
+   held, so he shivers in place rather than hopping between cells. */
+@keyframes i9k-nino-tremor {
+  0%,
+  100% {
+    transform: translate(1px, -0.5px);
+  }
+
+  25% {
+    transform: translate(-1px, 0.5px);
+  }
+
+  50% {
+    transform: translate(0.5px, 1px);
+  }
+
+  75% {
+    transform: translate(-0.5px, -1px);
   }
 }
 
 @keyframes i9k-nino-peek {
   0%,
+  72%,
   88%,
   100% {
     transform: translateY(0);
   }
 
-  76% {
+  76%,
+  84% {
     transform: translateY(10px);
   }
 }
 
-@keyframes i9k-nino-shiver {
+/* Talking trades heights between the mood's mouth and the open frame: as one
+   squashes the other grows, so the lips never cut between two drawings. */
+.i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth {
+  animation: i9k-nino-talk-closed 400ms ease-in-out infinite;
+}
+
+.i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk {
+  animation: i9k-nino-talk-open 400ms ease-in-out infinite;
+}
+
+@keyframes i9k-nino-talk-closed {
   0%,
-  50%,
   100% {
-    transform: translateX(0);
+    transform: scaleY(1);
   }
 
-  25% {
-    transform: translateX(-2px);
+  50% {
+    transform: scaleY(0.2);
+  }
+}
+
+@keyframes i9k-nino-talk-open {
+  0%,
+  100% {
+    transform: scaleY(0.2);
+    visibility: visible;
   }
 
-  75% {
-    transform: translateX(2px);
+  50% {
+    transform: scaleY(1);
+    visibility: visible;
   }
 }
 
@@ -685,37 +751,6 @@ const classes = computed(() => [
   60%,
   100% {
     transform: translateY(0);
-  }
-}
-
-/* Talking swaps two mouth frames rather than scaling one, so it stays on the grid. */
-.i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth {
-  animation: i9k-nino-talk-closed 400ms steps(1, end) infinite;
-}
-
-.i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk {
-  animation: i9k-nino-talk-open 400ms steps(1, end) infinite;
-}
-
-@keyframes i9k-nino-talk-closed {
-  0%,
-  100% {
-    visibility: visible;
-  }
-
-  50% {
-    visibility: hidden;
-  }
-}
-
-@keyframes i9k-nino-talk-open {
-  0%,
-  100% {
-    visibility: hidden;
-  }
-
-  50% {
-    visibility: visible;
   }
 }
 
