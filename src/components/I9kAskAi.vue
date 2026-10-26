@@ -12,11 +12,14 @@ const props = withDefaults(
     /** `h2` matches I9kFooter's column headings. */
     headingTag?: string;
     providers?: I9kAskAiProvider[];
+    /** `center` for I9kFooter's centred layout. */
+    align?: 'start' | 'center';
   }>(),
   {
     heading: null,
     headingTag: 'h2',
     providers: () => ['chatgpt', 'perplexity', 'claude'],
+    align: 'start',
   },
 );
 
@@ -28,7 +31,7 @@ const links = computed(() =>
 </script>
 
 <template>
-  <div class="i9k-ask-ai">
+  <div class="i9k-ask-ai" :class="{ 'i9k-ask-ai--center': align === 'center' }">
     <component :is="headingTag" v-if="heading" class="i9k-ask-ai__heading">{{ heading }}</component>
     <ul class="i9k-ask-ai__list">
       <li v-for="link in links" :key="link.id">
@@ -54,6 +57,13 @@ const links = computed(() =>
   flex-direction: column;
   align-items: flex-start;
   gap: var(--spacing-7);
+}
+.i9k-ask-ai--center {
+  align-items: center;
+  text-align: center;
+}
+.i9k-ask-ai--center .i9k-ask-ai__list {
+  justify-content: center;
 }
 .i9k-ask-ai__heading {
   margin: 0;

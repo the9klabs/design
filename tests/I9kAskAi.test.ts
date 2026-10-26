@@ -49,6 +49,13 @@ describe('I9kAskAi', () => {
     expect(wrapper.emitted('click')?.[0]?.[0]).toBe('claude');
   });
 
+  it('centres itself only when asked', () => {
+    expect(mount(I9kAskAi, { props: { prompt } }).classes()).not.toContain('i9k-ask-ai--center');
+    expect(mount(I9kAskAi, { props: { prompt, align: 'center' } }).classes()).toContain(
+      'i9k-ask-ai--center',
+    );
+  });
+
   it('keeps the logos out of the accessible name', () => {
     const wrapper = mount(I9kAskAi, { props: { prompt } });
     expect(wrapper.find('svg').attributes('aria-hidden')).toBe('true');

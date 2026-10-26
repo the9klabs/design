@@ -14,6 +14,7 @@ Props:
 - heading?: string | null (default null) — the visible heading above the links.
 - headingTag?: string (default 'h2') — matches I9kFooter's column headings.
 - providers?: I9kAskAiProvider[] (default ['chatgpt', 'perplexity', 'claude']) — which assistants, in order.
+- align?: 'start' | 'center' (default 'start') — 'center' in I9kFooter's centred layout (no columns and no brand).
 
 Emits: click — [provider: I9kAskAiProvider, event: MouseEvent].
 
