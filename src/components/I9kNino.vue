@@ -112,25 +112,44 @@ watch(
 
 const activeAction = ref<I9kNinoAction | null>(null);
 /**
- * Re-keys the stage, but only when an action is already on screen: a replay
- * (the same action again, or a cut-off chain from an action-end handler) then
- * starts its keyframes at frame 0, while a play() from rest keeps every
- * element, so the hiding arms and hands cross-fade and the ambient loops keep
- * their phase.
+ * Re-keys the stage, but only when an action is on screen, or gone for less
+ * than a frame: a replay (the same action again, or a cut-off chain from an
+ * action-end handler) then starts its keyframes at frame 0, while a play() from
+ * rest keeps every element, so the hiding arms and hands cross-fade and the
+ * ambient loops keep their phase.
  */
 const run = ref(0);
 /**
- * The action the DOM last rendered, recorded after the flush that drew it.
- * endAction() nulls activeAction synchronously inside play(), and a replay
- * from an action-end handler sees activeAction === null while the DOM still
- * carries the old class, so only this post-flush record tells a replay from a
- * play() at rest.
+ * The action the stage is showing. It stays set after the class leaves the
+ * DOM until the browser has drawn a frame without it: a CSS animation restarts
+ * only when a style recalculation sees its name leave and return, so a replay
+ * before that (chained from play()'s promise, from nextTick, or from a timer
+ * in the same frame) must still re-key. The first frame callback runs before
+ * that frame's style pass, the second after it.
  */
 let renderedAction: I9kNinoAction | null = null;
+let restFrame: number | undefined;
+
+function cancelRestFrame() {
+  if (restFrame === undefined) return;
+  cancelAnimationFrame(restFrame);
+  restFrame = undefined;
+}
+
 watch(
   activeAction,
   (action) => {
-    renderedAction = action;
+    cancelRestFrame();
+    if (action || typeof requestAnimationFrame !== 'function') {
+      renderedAction = action;
+      return;
+    }
+    restFrame = requestAnimationFrame(() => {
+      restFrame = requestAnimationFrame(() => {
+        restFrame = undefined;
+        renderedAction = null;
+      });
+    });
   },
   { flush: 'post' },
 );
@@ -188,6 +207,7 @@ function play(action: I9kNinoAction): Promise<I9kNinoActionResult> {
 onBeforeUnmount(() => {
   clearBeat();
   endAction(false, false);
+  cancelRestFrame();
 });
 
 const exposed: I9kNinoExposed = { play };

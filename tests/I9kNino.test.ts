@@ -957,7 +957,9 @@ describe('I9kNino actions', () => {
     expect(wrapper.findAll('[data-nino-part="hand"]')[0].element).toBe(hand);
   });
 
-  it('re-keys the stage only to restart an action that is already on screen', async () => {
+  // A CSS animation restarts only once a style pass has seen its name leave, so a replay chained
+  // from the promise (before the next frame) must still re-key the stage.
+  it('re-keys the stage for a replay that arrives before the next frame', async () => {
     const wrapper = mount(I9kNino);
     void ninoOf(wrapper).play('nod');
     await nextTick();
@@ -965,6 +967,19 @@ describe('I9kNino actions', () => {
 
     await advance(NINO_ACTION_DURATIONS.nod);
     expect(wrapper.classes()).not.toContain('i9k-nino--acting');
+    void ninoOf(wrapper).play('nod');
+    await nextTick();
+    expect(wrapper.get('[data-nino-part="stage"]').element).not.toBe(first);
+  });
+
+  it('keeps the stage for a replay once a frame has been drawn without the action', async () => {
+    const wrapper = mount(I9kNino);
+    void ninoOf(wrapper).play('nod');
+    await nextTick();
+    const first = wrapper.get('[data-nino-part="stage"]').element;
+
+    await advance(NINO_ACTION_DURATIONS.nod + 40);
+    expect(vi.getTimerCount()).toBe(0);
     void ninoOf(wrapper).play('nod');
     await nextTick();
     expect(wrapper.get('[data-nino-part="stage"]').element).toBe(first);
@@ -1031,6 +1046,8 @@ describe('I9kNino actions', () => {
       [{ action: 'wave', completed: false }],
       [{ action: 'nod', completed: true }],
     ]);
+    // Two frames later the stage's rest check has run too; nothing else may remain.
+    await advance(40);
     expect(vi.getTimerCount()).toBe(0);
   });
 
