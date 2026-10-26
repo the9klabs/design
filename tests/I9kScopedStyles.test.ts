@@ -18,6 +18,7 @@ const migratedComponents = [
   ['I9kToaster.vue', 'i9k-toaster'],
   ['I9kModal.vue', 'i9k-modal'],
   ['I9kAsciiEmoji.vue', 'i9k-ascii-emoji'],
+  ['I9kAskAi.vue', 'i9k-ask-ai'],
   ['I9kLinkCard.vue', 'i9k-link-card'],
   ['I9kProfileCard.vue', 'i9k-profile-card'],
   ['I9kAvatar.vue', 'i9k-avatar'],

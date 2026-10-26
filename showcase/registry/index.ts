@@ -1,6 +1,7 @@
 import { I9kAnnouncementBarEntry } from './I9kAnnouncementBar';
 import { I9kArticleHeaderEntry } from './I9kArticleHeader';
 import { I9kAsciiEmojiEntry } from './I9kAsciiEmoji';
+import { I9kAskAiEntry } from './I9kAskAi';
 import { I9kAvatarEntry } from './I9kAvatar';
 import { I9kBandanaAvatarEntry } from './I9kBandanaAvatar';
 import { I9kBadgeEntry } from './I9kBadge';
@@ -85,6 +86,7 @@ export const entries: ShowcaseEntry[] = [
   I9kGithubEmbedEntry,
   I9kIconEntry,
   I9kAsciiEmojiEntry,
+  I9kAskAiEntry,
   I9kNinoEntry,
   I9kNinoMazeEntry,
   I9kNinoSkyEntry,

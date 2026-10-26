@@ -113,6 +113,7 @@ const routed = (link: I9kFooterLink) =>
             </div>
           </nav>
         </div>
+        <div v-if="$slots.extra" class="i9k-footer__extra"><slot name="extra" /></div>
         <div v-if="socialLinks.length || $slots.utilities" class="i9k-footer__bottom">
           <I9kSocialLinks
             v-if="socialLinks.length"
@@ -139,6 +140,7 @@ const routed = (link: I9kFooterLink) =>
         ><slot
           ><p v-if="tagline" class="footer-tagline">{{ tagline }}</p></slot
         >
+        <slot name="extra" />
         <div v-if="$slots.utilities" class="i9k-footer__utilities"><slot name="utilities" /></div>
       </template>
     </I9kContainer>
@@ -266,6 +268,12 @@ const routed = (link: I9kFooterLink) =>
 /* ↗ points toward the end of the line; mirrored, it still does in Arabic. */
 .i9k-footer__external:dir(rtl) {
   transform: scaleX(-1);
+}
+/* A row of its own between the columns and the bottom row, such as
+   I9kAskAi. */
+.i9k-footer__extra {
+  padding-block: var(--spacing-10);
+  border-top: 1px solid var(--border-color);
 }
 .i9k-footer__bottom {
   display: flex;
