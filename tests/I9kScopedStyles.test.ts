@@ -45,6 +45,7 @@ const migratedComponents = [
   ['I9kChatBubble.vue', 'i9k-chat-bubble'],
   ['I9kChatComposer.vue', 'i9k-chat-composer'],
   ['I9kChatOptions.vue', 'i9k-chat-options'],
+  ['I9kNinoMaze.vue', 'i9k-nino-maze'],
 ] as const;
 
 describe('migrated component styles', () => {

@@ -58,6 +58,26 @@ export const WithFooter: Story = {
   }),
 };
 
+export const WithAfter: Story = {
+  args: { title: 'Sign in', size: 'sm' },
+  render: (args) => ({
+    components: { I9kButton, I9kModal },
+    setup: () => {
+      const open = ref(false);
+      return { args, open };
+    },
+    template: `<div>
+      <I9kButton @click="open = true">Sign in</I9kButton>
+      <I9kModal v-bind="args" v-model:open="open">
+        <label>Email <input name="email" type="email" autofocus /></label>
+        <template #after>
+          <a href="#forgot">Forgot your password?</a>
+        </template>
+      </I9kModal>
+    </div>`,
+  }),
+};
+
 export const NotDismissible: Story = {
   args: {
     title: 'Saving module',

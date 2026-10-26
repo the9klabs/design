@@ -24,6 +24,7 @@ Emits:
 Slots:
 - default — the dialog body; it scrolls when taller than the viewport.
 - footer — actions such as Cancel and Save, aligned to the end.
+- after — under the dialog's card, on the backdrop, centred: a way out of the dialog's task, such as "Forgot your password?" under a sign-in form. It is inside the <dialog>, so it is reachable by keyboard while the modal is open.
 
 Behavior: the parent owns \`open\`. The close button and Escape only request a close by emitting update:open(false); the modal closes when the parent sets \`open\` to false, and focus returns to the element that was focused when it opened.
 
@@ -50,6 +51,7 @@ Usage:
     'Set `dismissible` to false while saving; Escape is then ignored and the close button is disabled.',
     'The body and footer render only while open, so a form inside remounts on every opening; put `autofocus` on its first field.',
     'The footer renders outside the body, so a submit button there needs `form="<id>"` pointing at the form in the body.',
+    'The `after` slot sits on the backdrop, not on the card: keep it to a short link, which reads on the dimmed page.',
   ],
   demos: [
     {

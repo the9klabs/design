@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { defineComponent, h, nextTick, ref } from 'vue';
+import { Suspense, defineComponent, h, nextTick, ref } from 'vue';
 
 import I9kModal from '../src/components/I9kModal.vue';
 import I9kToaster from '../src/components/I9kToaster.vue';
@@ -139,8 +139,9 @@ describe('I9kModal with a native dialog', () => {
     Object.defineProperty(prototype, 'showModal', {
       configurable: true,
       value: vi.fn(function (this: HTMLDialogElement) {
-        if (!this.isConnected)
-          throw new DOMException('Element is not connected', 'InvalidStateError');
+        if (!this.isConnected) {
+          throw new DOMException('The element is not in a Document.', 'InvalidStateError');
+        }
         this.setAttribute('open', '');
       }),
     });
@@ -218,6 +219,53 @@ describe('I9kModal with a native dialog', () => {
     await wrapper.setProps({ open: true });
     await wrapper.vm.$nextTick();
     expect(prototype.showModal).not.toHaveBeenCalled();
+  });
+
+  // A route change in an app: the old page stays mounted under <Suspense>
+  // while the next one loads, and re-rendering the modal then (here its
+  // `dismissible` coming back once a save ends) leaves Vue a ref update that
+  // runs after the old page is gone, so `close` from hide() finds the removed
+  // <dialog> again. It must not be shown again: showModal() throws on it.
+  it('never shows again a dialog its page left while open', async () => {
+    const pages: Record<string, () => void> = {};
+    const page = ref('a');
+    const dismissible = ref(true);
+    const Page = defineComponent({
+      props: { name: { type: String, required: true } },
+      async setup(props) {
+        await new Promise<void>((resolve) => (pages[props.name] = resolve));
+        return () =>
+          props.name === 'a'
+            ? h(I9kModal, { open: true, title: 'Quiz', dismissible: dismissible.value })
+            : h('p', 'Next page');
+      },
+    });
+    const app = mount(
+      defineComponent(
+        () => () =>
+          h(Suspense, null, { default: () => h(Page, { name: page.value, key: page.value }) }),
+      ),
+      { attachTo: document.body },
+    );
+    mounted.push(app);
+    await tick();
+    pages.a!();
+    await tick();
+    const modal = app.getComponent(I9kModal);
+    expect(prototype.showModal).toHaveBeenCalledTimes(1);
+
+    dismissible.value = false;
+    page.value = 'b';
+    await tick();
+    dismissible.value = true;
+    await tick();
+    pages.b!();
+    await tick();
+    await tick();
+
+    expect(app.text()).toBe('Next page');
+    expect(prototype.showModal).toHaveBeenCalledTimes(1);
+    expect(modal.emitted('update:open')).toBeUndefined();
   });
 
   it('ignores a stale close queued before the parent reopened the dialog', async () => {
@@ -325,5 +373,23 @@ describe('I9kModal toaster host', () => {
       expect(wrapper.findAll('main [data-i9k-toast]')).toHaveLength(1);
       expect(pageAlert()).toBe('');
     });
+  });
+
+  it('renders the after slot inside the dialog, outside its card, only while open', async () => {
+    const wrapper = mountModal({}, { after: '<a href="#forgot">Forgot your password?</a>' });
+    expect(wrapper.find('a[href="#forgot"]').exists()).toBe(false);
+
+    await wrapper.setProps({ open: true });
+    await nextTick();
+    const link = wrapper.get('a[href="#forgot"]');
+    expect(link.element.closest('dialog')).toBe(wrapper.get('dialog').element);
+    expect(link.element.closest('.i9k-modal__surface')).toBeNull();
+    expect(link.element.closest('.i9k-modal__after')).not.toBeNull();
+  });
+
+  it('renders no after wrapper without the slot', async () => {
+    const wrapper = mountModal({ open: true });
+    await nextTick();
+    expect(wrapper.find('.i9k-modal__after').exists()).toBe(false);
   });
 });

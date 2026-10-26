@@ -30,6 +30,11 @@ const dialog = ref<HTMLDialogElement | null>(null);
 const titleId = useId();
 const descriptionId = useId();
 let returnFocus: HTMLElement | null = null;
+// Set as the modal starts to unmount. Its `dialog` ref cannot be trusted from
+// then on: a re-render while an ancestor <Suspense> waits for a new page
+// leaves Vue a ref update that runs after the unmount and puts the removed
+// <dialog> back, where showModal() throws.
+let unmounting = false;
 
 function isShown(element: HTMLDialogElement) {
   return element.open || element.hasAttribute('open');
@@ -37,9 +42,10 @@ function isShown(element: HTMLDialogElement) {
 
 function show() {
   const element = dialog.value;
-  // A route change can take the dialog off the page before a queued show()
-  // runs, and showModal() throws on a disconnected element.
-  if (!element || !element.isConnected || isShown(element)) return;
+  // The dialog can also leave the document while the modal stays mounted (a
+  // removed subtree, a page cached by <KeepAlive>), and showModal() throws on a
+  // disconnected element.
+  if (unmounting || !element || !element.isConnected || isShown(element)) return;
   // Kept when the dialog is shown again after the browser closed it, so focus
   // still returns to the element that opened it, not to where focus landed.
   if (!returnFocus) {
@@ -73,13 +79,14 @@ function onCancel(event: Event) {
   if (event.cancelable) dismiss();
 }
 
-// Skip a close the parent already asked for, and a stale `close` queued by
-// hide() that arrives after the dialog was shown again. Otherwise the browser
+// Skip a close the parent already asked for, a stale `close` queued by hide()
+// that arrives after the dialog was shown again, and the one hide() queues as
+// the modal unmounts, which arrives once it is gone. Otherwise the browser
 // closed the dialog on its own: forward the request, then show the dialog
 // again if the parent kept `open` true (not dismissible, or declined).
 function onNativeClose() {
   const element = dialog.value;
-  if (!element || isShown(element) || !props.open) return;
+  if (unmounting || !element || isShown(element) || !props.open) return;
   dismiss();
   void nextTick(() => {
     if (props.open) show();
@@ -109,6 +116,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  unmounting = true;
   document.removeEventListener('keydown', onDocumentKeydown, true);
   hide();
 });
@@ -147,23 +155,34 @@ onBeforeUnmount(() => {
            the page's toaster does, above the backdrop. -->
       <I9kToaster v-if="toaster" />
     </div>
+    <!-- Under the box, still inside the <dialog>: in the top layer and the
+         focus order, and above the backdrop, but not part of the dialog's
+         own card. For a way out of the dialog's task, such as "Forgot your
+         password?" under a sign-in form. -->
+    <div v-if="open && $slots.after" class="i9k-modal__after"><slot name="after" /></div>
   </dialog>
 </template>
 
 <style scoped>
+/* The <dialog> is only the frame: the card is .i9k-modal__surface, so the
+   `after` slot can sit under the card, on the backdrop. */
 .i9k-modal {
   --i9k-modal-width: 40rem;
 
   width: min(100% - 2 * var(--spacing-8), var(--i9k-modal-width));
   max-height: calc(100dvh - 2 * var(--spacing-8));
-  /* Borders sit outside max-height, so .i9k-modal__surface can inherit it and still fit. */
-  box-sizing: content-box;
+  overflow: visible;
   padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised-color);
-  box-shadow: var(--shadow-sm);
+  border: 0;
+  background: transparent;
   color: var(--text-color);
+}
+
+/* A column, so the card shrinks (and its body scrolls) to leave room for the
+   `after` slot. Only while open: a closed <dialog> must stay display: none. */
+.i9k-modal[open] {
+  display: flex;
+  flex-direction: column;
 }
 
 .i9k-modal--sm {
@@ -175,13 +194,26 @@ onBeforeUnmount(() => {
 }
 
 .i9k-modal::backdrop {
-  background: hsl(0 0% 0% / 0.5);
+  background: hsl(0 0% 0% / 0.75);
 }
 
 .i9k-modal__surface {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  max-height: inherit;
+  min-height: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.i9k-modal__after {
+  flex: none;
+  margin-block-start: var(--spacing-6);
+  /* On the backdrop, which is dark in both themes, so always light text
+     (links inherit it). */
+  color: var(--white-color);
+  text-align: center;
 }
 
 .i9k-modal__header {

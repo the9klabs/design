@@ -22,6 +22,12 @@ export type {
   I9kNinoSize,
 } from './types/components';
 export { I9K_NINO_ACTIONS, I9K_NINO_EXPRESSIONS } from './types/components';
+export type {
+  I9kNinoMazeDifficulty,
+  I9kNinoMazeLabels,
+  I9kNinoMazeResult,
+} from './types/components';
+export { formatI9kNinoMazeSeed, parseI9kNinoMazeSeed } from './utils/ninoMaze';
 export type { I9kCheckboxOption, I9kRadioOption } from './types/forms';
 export type { I9kIconName } from './types/icons';
 export { I9K_COUNTRY_DIAL_CODES } from './data/countries';
@@ -60,6 +66,7 @@ export { default as I9kSidebarLayout } from './components/I9kSidebarLayout.vue';
 export { default as I9kSideNav } from './components/I9kSideNav.vue';
 export { default as I9kNino } from './components/I9kNino.vue';
 export { default as I9kNinoSky } from './components/I9kNinoSky.vue';
+export { default as I9kNinoMaze } from './components/I9kNinoMaze.vue';
 export { default as I9kProfileCard } from './components/I9kProfileCard.vue';
 export { default as I9kAvatar } from './components/I9kAvatar.vue';
 export { default as I9kBandanaAvatar } from './components/I9kBandanaAvatar.vue';

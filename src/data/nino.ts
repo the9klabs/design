@@ -77,6 +77,16 @@ export const NINO_FACES: Record<I9kNinoExpression, NinoFace> = {
       { d: 'M34 14H36V18H38V14H40V18H42V14H44V18H46V14H48V30H34Z' },
     ],
   },
+  // Thrown out of the sky. Each eye is a square spiral in the open eye's box,
+  // the right one the left one mirrored, and the mouth wobbles.
+  dizzy: {
+    eyes: [
+      { d: 'M18 16H30V28H18V20H26V24H24V22H20V26H28V18H18Z' },
+      { d: 'M46 16H34V28H46V20H38V24H40V22H44V26H36V18H46Z' },
+    ],
+    mouth:
+      'M18 36H22V34H26V36H30V34H34V36H38V34H42V36H46V40H42V38H38V40H34V38H30V40H26V38H22V40H18Z',
+  },
 };
 
 /** The shared open-mouth frame Nino talks with. */
@@ -99,4 +109,5 @@ export const NINO_ACTION_DURATIONS: Record<I9kNinoAction, number> = {
   jump: 800,
   nod: 900,
   shake: 700,
+  dizzy: 1200,
 };
