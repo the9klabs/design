@@ -37,7 +37,7 @@
     "build-storybook": "storybook build",
     "build:showcase": "vitepress build showcase",
     "check": "pnpm test && pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run build-storybook && pnpm run build:showcase",
-    "prepare": "pnpm run build"
+    "prepare": "npm run build"
   },
   "keywords": [
     "vue",
