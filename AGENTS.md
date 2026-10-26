@@ -200,6 +200,9 @@ nothing.
 - `pnpm install`: install the dependencies recorded in `pnpm-lock.yaml`. The repository uses pnpm
   only, at the version pinned by `packageManager` in `package.json`; do not add a
   `package-lock.json`, because Cloudflare picks its package manager from the lockfile it finds.
+  The one exception is `prepare`, which stays `npm run build`: consumers install this package from
+  git, and npm-based ones (`ismail9k.com`, `the9klabs.com`) run `prepare` where pnpm is not
+  installed.
 - `pnpm run storybook`: start the component workshop at port 6006.
 - `pnpm test`: run the Vitest suite once.
 - `pnpm run test:watch`: rerun affected tests while developing.
