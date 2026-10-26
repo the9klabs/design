@@ -135,6 +135,21 @@ function transitionRules(stylesheet: Root) {
   return found;
 }
 
+/** The frames of one scoped @keyframes block, by the name before its scope hash. */
+function framesOf(stylesheet: Root, name: string) {
+  const frames: { at: string; numbers: number[] }[] = [];
+  stylesheet.walkAtRules(/keyframes$/, (atRule) => {
+    if (atRule.params.replace(/-(?:data-v-)?[0-9a-f]{6,}$/, '') !== name) return;
+    atRule.walkDecls('transform', (decl) => {
+      frames.push({
+        at: (decl.parent as Rule).selector,
+        numbers: (decl.value.match(/-?\d+(\.\d+)?/g) ?? []).map(Number),
+      });
+    });
+  });
+  return frames;
+}
+
 /** A rule inside an @keyframes block: its declarations describe one frame, not a motion. */
 function isKeyframeRule(rule: Rule) {
   return rule.parent?.type === 'atrule' && /keyframes$/.test((rule.parent as AtRule).name);
@@ -465,13 +480,8 @@ describe('I9kNino ambient life', () => {
     );
   });
 
-  // Task 4 makes this file-wide once the beat and the actions are eased too.
-  it('keeps the ambient motion it had, now eased', () => {
-    const pending = /--action-/;
-    for (const { selector, value } of animationRules(stylesheet)) {
-      if (pending.test(selector)) continue;
-      expect(value, selector).not.toMatch(/steps\(|step-end|step-start/);
-    }
+  it('moves smoothly: nothing is stepped', () => {
+    expect(stylesheet.toString()).not.toMatch(/steps\(|step-end|step-start/);
   });
 
   it('breathes, blinks and pulses his antenna in every mood', () => {
@@ -580,28 +590,24 @@ describe('I9kNino ambient life', () => {
     expect(dizzy[0].value).toContain('i9k-nino-dizzy');
   });
 
-  it('sways in two-unit steps and ends the dizzy spell at rest', () => {
-    const frames: { at: string; numbers: number[] }[] = [];
-    stylesheet.walkAtRules(/keyframes$/, (atRule) => {
-      // Scoped styles suffix keyframe names with the component's id.
-      if (!atRule.params.startsWith('i9k-nino-dizzy')) return;
-      atRule.walkDecls('transform', (decl) => {
-        frames.push({
-          at: (decl.parent as Rule).selector,
-          numbers: (decl.value.match(/-?\d+(\.\d+)?/g) ?? []).map(Number),
-        });
-      });
-    });
+  it.each(['wave', 'jump', 'jump-arms', 'nod', 'shake', 'dizzy'])(
+    'starts and ends the %s at rest',
+    (name) => {
+      const frames = framesOf(stylesheet, `i9k-nino-${name}`);
+      const frameAt = (mark: RegExp) =>
+        frames.find(({ at }) => at.split(',').some((part) => mark.test(part.trim())));
 
-    expect(frames.length).toBeGreaterThan(4);
-    for (const { numbers } of frames) {
-      expect(numbers.filter((value) => value % 2 !== 0)).toEqual([]);
-    }
-    const last = frames.find(({ at }) =>
-      at.split(',').some((part) => ['to', '100%'].includes(part.trim())),
-    );
-    expect(last?.numbers.every((value) => value === 0)).toBe(true);
-  });
+      expect(frames.length).toBeGreaterThan(2);
+      expect(
+        frameAt(/^(0%|from)$/)?.numbers.every((value) => value === 0),
+        `${name} start`,
+      ).toBe(true);
+      expect(
+        frameAt(/^(100%|to)$/)?.numbers.every((value) => value === 0),
+        `${name} end`,
+      ).toBe(true);
+    },
+  );
 });
 
 describe('I9kNino mood beat', () => {

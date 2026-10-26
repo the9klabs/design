@@ -773,8 +773,13 @@ const classes = computed(() => [
 
 /* Actions: one-shots from play(). Each pauses the ambient motion of the layers
    it shares, and its length comes from NINO_ACTION_DURATIONS through
-   --i9k-nino-action-duration. The look-center part of the glance selector only
-   matches the look-around rule's specificity. */
+   --i9k-nino-action-duration. Every one starts and ends at rest (the shadow at
+   scaleX(1), its resting width), so the stage re-key that restarts an action
+   and the class removal that ends one never cut a part off mid-air. The nod,
+   shake and dizzy sway on ease-in-out; the wave and the jump name the curve of
+   each segment at its stop, so their shorthand's linear is a placeholder. The
+   look-center part of the glance selector only matches the look-around rule's
+   specificity. */
 .i9k-nino--animated.i9k-nino--acting .i9k-nino__upper,
 .i9k-nino--animated.i9k-nino--acting .i9k-nino__figure,
 .i9k-nino--animated.i9k-nino--acting.i9k-nino--look-center .i9k-nino__glance {
@@ -783,68 +788,89 @@ const classes = computed(() => [
 
 /* The wave uses the right-hand arm on every page: arms are drawn, not read. */
 .i9k-nino--animated.i9k-nino--action-wave .i9k-nino__arm--right {
-  animation: i9k-nino-wave var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-wave var(--i9k-nino-action-duration) linear;
 }
 
 .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__figure {
-  animation: i9k-nino-jump var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-jump var(--i9k-nino-action-duration) linear;
 }
 
 .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__arm {
-  animation: i9k-nino-jump-arms var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-jump-arms var(--i9k-nino-action-duration) linear;
 }
 
 .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__shadow {
-  animation: i9k-nino-jump-shadow var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-jump-shadow var(--i9k-nino-action-duration) linear;
 }
 
 .i9k-nino--animated.i9k-nino--action-nod .i9k-nino__upper {
-  animation: i9k-nino-nod var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-nod var(--i9k-nino-action-duration) ease-in-out;
 }
 
 .i9k-nino--animated.i9k-nino--action-shake .i9k-nino__upper {
-  animation: i9k-nino-shake var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-shake var(--i9k-nino-action-duration) ease-in-out;
 }
 
 .i9k-nino--animated.i9k-nino--action-dizzy .i9k-nino__upper {
-  animation: i9k-nino-dizzy var(--i9k-nino-action-duration) steps(1, end);
+  animation: i9k-nino-dizzy var(--i9k-nino-action-duration) ease-in-out;
 }
 
+/* The arm rises and settles, wiggles three times, holds, and eases back down. */
 @keyframes i9k-nino-wave {
-  0%,
-  28%,
-  56% {
-    transform: translate(0, -16px);
+  0% {
+    transform: translate(0, 0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   14%,
-  42%,
-  70% {
-    transform: translate(-2px, -18px);
+  34%,
+  54%,
+  74% {
+    transform: translate(0, -16px);
+    animation-timing-function: ease-in-out;
   }
 
-  86%,
+  24%,
+  44%,
+  64% {
+    transform: translate(-2px, -18px);
+    animation-timing-function: ease-in-out;
+  }
+
+  86% {
+    transform: translate(0, -16px);
+    animation-timing-function: ease-in;
+  }
+
   100% {
     transform: translate(0, 0);
   }
 }
 
+/* A crouch, a rise that settles at the top, a fall that eases in, and a landing
+   crouch that settles back to standing. */
 @keyframes i9k-nino-jump {
-  0%,
-  70% {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: ease-in-out;
+  }
+
+  12% {
     transform: translateY(2px);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  15%,
-  55% {
-    transform: translateY(-6px);
-  }
-
-  30% {
+  40% {
     transform: translateY(-12px);
+    animation-timing-function: ease-in;
   }
 
-  82%,
+  65% {
+    transform: translateY(2px);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  80%,
   100% {
     transform: translateY(0);
   }
@@ -852,46 +878,63 @@ const classes = computed(() => [
 
 @keyframes i9k-nino-jump-arms {
   0%,
-  70%,
-  100% {
+  12% {
     transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  15% {
+  30%,
+  55% {
     transform: translateY(-14px);
+    animation-timing-function: ease-in;
+  }
+
+  75%,
+  100% {
+    transform: translateY(0);
   }
 }
 
 /* The shadow is the one part off the grid: it is a soft hint, not a pixel. */
 @keyframes i9k-nino-jump-shadow {
-  0%,
-  70% {
+  0% {
+    transform: scaleX(1);
+    animation-timing-function: ease-in-out;
+  }
+
+  12% {
     transform: scaleX(1.1);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
 
-  15%,
-  55% {
-    transform: scaleX(0.8);
-  }
-
-  30% {
+  40% {
     transform: scaleX(0.6);
+    animation-timing-function: ease-in;
   }
 
-  82%,
+  65% {
+    transform: scaleX(1.1);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  80%,
   100% {
     transform: scaleX(1);
   }
 }
 
 @keyframes i9k-nino-nod {
-  0%,
-  40% {
+  0% {
+    transform: translateY(0);
+  }
+
+  15%,
+  50% {
     transform: translateY(4px);
   }
 
-  20%,
-  60%,
+  35%,
+  70%,
   100% {
     transform: translateY(0);
   }
@@ -899,51 +942,52 @@ const classes = computed(() => [
 
 @keyframes i9k-nino-shake {
   0%,
-  33%,
-  66% {
-    transform: translateX(-2px);
-  }
-
-  16%,
-  50% {
-    transform: translateX(2px);
-  }
-
-  83%,
+  90%,
   100% {
     transform: translateX(0);
   }
+
+  12%,
+  44%,
+  76% {
+    transform: translateX(-2px);
+  }
+
+  28%,
+  60% {
+    transform: translateX(2px);
+  }
 }
 
-/* Three small circles of the head and arms, then rest. */
+/* Three small circles of the head and arms, then home. */
 @keyframes i9k-nino-dizzy {
   0%,
-  32%,
-  64% {
+  100% {
+    transform: translate(0, 0);
+  }
+
+  6%,
+  38%,
+  70% {
     transform: translate(2px, 0);
   }
 
-  8%,
-  40%,
-  72% {
+  14%,
+  46%,
+  78% {
     transform: translate(0, 2px);
   }
 
-  16%,
-  48%,
-  80% {
+  22%,
+  54%,
+  86% {
     transform: translate(-2px, 0);
   }
 
-  24%,
-  56%,
-  88% {
+  30%,
+  62%,
+  94% {
     transform: translate(0, -2px);
-  }
-
-  96%,
-  100% {
-    transform: translate(0, 0);
   }
 }
 
