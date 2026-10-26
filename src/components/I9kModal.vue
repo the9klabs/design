@@ -30,6 +30,11 @@ const dialog = ref<HTMLDialogElement | null>(null);
 const titleId = useId();
 const descriptionId = useId();
 let returnFocus: HTMLElement | null = null;
+// Set as the modal starts to unmount. Its `dialog` ref cannot be trusted from
+// then on: a re-render while an ancestor <Suspense> waits for a new page
+// leaves Vue a ref update that runs after the unmount and puts the removed
+// <dialog> back, where showModal() throws.
+let unmounting = false;
 
 function isShown(element: HTMLDialogElement) {
   return element.open || element.hasAttribute('open');
@@ -37,7 +42,7 @@ function isShown(element: HTMLDialogElement) {
 
 function show() {
   const element = dialog.value;
-  if (!element || isShown(element)) return;
+  if (unmounting || !element || isShown(element)) return;
   // Kept when the dialog is shown again after the browser closed it, so focus
   // still returns to the element that opened it, not to where focus landed.
   if (!returnFocus) {
@@ -71,13 +76,14 @@ function onCancel(event: Event) {
   if (event.cancelable) dismiss();
 }
 
-// Skip a close the parent already asked for, and a stale `close` queued by
-// hide() that arrives after the dialog was shown again. Otherwise the browser
+// Skip a close the parent already asked for, a stale `close` queued by hide()
+// that arrives after the dialog was shown again, and the one hide() queues as
+// the modal unmounts, which arrives once it is gone. Otherwise the browser
 // closed the dialog on its own: forward the request, then show the dialog
 // again if the parent kept `open` true (not dismissible, or declined).
 function onNativeClose() {
   const element = dialog.value;
-  if (!element || isShown(element) || !props.open) return;
+  if (unmounting || !element || isShown(element) || !props.open) return;
   dismiss();
   void nextTick(() => {
     if (props.open) show();
@@ -107,6 +113,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  unmounting = true;
   document.removeEventListener('keydown', onDocumentKeydown, true);
   hide();
 });
