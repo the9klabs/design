@@ -218,8 +218,10 @@ const classes = computed(() => [
       Layers, outermost first. Each animation moves exactly one layer, so two
       motions never fight over the same transform: stage is re-created per
       action, figure lifts the whole body, upper dips or slides the head and
-      arms, and eyes glances. (Kept inside the svg: a comment beside the root
-      would make the component a fragment in development builds.)
+      arms, and eyes glances, with glance inside it carrying the idle
+      look-around so the look's transition never meets an animation. (Kept
+      inside the svg: a comment beside the root would make the component a
+      fragment in development builds.)
     -->
     <g :key="run" class="i9k-nino__stage" data-nino-part="stage">
       <rect
@@ -293,10 +295,12 @@ const classes = computed(() => [
             <rect v-else class="i9k-nino__brow" data-nino-part="brow" v-bind="brow" />
           </template>
           <g class="i9k-nino__eyes" data-nino-part="eyes">
-            <template v-for="(eye, index) in face.eyes" :key="`eye-${index}`">
-              <path v-if="'d' in eye" class="i9k-nino__eye" data-nino-part="eye" :d="eye.d" />
-              <rect v-else class="i9k-nino__eye" data-nino-part="eye" v-bind="eye" />
-            </template>
+            <g class="i9k-nino__glance" data-nino-part="glance">
+              <template v-for="(eye, index) in face.eyes" :key="`eye-${index}`">
+                <path v-if="'d' in eye" class="i9k-nino__eye" data-nino-part="eye" :d="eye.d" />
+                <rect v-else class="i9k-nino__eye" data-nino-part="eye" v-bind="eye" />
+              </template>
+            </g>
           </g>
           <path class="i9k-nino__mouth" data-nino-part="mouth" :d="face.mouth" />
           <path
@@ -412,10 +416,17 @@ const classes = computed(() => [
   transform-origin: center;
 }
 
-/* The glance moves the eye group; the blink scales each eye. Two elements, so
+/* The look moves the eye group; the blink scales each eye. Two elements, so
    the two transforms never overwrite one another. */
 .i9k-nino__eyes {
   transform: translate(calc(var(--i9k-nino-look-x) * 4px), calc(var(--i9k-nino-look-y) * 4px));
+}
+
+/* The look glides to its new place. The ambient glance lives one layer in, on
+   .i9k-nino__glance: a transition cannot hand over to an animation created or
+   cancelled in the same style change, so the two never share an element. */
+.i9k-nino--animated .i9k-nino__eyes {
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .i9k-nino__eye {
@@ -481,7 +492,7 @@ const classes = computed(() => [
 }
 
 /* Only an idle Nino with nowhere to look glances about; a caller's look wins. */
-.i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__eyes {
+.i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__glance {
   animation: i9k-nino-look-around 9s steps(1, end) infinite;
 }
 
@@ -710,11 +721,11 @@ const classes = computed(() => [
 
 /* Actions: one-shots from play(). Each pauses the ambient motion of the layers
    it shares, and its length comes from NINO_ACTION_DURATIONS through
-   --i9k-nino-action-duration. The look-center part of the eyes selector only
+   --i9k-nino-action-duration. The look-center part of the glance selector only
    matches the look-around rule's specificity. */
 .i9k-nino--animated.i9k-nino--acting .i9k-nino__upper,
 .i9k-nino--animated.i9k-nino--acting .i9k-nino__figure,
-.i9k-nino--animated.i9k-nino--acting.i9k-nino--look-center .i9k-nino__eyes {
+.i9k-nino--animated.i9k-nino--acting.i9k-nino--look-center .i9k-nino__glance {
   animation: none;
 }
 
@@ -892,7 +903,7 @@ const classes = computed(() => [
   .i9k-nino--animated .i9k-nino__antenna,
   .i9k-nino--animated.i9k-nino--thinking .i9k-nino__antenna,
   .i9k-nino--animated:not(.i9k-nino--eyes-closed) .i9k-nino__eye,
-  .i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__eyes,
+  .i9k-nino--animated.i9k-nino--idle.i9k-nino--look-center .i9k-nino__glance,
   .i9k-nino--animated.i9k-nino--happy .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure,
@@ -911,6 +922,10 @@ const classes = computed(() => [
   .i9k-nino--animated.i9k-nino--action-shake .i9k-nino__upper,
   .i9k-nino--animated.i9k-nino--action-dizzy .i9k-nino__upper {
     animation: none;
+  }
+
+  .i9k-nino--animated .i9k-nino__eyes {
+    transition: none;
   }
 }
 </style>

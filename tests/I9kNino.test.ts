@@ -125,6 +125,21 @@ function animationRules(stylesheet: Root) {
   return found;
 }
 
+/** Every `transition` declaration outside the reduced-motion block, with its selector. */
+function transitionRules(stylesheet: Root) {
+  const found: { selector: string; value: string }[] = [];
+  stylesheet.walkDecls('transition', (decl) => {
+    const rule = decl.parent as Rule;
+    if (!isReducedMotionRule(rule)) found.push({ selector: rule.selector, value: decl.value });
+  });
+  return found;
+}
+
+/** A rule inside an @keyframes block: its declarations describe one frame, not a motion. */
+function isKeyframeRule(rule: Rule) {
+  return rule.parent?.type === 'atrule' && /keyframes$/.test((rule.parent as AtRule).name);
+}
+
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 // jsdom has never implemented window.matchMedia.
@@ -220,6 +235,15 @@ describe('I9kNino', () => {
     expect(wrapper.get('[data-nino-part="head"]').attributes('d')).toBe(
       mount(I9kNino).get('[data-nino-part="head"]').attributes('d'),
     );
+  });
+
+  it("keeps the caller's look and his own glance on separate layers", () => {
+    const wrapper = mount(I9kNino);
+    const eyes = wrapper.get('[data-nino-part="eyes"]');
+    const glance = eyes.get('[data-nino-part="glance"]');
+
+    expect(glance.classes()).toContain('i9k-nino__glance');
+    expect(glance.findAll('[data-nino-part="eye"]')).toHaveLength(2);
   });
 
   it('animates by default and goes still when asked not to', () => {
@@ -358,23 +382,27 @@ describe('I9kNino', () => {
 });
 
 describe('I9kNino compiled styles', () => {
-  it('stops every animation under prefers-reduced-motion', async () => {
+  it('stops every animation and transition under prefers-reduced-motion', async () => {
     const stylesheet = await buildComponentStylesheet('I9kNino');
-    const animated: string[] = [];
+    const moving: string[] = [];
     const stilled: string[] = [];
 
     stylesheet.walkRules((rule) => {
+      if (isKeyframeRule(rule)) return;
       for (const node of rule.nodes) {
         if (node.type !== 'decl') continue;
-        if (node.prop !== 'animation' && !node.prop.startsWith('animation-')) continue;
+        if (!/^(animation|transition)(-|$)/.test(node.prop)) continue;
         if (isReducedMotionRule(rule) && node.value === 'none') stilled.push(rule.selector);
-        else if (!isReducedMotionRule(rule) && node.value !== 'none') animated.push(rule.selector);
+        else if (!isReducedMotionRule(rule) && node.value !== 'none') moving.push(rule.selector);
       }
     });
 
-    expect(animated.length).toBeGreaterThan(0);
-    for (const selector of animated) {
-      expect(stilled.some((stilledSelector) => stilledSelector.includes(selector))).toBe(true);
+    expect(moving.length).toBeGreaterThan(0);
+    for (const selector of moving) {
+      expect(
+        stilled.some((stilledSelector) => stilledSelector.includes(selector)),
+        selector,
+      ).toBe(true);
     }
   });
 
@@ -433,7 +461,7 @@ describe('I9kNino ambient life', () => {
 
   it('glances about only when idle and free to look', () => {
     const glances = animationRules(stylesheet).filter(
-      ({ selector, value }) => selector.includes('.i9k-nino__eyes') && value !== 'none',
+      ({ selector, value }) => selector.includes('.i9k-nino__glance') && value !== 'none',
     );
 
     expect(glances.length).toBeGreaterThan(0);
@@ -441,6 +469,21 @@ describe('I9kNino ambient life', () => {
       expect(selector).toContain('.i9k-nino--idle');
       expect(selector).toContain('.i9k-nino--look-center');
     }
+  });
+
+  // A transition cannot hand over to an animation created or cancelled in the same
+  // style change, so the look and the ambient glance must live on different elements.
+  it('glides his eyes to a new look', () => {
+    const glide = transitionRules(stylesheet).find(({ selector }) =>
+      selector.includes('.i9k-nino--animated .i9k-nino__eyes'),
+    );
+
+    expect(glide?.value).toContain('transform');
+    expect(glide?.value).toMatch(/200ms|\.2s/);
+    expect(glide?.value).toMatch(/cubic-bezier\(0?\.23,\s*1,\s*0?\.32,\s*1\)/);
+    expect(
+      animationRules(stylesheet).filter(({ selector }) => /\.i9k-nino__eyes\[/.test(selector)),
+    ).toEqual([]);
   });
 
   it('peeks over one hand only while hiding', () => {
