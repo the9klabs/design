@@ -1,6 +1,7 @@
 {
   "name": "@9klabs/design",
   "version": "0.1.0",
+  "packageManager": "pnpm@11.10.0",
   "description": "Reusable Vue 3 components and tokens from the Ismail9k design system.",
   "type": "module",
   "files": [
@@ -35,8 +36,8 @@
     "showcase": "vitepress dev showcase",
     "build-storybook": "storybook build",
     "build:showcase": "vitepress build showcase",
-    "check": "npm test && npm run format:check && npm run lint && npm run typecheck && npm run build && npm run build-storybook && npm run build:showcase",
-    "prepare": "npm run build"
+    "check": "pnpm test && pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run build-storybook && pnpm run build:showcase",
+    "prepare": "pnpm run build"
   },
   "keywords": [
     "vue",
@@ -52,8 +53,9 @@
     "@storybook/vue3-vite": "^10.5.9",
     "@types/node": "^26.2.0",
     "@vitejs/plugin-vue": "latest",
-    "@vue/compiler-dom": "^3.5.41",
-    "@vue/server-renderer": "^3.5.41",
+    "@vue/compiler-core": "^3.5.44",
+    "@vue/compiler-dom": "^3.5.44",
+    "@vue/server-renderer": "^3.5.44",
     "@vue/test-utils": "^2.4.11",
     "dom-accessibility-api": "^0.6.3",
     "eslint": "^10.8.1",
@@ -69,6 +71,7 @@
     "vitepress": "^1.6.4",
     "vitest": "^4.1.11",
     "vue": "latest",
+    "vue-eslint-parser": "^10.4.1",
     "vue-tsc": "latest"
   },
   "dependencies": {

@@ -1,0 +1,22 @@
+name: CI
+
+# Checks every push and pull request. Deploying is not done here: Cloudflare Pages builds the docs
+# site from this repository on its own, `main` to production and every other branch to a preview.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The pnpm version comes from `packageManager` in package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
