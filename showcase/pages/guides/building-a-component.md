@@ -86,7 +86,7 @@ Check the component in light and dark, left to right and right to left, and at p
 run the whole pipeline:
 
 ```bash
-npm run check
+pnpm run check
 ```
 
 ## The prompt
@@ -120,5 +120,5 @@ Rules:
 - Animations get a prefers-reduced-motion: reduce block repeating every animated selector.
 - Prettier style: two-space indent, single quotes, trailing commas, 100-character lines.
 
-Finish by running npm run check and fixing everything it reports. Check the component in light and dark, LTR and RTL, and at 375px wide.
+Finish by running pnpm run check and fixing everything it reports. Check the component in light and dark, LTR and RTL, and at 375px wide.
 ```

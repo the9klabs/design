@@ -225,24 +225,24 @@ Arabic text automatically uses Thmanyah Sans through `:lang(ar)`. Arabic heading
 ## Development
 
 ```bash
-npm install
-npm run storybook
-npm test
-npm run test:watch
-npm run format:check
-npm run lint
-npm run typecheck
-npm run build
-npm run build-storybook
-npm run showcase
-npm run build:showcase
-npm pack --dry-run
+pnpm install
+pnpm run storybook
+pnpm test
+pnpm run test:watch
+pnpm run format:check
+pnpm run lint
+pnpm run typecheck
+pnpm run build
+pnpm run build-storybook
+pnpm run showcase
+pnpm run build:showcase
+pnpm pack --dry-run
 ```
 
-`npm test` runs Vitest once; `npm run test:watch` reruns affected unit tests while developing. `npm run check` runs tests, formatting, linting, TypeScript checks, the library build, the static Storybook build, and the docs site build in one command.
+`pnpm test` runs Vitest once; `pnpm run test:watch` reruns affected unit tests while developing. `pnpm run check` runs tests, formatting, linting, TypeScript checks, the library build, the static Storybook build, and the docs site build in one command.
 
-`npm run showcase` serves the documentation site (VitePress, in `showcase/`) with live reload;
-`npm run build:showcase` writes it, with its Markdown twins, `llms.txt`, `llms-full.txt` and
+`pnpm run showcase` serves the documentation site (VitePress, in `showcase/`) with live reload;
+`pnpm run build:showcase` writes it, with its Markdown twins, `llms.txt`, `llms-full.txt` and
 `components.json`, to `showcase-dist/`.
 
 Storybook provides isolated component documentation, light and dark theme previews, and accessibility checks. It is development tooling only and is excluded from the published npm tarball.

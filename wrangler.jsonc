@@ -1,6 +1,7 @@
 {
   "name": "9k-design-system",
   "compatibility_date": "2026-08-27",
-  // The docs site is a fully static VitePress build. `npm run build:showcase` writes here.
+  // The docs site is a fully static VitePress build. Cloudflare Pages runs `pnpm run build:showcase`
+  // from its Git integration and serves this directory.
   "pages_build_output_dir": "./showcase-dist",
 }

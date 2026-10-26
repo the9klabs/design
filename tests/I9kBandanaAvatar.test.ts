@@ -155,7 +155,7 @@ describe('I9kBandanaAvatar styles', () => {
   async function compiledCss() {
     const { readFileSync } = await import('node:fs');
     const { resolve } = await import('node:path');
-    const { compileStyle, parse } = await import('@vue/compiler-sfc');
+    const { compileStyle, parse } = await import('vue/compiler-sfc');
     const source = readFileSync(
       resolve(process.cwd(), 'src/components/I9kBandanaAvatar.vue'),
       'utf8',

@@ -144,10 +144,10 @@ plans behind this work live in `docs/superpowers/`.
 `showcase/` is the documentation site at https://design.the9klabs.com, built with VitePress 1 and
 themed to the 9k design language. It is for people and agents both: a page per component (live
 demos, gotchas, a props/emits/slots table extracted from the component's own source, and a
-copy-paste agent prompt), plus foundations and guides, and a Markdown twin of every page. `npm run
-showcase` serves it in dev; `npm run build:showcase` writes static HTML to `showcase-dist/`
+copy-paste agent prompt), plus foundations and guides, and a Markdown twin of every page. `pnpm run
+showcase` serves it in dev; `pnpm run build:showcase` writes static HTML to `showcase-dist/`
 together with each page's twin at `<path>.md`, `llms.txt` (an llmstxt.org index of the twins that
-opens with the rules), `llms-full.txt`, `components.json` and `sitemap.xml`. `npm run check` runs
+opens with the rules), `llms-full.txt`, `components.json` and `sitemap.xml`. `pnpm run check` runs
 `build:showcase` as part of its full pipeline.
 
 Where things live:
@@ -177,38 +177,39 @@ adding its registry entry in the same change; do not assume the docs cover a com
 because the component itself exists — check the registry, or run the test, rather than trusting a
 list here that would go stale.
 
-The showcase deploys to Cloudflare Pages via `.github/workflows/showcase.yml`, this repository's
-first CI workflow: the `build` job (test, format, lint, typecheck, library build, Storybook build,
-showcase build) runs on every push and pull request, and the `deploy` job additionally runs on
-pushes to `main` and publishes `showcase-dist/` with `wrangler.jsonc` — the deploy command is a
-bare `pages deploy`, because the project name and the output directory both come from that config
-file. Deploying requires a Cloudflare Pages project named `9k-design-system` and two repository
-secrets, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. When either secret is missing the
-`deploy` job skips the upload with a workflow warning instead of failing, so an unconfigured
-repository still gets a green pipeline — check that warning before assuming the showcase went
-live.
+Cloudflare Pages deploys the docs site through its Git integration, not through GitHub Actions: it
+builds `main` to production and every other branch to a preview URL. The project's build command
+is `pnpm run build:showcase`, and the output directory comes from `pages_build_output_dir` in
+`wrangler.jsonc`, which Cloudflare reads before the dashboard. Its build image does not read the
+pnpm version from `package.json` or the lockfile, so the project sets `PNPM_VERSION` (matching
+`packageManager` in `package.json`) and `NODE_VERSION` as environment variables; bump
+`PNPM_VERSION` whenever `packageManager` changes, or the frozen install fails. The one workflow,
+`.github/workflows/ci.yml`, runs `pnpm run check` on every push and pull request and deploys
+nothing.
 
 ## Build, Test, and Development Commands
 
-- `npm ci`: install the exact dependencies recorded in `package-lock.json`.
-- `npm run storybook`: start the component workshop at port 6006.
-- `npm test`: run the Vitest suite once.
-- `npm run test:watch`: rerun affected tests while developing.
-- `npm run lint`: check TypeScript and Vue files with ESLint.
-- `npm run format:check`: verify Prettier formatting without rewriting files.
-- `npm run typecheck`: type-check the library, Storybook, and unit tests.
-- `npm run build`: create the ESM library and declarations in `dist/`.
-- `npm run check`: run the complete test, formatting, lint, type, library, and Storybook build pipeline.
-- `npx vitest run tests/I9kButton.test.ts`: run a single test file.
-- `npx vitest run -t 'renders an anchor'`: run tests matching a name across the suite.
+- `pnpm install`: install the dependencies recorded in `pnpm-lock.yaml`. The repository uses pnpm
+  only, at the version pinned by `packageManager` in `package.json`; do not add a
+  `package-lock.json`, because Cloudflare picks its package manager from the lockfile it finds.
+- `pnpm run storybook`: start the component workshop at port 6006.
+- `pnpm test`: run the Vitest suite once.
+- `pnpm run test:watch`: rerun affected tests while developing.
+- `pnpm run lint`: check TypeScript and Vue files with ESLint.
+- `pnpm run format:check`: verify Prettier formatting without rewriting files.
+- `pnpm run typecheck`: type-check the library, Storybook, and unit tests.
+- `pnpm run build`: create the ESM library and declarations in `dist/`.
+- `pnpm run check`: run the complete test, formatting, lint, type, library, and Storybook build pipeline.
+- `pnpm exec vitest run tests/I9kButton.test.ts`: run a single test file.
+- `pnpm exec vitest run -t 'renders an anchor'`: run tests matching a name across the suite.
 
 ## Coding Style & Naming Conventions
 
-Use TypeScript and Vue Single-File Components where practical. Prettier enforces two-space indentation, single quotes, trailing commas, and a 100-character print width; run `npm run format` before submitting broad edits. Name components in PascalCase with the `I9k` prefix (`I9kButton.vue`), stories as `I9kButton.stories.ts`, and tests as `I9kButton.test.ts`. Prefer scoped component styles, existing CSS custom properties, and `i9k-` prefixes for package-specific classes. Add every public component or type to `src/index.ts`.
+Use TypeScript and Vue Single-File Components where practical. Prettier enforces two-space indentation, single quotes, trailing commas, and a 100-character print width; run `pnpm run format` before submitting broad edits. Name components in PascalCase with the `I9k` prefix (`I9kButton.vue`), stories as `I9kButton.stories.ts`, and tests as `I9kButton.test.ts`. Prefer scoped component styles, existing CSS custom properties, and `i9k-` prefixes for package-specific classes. Add every public component or type to `src/index.ts`.
 
 ## Testing Guidelines
 
-Write tests with Vitest and mount Vue components with Vue Test Utils in the configured jsdom environment. Assert public rendering and interaction behavior rather than implementation details. Add focused cases for new variants, state changes, events, and accessibility contracts. Keep each test independent and use explicit imports from `vitest`. No coverage threshold is configured; cover changed behavior and run `npm run check` before opening a pull request.
+Write tests with Vitest and mount Vue components with Vue Test Utils in the configured jsdom environment. Assert public rendering and interaction behavior rather than implementation details. Add focused cases for new variants, state changes, events, and accessibility contracts. Keep each test independent and use explicit imports from `vitest`. No coverage threshold is configured; cover changed behavior and run `pnpm run check` before opening a pull request.
 
 Some suites are not ordinary component tests and are slower because they invoke a real Vite build to
 inspect emitted CSS with PostCSS: `normalizeStyles.test.ts` (global cascade layers) and
