@@ -4,14 +4,14 @@ export const I9kNinoEntry: ShowcaseEntry = {
   name: 'I9kNino',
   section: 'content',
   summary:
-    'Nino, the 9k pixel mascot: an inline-SVG character with eight expressions (one of them hide and seek, one dizzy), stepped ambient life, a reaction beat on mood changes, one-shot actions (wave, jump, nod, shake, dizzy), a talking state, a logical gaze direction, and motion that switches itself off for reduced-motion visitors.',
-  agentPrompt: `Use I9kNino from @9klabs/design to put the 9k mascot on a page. He is drawn entirely from rectangles and paths on a 32x32 pixel grid, so there is no image to load and nothing blurs at small sizes. Every motion is stepped like a sprite.
+    'Nino, the 9k pixel mascot: an inline-SVG character with eight expressions (one of them hide and seek, one dizzy), continuous ambient life (breathing, blinks, an antenna pulse, idle glances), a 300ms face morph on mood changes, one-shot actions (wave, jump, nod, shake, dizzy), a talking state, a logical gaze direction, and motion that switches itself off for reduced-motion visitors.',
+  agentPrompt: `Use I9kNino from @9klabs/design to put the 9k mascot on a page. He is drawn entirely from rectangles and paths on a 32x32 pixel grid, so there is no image to load and nothing blurs at small sizes. Motion is eased: resting poses sit on the grid, and parts glide between cells.
 
 import { I9kNino, I9K_NINO_EXPRESSIONS, I9K_NINO_ACTIONS, type I9kNinoExposed } from '@9klabs/design';
 
 Props:
-- expression?: 'idle' | 'happy' | 'thinking' | 'worried' | 'surprised' | 'eyes-closed' | 'hiding' | 'dizzy' (default 'idle'). Only the eyes, brows, cheeks and mouth change, except 'hiding', where he covers his eyes with both hands for hide and seek and now and then peeks over the right one. 'dizzy' swirls his eyes into spirals and wobbles his mouth. A change plays a 240ms beat: his eyes shut, he hops, and the new face swaps in at 100ms.
-- look?: 'center' | 'up' | 'down' | 'start' | 'end' (default 'center') — moves the eyes only. 'start' and 'end' follow the reading direction and swap under [dir="rtl"]. An idle Nino left at 'center' glances around on his own.
+- expression?: 'idle' | 'happy' | 'thinking' | 'worried' | 'surprised' | 'eyes-closed' | 'hiding' | 'dizzy' (default 'idle'). Only the eyes, brows, cheeks and mouth change, except 'hiding', where he covers his eyes with both hands for hide and seek and now and then peeks over the right one. 'dizzy' swirls his eyes into spirals and wobbles his mouth. A change plays a 300ms morph: the face squashes shut, the new face swaps in at 120ms, and it opens.
+- look?: 'center' | 'up' | 'down' | 'start' | 'end' (default 'center') — moves the eyes only. 'start' and 'end' follow the reading direction and swap under [dir="rtl"]. An idle Nino left at 'center' glances around on his own. A look change glides over 200ms.
 - size?: 'sm' | 'md' | 'lg' | 'auto' (default 'md') — 2rem / 3rem / 4.5rem, or 'auto' to drop the component's own CSS sizing.
 - animated?: boolean (default true) — removes the class every animation rule hangs off when false.
 - talking?: boolean (default false) — flaps his mouth between its own shape and an open frame.
@@ -36,7 +36,7 @@ await nino.value.play('wave');`,
     '`animated: false` and prefers-reduced-motion are two independent switches. Turning the prop off does not make the media query redundant, and the media query does not make the prop redundant.',
     '`look` moves only the eyes, and start/end are reading-direction, not left/right — they swap on an Arabic page.',
     'Actions are imperative: hold a template ref and call play(). There is no action prop, so replaying the same action is just calling play() again.',
-    'A changed expression shows 100ms later, after his eyes blink shut. Read the prop, not the rendered class, when you test what mood you asked for.',
+    'A changed expression shows 120ms later, once the face has squashed shut. Read the prop, not the rendered class, when you test what mood you asked for.',
     'While hiding, `look` has no effect (his eyes stay behind his hands), and play() lowers his hands for the length of the action before he covers his eyes again.',
     'Jumps and waves leave his box. Give him headroom instead of clipping his container with overflow: hidden.',
   ],
