@@ -64,13 +64,12 @@ function motionAllowed() {
 }
 
 const shownExpression = ref<I9kNinoExpression>(props.expression);
-const beating = ref(false);
 /**
- * The beat keyframes run once, so a mood that arrives mid-beat flips to the
- * other phase: a different animation name restarts the blink, and the new face
- * still swaps in while the eyes are shut.
+ * The two phases of a mood change. shut squashes every face part closed and
+ * holds it; open grows the new face from closed. Parts that only the new face
+ * has mount during open, so they start closed too.
  */
-const beatPhase = ref<'even' | 'odd'>('odd');
+const beatPhase = ref<'shut' | 'open' | null>(null);
 let swapTimer: ReturnType<typeof setTimeout> | undefined;
 let beatTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -84,17 +83,17 @@ watch(
   (next) => {
     clearBeat();
     if (!motionAllowed()) {
-      beating.value = false;
+      beatPhase.value = null;
       shownExpression.value = next;
       return;
     }
-    beatPhase.value = beatPhase.value === 'even' ? 'odd' : 'even';
-    beating.value = true;
+    beatPhase.value = 'shut';
     swapTimer = setTimeout(() => {
       shownExpression.value = next;
+      beatPhase.value = 'open';
     }, NINO_BEAT.swapAt);
     beatTimer = setTimeout(() => {
-      beating.value = false;
+      beatPhase.value = null;
     }, NINO_BEAT.duration);
   },
 );
@@ -106,7 +105,7 @@ watch(
   (animated) => {
     if (animated) return;
     clearBeat();
-    beating.value = false;
+    beatPhase.value = null;
     shownExpression.value = props.expression;
   },
 );
@@ -196,7 +195,7 @@ const classes = computed(() => [
   `i9k-nino--look-${props.look}`,
   `i9k-nino--${props.size}`,
   ...(props.animated ? ['i9k-nino--animated'] : []),
-  ...(beating.value ? ['i9k-nino--beat', `i9k-nino--beat-${beatPhase.value}`] : []),
+  ...(beatPhase.value ? ['i9k-nino--beat', `i9k-nino--beat-${beatPhase.value}`] : []),
   ...(props.talking ? ['i9k-nino--talking'] : []),
   ...(activeAction.value ? ['i9k-nino--acting', `i9k-nino--action-${activeAction.value}`] : []),
 ]);
@@ -374,10 +373,16 @@ const classes = computed(() => [
 }
 
 /* Hiding raises the arms to his face: the side arms go, the hands show. An
-   action lowers them again for its length, so a wave still has an arm. */
+   action lowers them again for its length, so a wave still has an arm. Hidden
+   by opacity rather than visibility, so the change can fade. */
 .i9k-nino--hiding:not(.i9k-nino--acting) .i9k-nino__arm,
 .i9k-nino--hiding.i9k-nino--acting .i9k-nino__hand {
-  visibility: hidden;
+  opacity: 0;
+}
+
+.i9k-nino--animated .i9k-nino__arm,
+.i9k-nino--animated .i9k-nino__hand {
+  transition: opacity 120ms ease-in-out;
 }
 
 /* A glance would slide his eyes out from behind his hands. */
@@ -690,65 +695,77 @@ const classes = computed(() => [
   }
 }
 
-/* Mood beat: the eyes shut and the body hops while the face is swapped behind
-   them. 240ms and the swap at 100ms are NINO_BEAT in src/data/nino.ts. The two
-   phases are identical; alternating between them restarts the keyframes when a
-   mood arrives mid-beat. */
-.i9k-nino--animated.i9k-nino--beat-even .i9k-nino__eye {
-  animation: i9k-nino-beat-blink 240ms steps(1, end);
+/* Mood beat: a change of mood is a two-phase morph, and the body hops through
+   both. In shut, every face part squashes closed and the cheeks fade; the face
+   then swaps behind them, and in open the new parts grow from closed. Two
+   phases rather than one keyframe because the parts themselves change at the
+   swap: brows, cheeks and hands that only the new face has mount during open,
+   so they start closed too, and those that only the old face had are already
+   shut when they leave. The shut keyframes fill forwards, so the face stays
+   closed until the JS timer swaps it, however late that timer fires. The hop's
+   40% stop is NINO_BEAT.swapAt; 120ms, 180ms and 300ms are NINO_BEAT in
+   src/data/nino.ts. */
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__eye,
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__brow,
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__mouth,
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__hand {
+  animation: i9k-nino-beat-shut 120ms ease-in forwards;
 }
 
-.i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__eye {
-  animation: i9k-nino-beat-blink-again 240ms steps(1, end);
+.i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__cheek {
+  animation: i9k-nino-beat-fade 120ms ease-in forwards;
 }
 
-.i9k-nino--animated.i9k-nino--beat-even .i9k-nino__figure {
-  animation: i9k-nino-beat-hop 240ms steps(1, end);
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__eye,
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__brow,
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__mouth,
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__hand {
+  animation: i9k-nino-beat-open 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__figure {
-  animation: i9k-nino-beat-hop-again 240ms steps(1, end);
+.i9k-nino--animated.i9k-nino--beat-open .i9k-nino__cheek {
+  animation: i9k-nino-beat-unfade 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-@keyframes i9k-nino-beat-blink {
-  0% {
-    transform: scaleY(0.15);
+.i9k-nino--animated.i9k-nino--beat .i9k-nino__figure {
+  animation: i9k-nino-beat-hop 300ms;
+}
+
+@keyframes i9k-nino-beat-shut {
+  to {
+    transform: scaleY(0.1);
   }
+}
 
-  60%,
-  100% {
-    transform: scaleY(1);
+@keyframes i9k-nino-beat-fade {
+  to {
+    opacity: 0;
   }
 }
 
-@keyframes i9k-nino-beat-blink-again {
-  0% {
-    transform: scaleY(0.15);
+@keyframes i9k-nino-beat-open {
+  from {
+    transform: scaleY(0.1);
   }
+}
 
-  60%,
-  100% {
-    transform: scaleY(1);
+@keyframes i9k-nino-beat-unfade {
+  from {
+    opacity: 0;
   }
 }
 
 @keyframes i9k-nino-beat-hop {
   0% {
-    transform: translateY(-2px);
-  }
-
-  60%,
-  100% {
     transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
   }
-}
 
-@keyframes i9k-nino-beat-hop-again {
-  0% {
+  40% {
     transform: translateY(-2px);
+    animation-timing-function: ease-in;
   }
 
-  60%,
   100% {
     transform: translateY(0);
   }
@@ -943,12 +960,19 @@ const classes = computed(() => [
   .i9k-nino--animated.i9k-nino--thinking .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--worried .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--hiding .i9k-nino__hand--peek,
-  .i9k-nino--animated.i9k-nino--beat-even .i9k-nino__eye,
-  .i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__eye,
-  .i9k-nino--animated.i9k-nino--beat-even .i9k-nino__figure,
-  .i9k-nino--animated.i9k-nino--beat-odd .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth,
   .i9k-nino--animated.i9k-nino--talking .i9k-nino__mouth--talk,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__eye,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__brow,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__mouth,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__hand,
+  .i9k-nino--animated.i9k-nino--beat-shut .i9k-nino__cheek,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__eye,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__brow,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__mouth,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__hand,
+  .i9k-nino--animated.i9k-nino--beat-open .i9k-nino__cheek,
+  .i9k-nino--animated.i9k-nino--beat .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--action-wave .i9k-nino__arm--right,
   .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__figure,
   .i9k-nino--animated.i9k-nino--action-jump .i9k-nino__arm,
@@ -959,7 +983,9 @@ const classes = computed(() => [
     animation: none;
   }
 
-  .i9k-nino--animated .i9k-nino__eyes {
+  .i9k-nino--animated .i9k-nino__eyes,
+  .i9k-nino--animated .i9k-nino__arm,
+  .i9k-nino--animated .i9k-nino__hand {
     transition: none;
   }
 }

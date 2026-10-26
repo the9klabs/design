@@ -467,7 +467,7 @@ describe('I9kNino ambient life', () => {
 
   // Task 4 makes this file-wide once the beat and the actions are eased too.
   it('keeps the ambient motion it had, now eased', () => {
-    const pending = /--beat|--action-/;
+    const pending = /--action-/;
     for (const { selector, value } of animationRules(stylesheet)) {
       if (pending.test(selector)) continue;
       expect(value, selector).not.toMatch(/steps\(|step-end|step-start/);
@@ -521,8 +521,8 @@ describe('I9kNino ambient life', () => {
 
   it('lifts his arms off his sides to hide, and lowers his hands to act', () => {
     const hidden: string[] = [];
-    stylesheet.walkDecls('visibility', (decl) => {
-      if (decl.value === 'hidden') hidden.push((decl.parent as Rule).selector);
+    stylesheet.walkDecls('opacity', (decl) => {
+      if (decl.value === '0') hidden.push((decl.parent as Rule).selector);
     });
 
     expect(
@@ -539,6 +539,14 @@ describe('I9kNino ambient life', () => {
           selector.includes('.i9k-nino__hand'),
       ),
     ).toBe(true);
+  });
+
+  it('fades his arms and hands rather than popping them', () => {
+    const fades = transitionRules(stylesheet).filter(({ value }) => value.includes('opacity'));
+
+    expect(fades.some(({ selector }) => selector.includes('.i9k-nino__arm['))).toBe(true);
+    expect(fades.some(({ selector }) => selector.includes('.i9k-nino__hand['))).toBe(true);
+    for (const { selector } of fades) expect(selector).toContain('.i9k-nino--animated');
   });
 
   it('keeps his eyes behind his hands wherever he is asked to look', () => {
@@ -611,6 +619,7 @@ describe('I9kNino mood beat', () => {
 
     await wrapper.setProps({ expression: 'worried' });
     expect(wrapper.classes()).toContain('i9k-nino--beat');
+    expect(wrapper.classes()).toContain('i9k-nino--beat-shut');
     expect(wrapper.classes()).toContain('i9k-nino--idle');
     expect(wrapper.findAll('[data-nino-part="brow"]')).toHaveLength(0);
 
@@ -618,9 +627,12 @@ describe('I9kNino mood beat', () => {
     expect(wrapper.classes()).toContain('i9k-nino--worried');
     expect(wrapper.findAll('[data-nino-part="brow"]')).toHaveLength(2);
     expect(wrapper.classes()).toContain('i9k-nino--beat');
+    expect(wrapper.classes()).toContain('i9k-nino--beat-open');
+    expect(wrapper.classes()).not.toContain('i9k-nino--beat-shut');
 
     await advance(NINO_BEAT.duration - NINO_BEAT.swapAt);
     expect(wrapper.classes()).not.toContain('i9k-nino--beat');
+    expect(wrapper.classes().filter((name) => name.startsWith('i9k-nino--beat'))).toEqual([]);
   });
 
   it('lands on the latest mood when moods change mid-beat', async () => {
@@ -637,34 +649,71 @@ describe('I9kNino mood beat', () => {
     expect(wrapper.classes()).not.toContain('i9k-nino--worried');
   });
 
-  // The beat keyframes run once, so a second change must restart them, or the
-  // new face would swap in after the eyes have already reopened.
-  it('blinks again when a second mood arrives mid-beat', async () => {
+  it('shuts again when a second mood arrives mid-beat', async () => {
     const wrapper = mount(I9kNino, { props: { expression: 'idle' } });
 
     await wrapper.setProps({ expression: 'thinking' });
-    const first = wrapper.classes().filter((name) => name.startsWith('i9k-nino--beat-'));
     await advance(NINO_BEAT.swapAt + 20);
-    await wrapper.setProps({ expression: 'worried' });
-    const second = wrapper.classes().filter((name) => name.startsWith('i9k-nino--beat-'));
+    expect(wrapper.classes()).toContain('i9k-nino--beat-open');
 
-    expect(first).toHaveLength(1);
-    expect(second).toHaveLength(1);
-    expect(second).not.toEqual(first);
+    await wrapper.setProps({ expression: 'worried' });
+    expect(wrapper.classes()).toContain('i9k-nino--beat-shut');
+    expect(wrapper.classes()).not.toContain('i9k-nino--beat-open');
+    expect(wrapper.classes()).toContain('i9k-nino--thinking');
+
+    await advance(NINO_BEAT.swapAt);
+    expect(wrapper.classes()).toContain('i9k-nino--worried');
+    expect(wrapper.classes()).toContain('i9k-nino--beat-open');
+
+    await advance(NINO_BEAT.duration - NINO_BEAT.swapAt);
+    expect(wrapper.classes()).not.toContain('i9k-nino--beat');
   });
 
-  it('runs a whole blink-and-hop for either beat phase', async () => {
+  it('shuts and opens every face part through the beat', async () => {
     const stylesheet = await buildComponentStylesheet('I9kNino');
-    const rules = animationRules(stylesheet).map(({ selector }) => selector);
+    const rules = animationRules(stylesheet);
 
-    for (const phase of ['even', 'odd']) {
-      expect(rules.some((selector) => selector.includes(`--beat-${phase} .i9k-nino__eye`))).toBe(
-        true,
+    for (const part of ['eye', 'brow', 'mouth', 'hand', 'cheek']) {
+      const shut = rules.find(({ selector }) =>
+        selector.includes(`--beat-shut .i9k-nino__${part}[`),
       );
-      expect(rules.some((selector) => selector.includes(`--beat-${phase} .i9k-nino__figure`))).toBe(
-        true,
+      const open = rules.find(({ selector }) =>
+        selector.includes(`--beat-open .i9k-nino__${part}[`),
       );
+      expect(shut?.value, `${part} shut`).toContain('forwards');
+      expect(shut?.value, `${part} shut`).toMatch(/120ms|\.12s/);
+      expect(open?.value, `${part} open`).toMatch(/180ms|\.18s/);
+      expect(open?.value, `${part} open`).not.toContain('forwards');
     }
+    const hop = rules.find(({ selector }) => selector.includes('--beat .i9k-nino__figure['));
+    expect(hop?.value).toContain('i9k-nino-beat-hop');
+    expect(hop?.value).toMatch(/300ms|\.3s/);
+  });
+
+  // The talk frame carries the mouth class too, so the beat's rules must come later
+  // in the stylesheet than talking's to win at equal specificity.
+  it('lets the beat take the mouth from the talk loop', async () => {
+    const stylesheet = await buildComponentStylesheet('I9kNino');
+    const order: string[] = [];
+    stylesheet.walkRules((rule) => {
+      if (!isReducedMotionRule(rule) && !isKeyframeRule(rule)) order.push(rule.selector);
+    });
+    const talking = order.findIndex((selector) => selector.includes('--talking .i9k-nino__mouth['));
+    const beat = order.findIndex((selector) => selector.includes('--beat-shut .i9k-nino__mouth['));
+
+    expect(talking).toBeGreaterThan(-1);
+    expect(beat).toBeGreaterThan(talking);
+  });
+
+  it('raises his hands while the face opens', async () => {
+    const wrapper = mount(I9kNino, { props: { expression: 'idle' } });
+
+    await wrapper.setProps({ expression: 'hiding' });
+    expect(wrapper.findAll('[data-nino-part="hand"]')).toHaveLength(0);
+
+    await advance(NINO_BEAT.swapAt);
+    expect(wrapper.classes()).toContain('i9k-nino--beat-open');
+    expect(wrapper.findAll('[data-nino-part="hand"]')).toHaveLength(2);
   });
 
   it('swaps at once when it is not animating', async () => {
@@ -692,6 +741,7 @@ describe('I9kNino mood beat', () => {
 
     expect(wrapper.classes()).toContain('i9k-nino--happy');
     expect(wrapper.classes()).not.toContain('i9k-nino--beat');
+    expect(wrapper.classes().filter((name) => name.startsWith('i9k-nino--beat'))).toEqual([]);
     expect(vi.getTimerCount()).toBe(0);
   });
 
