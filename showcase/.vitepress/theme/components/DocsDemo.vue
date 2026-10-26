@@ -2,7 +2,6 @@
 import { computed, onMounted, onUpdated, ref } from 'vue';
 
 import { entries } from '../../../registry';
-import { demoDirection } from '../demoDirection';
 import { compileDemo } from './compileDemo';
 
 /**
@@ -19,8 +18,8 @@ const demo = computed(() => {
   return found;
 });
 
-// Compiled once per demo rather than on every render, so flipping the direction or the theme
-// does not recompile every template on the page.
+// Compiled once per demo rather than on every render, so flipping the theme does not recompile
+// every template on the page.
 const stage = computed(() => compileDemo(demo.value));
 
 // A heading inside a demo belongs to the component shown, not to the page, so VitePress's
@@ -36,7 +35,7 @@ onUpdated(hideHeadingsFromOutline);
 </script>
 
 <template>
-  <div ref="frame" class="docs-demo vp-raw" :dir="demoDirection">
+  <div ref="frame" class="docs-demo vp-raw">
     <component :is="stage" />
   </div>
 </template>

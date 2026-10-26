@@ -136,9 +136,10 @@ export default async () => {
         text: 'Edit this page on GitHub',
       },
       docFooter: { prev: 'Previous', next: 'Next' },
+      // DocsFooter shows these on the landing page, which hides VitePress's own footer.
       footer: {
-        message: 'Released under the MIT License.',
-        copyright: 'Built with @9klabs/design itself.',
+        message: 'Made with love 💚, caffeine, and Claude Code. Built with @9klabs/design itself.',
+        copyright: `© ${new Date().getFullYear()} 9kLabs · MIT License`,
       },
     },
 

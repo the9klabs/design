@@ -156,11 +156,14 @@ Where things live:
   and the `buildEnd` hook that writes the machine-readable files (a dev middleware serves the same
   files).
 - `showcase/.vitepress/theme/` — the default theme extended: `style.css` maps every `--vp-*`
-  variable onto a 9k token, and the `Docs*` components are the demo frame, page actions, RTL demo
-  toggle, Nino hero and the widgets pages place by name. VitePress ships Vue's runtime-only build,
-  so `compileDemo.ts` compiles demo templates with `@vue/compiler-dom` itself. Demos sit in
-  `.vp-raw`, which `postcssIsolateStyles` keeps VitePress's prose styles out of; a theme rule of
-  ours that targets `.vp-doc` content must skip `.vp-raw` the same way.
+  variable onto a 9k token, and the `Docs*` components are the demo frame, page actions, Nino
+  hero, the landing page's footer (`I9kFooter` plus `I9kNinoSky`, as on 9k.school and
+  ismail9k.com, in place of VitePress's own) and the widgets pages place by name. The docs are
+  English-only, so the nav has no language or direction switch; a demo that shows RTL sets `dir`
+  itself. VitePress ships Vue's runtime-only build, so `compileDemo.ts` compiles demo templates
+  with `@vue/compiler-dom` itself. Demos sit in `.vp-raw`, which `postcssIsolateStyles` keeps
+  VitePress's prose styles out of; a theme rule of ours that targets `.vp-doc` content must skip
+  `.vp-raw` the same way.
 - `showcase/pages/` — the Markdown pages. Every guide is listed in sidebar order in
   `showcase/site/pages.ts` (`GUIDE_GROUPS`) and needs `title` and `description` front matter;
   `tests/showcaseSite.test.ts` fails when a file and the list disagree. A `<DocsX />` widget on a
