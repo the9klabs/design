@@ -31,6 +31,7 @@ Emits:
 Slots:
 - brand — the wordmark or logo; wrapped in a link to brandHref. Filling it alone switches to the multi-column layout.
 - default — replaces the tagline paragraph.
+- extra — a row of its own under a divider, between the columns and the bottom bar (after the tagline when centred): I9kAskAi.
 - utilities — end of the bottom bar (or after the tagline when centred): a language switcher, a theme switcher, a markdown link.
 - social-icon — forwarded to I9kSocialLinks' icon slot; receives item.
 
@@ -93,6 +94,11 @@ Usage:
     ]"
   >
     <template #brand><I9kBrandWordmark /></template>
+    <template #extra
+      ><I9kAskAi
+        heading="Ask AI about Ismail9k"
+        prompt="Who is Abdelrahman Ismail (ismail9k, https://ismail9k.com)?"
+    /></template>
     <template #utilities><I9kLanguageSwitcher label="العربية" code="ar" href="#ar" /></template>
   </I9kFooter>
 </div>`,
