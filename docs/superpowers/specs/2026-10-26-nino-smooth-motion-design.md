@@ -181,9 +181,10 @@ one animation covers the whole beat.
 - With motion off (`animated: false`, reduced motion, no `window`), `shownExpression` follows the
   prop synchronously and no beat class is set, exactly as today. `animated` turning false mid-beat
   ends the beat and shows the pending face at once, as today.
-- `play()` re-keys `stage`, which remounts every part. A `play()` during a beat therefore restarts
-  the current phase's animation on the remounted parts. That is a one-frame pop, in a case no
-  consumer deliberately produces, and it is accepted.
+- A `play()` that replaces an action already on screen re-keys `stage`, which remounts every part
+  (a `play()` from rest keeps every element). Such a `play()` during a beat therefore restarts the
+  current phase's animation on the remounted parts. That is a one-frame pop, in a case no consumer
+  deliberately produces, and it is accepted.
 
 ### Data
 
@@ -225,11 +226,14 @@ the beat's mouth rules win over the talk loop at equal specificity, §8), then a
 reduced-motion block last. Actions still come after the beat, so an action's `animation: none` on
 `figure` still suppresses the beat hop and `'keeps acting while his mood changes'` still holds.
 
-Two small snaps remain and are accepted: `play()` re-keys `stage`, which restarts every ambient
-loop at its rest frame, so breathing settles by up to 2 units under the action's own first movement;
-and a beat that replaces the thinking bob on `figure` starts from rest, so a mood change away from
+Two small snaps remain and are accepted: a `play()` that replaces an action already on screen
+re-keys `stage` (a `play()` from rest keeps every element), which restarts every ambient loop at
+its rest frame, so breathing settles by up to 2 units under the action's own first movement; and a
+beat that replaces the thinking bob on `figure` starts from rest, so a mood change away from
 `thinking` can begin with a 2-unit settle under the face squash. Both are ≤ 2 units, both happen
-under a larger deliberate movement, and both existed as stepped jumps before this change.
+under a larger deliberate movement, and both existed as stepped jumps before this change. A third,
+rarer one: a mood change that lands inside a blink replaces the blink with the beat's shut, so a
+half-shut eye can open for one frame before shutting (rare, ≤ 1 frame, accepted).
 
 ## 7. The glance
 
@@ -291,7 +295,7 @@ timing functions. Every action starts from rest and ends at rest (identity trans
 | `jump`  | `figure`: crouch to `translateY(2px)` (`sway`), rise to `translateY(-12px)` (`settle`), fall to a `translateY(2px)` landing (`shut`), settle to 0 (`settle`); the arms rise to `translateY(-14px)` during the rise and come down during the fall; the shadow's `scaleX` follows the figure's height with the same timing functions (1.1 crouched, 0.6 at the top, 1 at rest) |
 | `nod`   | `upper` dips to `translateY(4px)` and back twice, `sway`, ending at 0 with a rest segment                                                                                                                                                                                                                                                                                    |
 | `shake` | `upper` swings between `translateX(-2px)` and `translateX(2px)` three times, `sway`, ending at 0                                                                                                                                                                                                                                                                             |
-| `dizzy` | `upper` visits the same four points as today, `(2,0)`, `(0,2)`, `(-2,0)`, `(0,-2)`, three times with `sway` between them so the square becomes a circle, and rests from 96 %                                                                                                                                                                                                 |
+| `dizzy` | `upper` visits the same four points as today, `(2,0)`, `(0,2)`, `(-2,0)`, `(0,-2)`, three times with `sway` between them so the square becomes a circle, and eases home from 94 %                                                                                                                                                                                            |
 
 `--i9k-nino-action-duration` still carries the length from `NINO_ACTION_DURATIONS`; the pause of
 ambient motion on the layers an action uses is unchanged.
@@ -303,7 +307,9 @@ The two rules that hide the side arms while hiding and the hands while acting sw
 `.i9k-nino--animated .i9k-nino__hand` get `transition: opacity 120ms ease-in-out`. Raising the hands
 (entering `hiding`) now fades the arms out while the hands open with the face; a `play()` while
 hiding cross-fades hands out and arms in for the action, and back after it. With motion off the
-`opacity: 0` applies instantly, which looks exactly as `visibility: hidden` did.
+`opacity: 0` applies instantly, which looks exactly as `visibility: hidden` did. The cross-fade
+holds in both directions because a `play()` from rest does not re-key the stage: the arms and
+hands keep their elements, so the transition has a before-change style to start from.
 
 ## 11. Motion off
 

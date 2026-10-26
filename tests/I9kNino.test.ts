@@ -135,15 +135,19 @@ function transitionRules(stylesheet: Root) {
   return found;
 }
 
-/** The frames of one scoped @keyframes block, by the name before its scope hash. */
+/**
+ * The frames of one scoped @keyframes block, by the name before its scope hash. The numbers are
+ * the transform's own: a custom property's name (the 9 in `--i9k-nino-dir`) is dropped first.
+ */
 function framesOf(stylesheet: Root, name: string) {
   const frames: { at: string; numbers: number[] }[] = [];
   stylesheet.walkAtRules(/keyframes$/, (atRule) => {
     if (atRule.params.replace(/-(?:data-v-)?[0-9a-f]{6,}$/, '') !== name) return;
     atRule.walkDecls('transform', (decl) => {
+      const value = decl.value.replace(/var\(--[\w-]+\)/g, '');
       frames.push({
         at: (decl.parent as Rule).selector,
-        numbers: (decl.value.match(/-?\d+(\.\d+)?/g) ?? []).map(Number),
+        numbers: (value.match(/-?\d+(\.\d+)?/g) ?? []).map(Number),
       });
     });
   });
@@ -397,26 +401,29 @@ describe('I9kNino', () => {
 });
 
 describe('I9kNino compiled styles', () => {
+  // Keyed by property family as well as selector: an animation whose twin only
+  // said `transition: none` would still move.
   it('stops every animation and transition under prefers-reduced-motion', async () => {
     const stylesheet = await buildComponentStylesheet('I9kNino');
-    const moving: string[] = [];
-    const stilled: string[] = [];
+    const moving: { family: string; selector: string }[] = [];
+    const stilled: { family: string; selector: string }[] = [];
 
     stylesheet.walkRules((rule) => {
       if (isKeyframeRule(rule)) return;
       for (const node of rule.nodes) {
         if (node.type !== 'decl') continue;
         if (!/^(animation|transition)(-|$)/.test(node.prop)) continue;
-        if (isReducedMotionRule(rule) && node.value === 'none') stilled.push(rule.selector);
-        else if (!isReducedMotionRule(rule) && node.value !== 'none') moving.push(rule.selector);
+        const entry = { family: node.prop.split('-')[0], selector: rule.selector };
+        if (isReducedMotionRule(rule) && node.value === 'none') stilled.push(entry);
+        else if (!isReducedMotionRule(rule) && node.value !== 'none') moving.push(entry);
       }
     });
 
     expect(moving.length).toBeGreaterThan(0);
-    for (const selector of moving) {
+    for (const { family, selector } of moving) {
       expect(
-        stilled.some((stilledSelector) => stilledSelector.includes(selector)),
-        selector,
+        stilled.some((twin) => twin.family === family && twin.selector.includes(selector)),
+        `${family}:${selector}`,
       ).toBe(true);
     }
   });
@@ -608,6 +615,33 @@ describe('I9kNino ambient life', () => {
       ).toBe(true);
     },
   );
+
+  // Held stops stay on the two-unit grid; only the worried tremor (±1 unit) and the shadow's
+  // scaleX are allowed off it.
+  it.each([
+    'breathe',
+    'look-around',
+    'hop',
+    'bob',
+    'peek',
+    'beat-hop',
+    'wave',
+    'jump',
+    'jump-arms',
+    'nod',
+    'shake',
+    'dizzy',
+  ])('keeps every %s stop on the two-unit grid', (name) => {
+    const frames = framesOf(stylesheet, `i9k-nino-${name}`);
+
+    expect(frames.length).toBeGreaterThan(0);
+    for (const { at, numbers } of frames) {
+      expect(
+        numbers.filter((value) => !Number.isInteger(value) || value % 2 !== 0),
+        `${name} ${at}`,
+      ).toEqual([]);
+    }
+  });
 });
 
 describe('I9kNino mood beat', () => {
@@ -907,6 +941,33 @@ describe('I9kNino actions', () => {
     void ninoOf(wrapper).play('nod');
     await nextTick();
     expect(wrapper.get('[data-nino-part="stage"]').element).not.toBe(firstStage);
+  });
+
+  // A transition needs a before-change style, which a freshly keyed element has none of, so a
+  // play() from rest must keep the stage: the hands and arms cross-fade instead of popping.
+  it('keeps his parts when an action starts from rest, so hiding can cross-fade', async () => {
+    const wrapper = mount(I9kNino, { props: { expression: 'hiding' } });
+    const stage = wrapper.get('[data-nino-part="stage"]').element;
+    const hand = wrapper.findAll('[data-nino-part="hand"]')[0].element;
+
+    void ninoOf(wrapper).play('wave');
+    await nextTick();
+    expect(wrapper.classes()).toContain('i9k-nino--action-wave');
+    expect(wrapper.get('[data-nino-part="stage"]').element).toBe(stage);
+    expect(wrapper.findAll('[data-nino-part="hand"]')[0].element).toBe(hand);
+  });
+
+  it('re-keys the stage only to restart an action that is already on screen', async () => {
+    const wrapper = mount(I9kNino);
+    void ninoOf(wrapper).play('nod');
+    await nextTick();
+    const first = wrapper.get('[data-nino-part="stage"]').element;
+
+    await advance(NINO_ACTION_DURATIONS.nod);
+    expect(wrapper.classes()).not.toContain('i9k-nino--acting');
+    void ninoOf(wrapper).play('nod');
+    await nextTick();
+    expect(wrapper.get('[data-nino-part="stage"]').element).toBe(first);
   });
 
   it('keeps acting while his mood changes', async () => {

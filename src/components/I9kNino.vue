@@ -111,8 +111,29 @@ watch(
 );
 
 const activeAction = ref<I9kNinoAction | null>(null);
-/** Re-keys the stage, so every play() starts its keyframes at frame 0, even a repeat. */
+/**
+ * Re-keys the stage, but only when an action is already on screen: a replay
+ * (the same action again, or a cut-off chain from an action-end handler) then
+ * starts its keyframes at frame 0, while a play() from rest keeps every
+ * element, so the hiding arms and hands cross-fade and the ambient loops keep
+ * their phase.
+ */
 const run = ref(0);
+/**
+ * The action the DOM last rendered, recorded after the flush that drew it.
+ * endAction() nulls activeAction synchronously inside play(), and a replay
+ * from an action-end handler sees activeAction === null while the DOM still
+ * carries the old class, so only this post-flush record tells a replay from a
+ * play() at rest.
+ */
+let renderedAction: I9kNinoAction | null = null;
+watch(
+  activeAction,
+  (action) => {
+    renderedAction = action;
+  },
+  { flush: 'post' },
+);
 let actionTimer: ReturnType<typeof setTimeout> | undefined;
 let settleAction: ((completed: boolean, notify: boolean) => void) | undefined;
 
@@ -153,7 +174,7 @@ function play(action: I9kNinoAction): Promise<I9kNinoActionResult> {
 
   return new Promise((resolve) => {
     activeAction.value = action;
-    run.value += 1;
+    if (renderedAction) run.value += 1;
     settleAction = (completed, notify) => {
       const result = { action, completed };
       // Resolve first: a throwing handler must not leave the await hanging.
@@ -215,12 +236,12 @@ const classes = computed(() => [
     <title v-if="label" :id="titleId">{{ label }}</title>
     <!--
       Layers, outermost first. Each animation moves exactly one layer, so two
-      motions never fight over the same transform: stage is re-created per
-      action, figure lifts the whole body, upper dips or slides the head and
-      arms, and eyes glances, with glance inside it carrying the idle
-      look-around so the look's transition never meets an animation. (Kept
-      inside the svg: a comment beside the root would make the component a
-      fragment in development builds.)
+      motions never fight over the same transform: stage is re-created when an
+      action replaces one already on screen, figure lifts the whole body, upper
+      dips or slides the head and arms, and eyes glances, with glance inside it
+      carrying the idle look-around so the look's transition never meets an
+      animation. (Kept inside the svg: a comment beside the root would make the
+      component a fragment in development builds.)
     -->
     <g :key="run" class="i9k-nino__stage" data-nino-part="stage">
       <rect
@@ -374,7 +395,8 @@ const classes = computed(() => [
 
 /* Hiding raises the arms to his face: the side arms go, the hands show. An
    action lowers them again for its length, so a wave still has an arm. Hidden
-   by opacity rather than visibility, so the change can fade. */
+   by opacity rather than visibility, so the change fades both ways: a play()
+   from rest keeps the stage (see run), so the fade has elements to run on. */
 .i9k-nino--hiding:not(.i9k-nino--acting) .i9k-nino__arm,
 .i9k-nino--hiding.i9k-nino--acting .i9k-nino__hand {
   opacity: 0;
@@ -421,8 +443,9 @@ const classes = computed(() => [
   transform-origin: center;
 }
 
-/* The look moves the eye group; the blink scales each eye. Two elements, so
-   the two transforms never overwrite one another. */
+/* The look moves the eye group, the idle glance slides the glance group inside
+   it, and the blink scales each eye: three layers (eyes › glance › eye), so no
+   two transforms overwrite one another. */
 .i9k-nino__eyes {
   transform: translate(calc(var(--i9k-nino-look-x) * 4px), calc(var(--i9k-nino-look-y) * 4px));
 }
@@ -481,10 +504,14 @@ const classes = computed(() => [
    cubic-bezier(0.23, 1, 0.32, 1), for anything that arrives and stops (an eye
    opening, a glance reaching its fixation, a hop rising); ease-in for anything
    that shuts or falls; ease-in-out for anything that sways (breath, bob,
-   antenna, talk, peek); and linear for the tremor. Every stop that is held
-   still lands on the two-unit grid, so a resting Nino is as crisp as a sprite,
-   and parts leave it only while travelling between cells. A layer with several
-   possible animations takes the last matching rule, so the rules below run
+   antenna, talk, peek); and linear for the tremor. linear is also the
+   shorthand's placeholder on the blink, the hop, the wave and the jump's three
+   lists, whose frames each name the curve of their own segment. Every stop
+   that is held still lands on the two-unit grid, so a resting Nino is as crisp
+   as a sprite, and parts leave it only while travelling between cells; the two
+   exceptions are the worried tremor (within ±1 unit, never held) and the
+   jump's shadow (a soft hint, not a pixel). A layer with several possible
+   animations takes the last matching rule, so the rules below run
    ambient → expression → talking → beat → actions, and the reduced-motion block
    stays last. Anything that lifts him moves the figure, so his feet come
    along; upper only dips or slides. */
@@ -502,7 +529,6 @@ const classes = computed(() => [
   animation: i9k-nino-antenna 1.2s ease-in-out infinite;
 }
 
-/* linear is a placeholder: every blink frame names the curve of its own segment. */
 .i9k-nino--animated:not(.i9k-nino--eyes-closed) .i9k-nino__eye {
   animation: i9k-nino-blink 13s linear infinite;
 }
@@ -626,8 +652,9 @@ const classes = computed(() => [
   }
 }
 
-/* The one motion off the grid: four offsets within a unit of centre, never
-   held, so he shivers in place rather than hopping between cells. */
+/* Off the grid, one of the two exceptions the header names: four offsets
+   within a unit of centre, never held, so he shivers in place rather than
+   hopping between cells. */
 @keyframes i9k-nino-tremor {
   0%,
   100% {
@@ -776,10 +803,10 @@ const classes = computed(() => [
    --i9k-nino-action-duration. Every one starts and ends at rest (the shadow at
    scaleX(1), its resting width), so the stage re-key that restarts an action
    and the class removal that ends one never cut a part off mid-air. The nod,
-   shake and dizzy sway on ease-in-out; the wave and the jump name the curve of
-   each segment at its stop, so their shorthand's linear is a placeholder. The
-   look-center part of the glance selector only matches the look-around rule's
-   specificity. */
+   shake and dizzy sway on ease-in-out; the wave and the jump's three lists
+   (jump, jump-arms and jump-shadow) name the curve of each segment at its stop,
+   so their shorthand's linear is a placeholder. The look-center part of the
+   glance selector only matches the look-around rule's specificity. */
 .i9k-nino--animated.i9k-nino--acting .i9k-nino__upper,
 .i9k-nino--animated.i9k-nino--acting .i9k-nino__figure,
 .i9k-nino--animated.i9k-nino--acting.i9k-nino--look-center .i9k-nino__glance {
@@ -895,7 +922,8 @@ const classes = computed(() => [
   }
 }
 
-/* The shadow is the one part off the grid: it is a soft hint, not a pixel. */
+/* Off the grid, the other exception the header names: the shadow is a soft
+   hint, not a pixel. */
 @keyframes i9k-nino-jump-shadow {
   0% {
     transform: scaleX(1);
@@ -992,8 +1020,8 @@ const classes = computed(() => [
 }
 
 /* The expression lives in the markup, never in a keyframe, so switching motion
-   off leaves the chosen face exactly as it was drawn. Every animated selector
-   above is listed here; keep this block last. */
+   off leaves the chosen face exactly as it was drawn. Every animated or
+   transitioned selector above is listed here; keep this block last. */
 @media (prefers-reduced-motion: reduce) {
   .i9k-nino--animated .i9k-nino__upper,
   .i9k-nino--animated .i9k-nino__antenna,
