@@ -1,5 +1,7 @@
 ---
 layout: home
+# DocsFooter replaces VitePress's footer here.
+footer: false
 title: 9k Design System
 description: Vue 3 components, design tokens and guidance for the 9k products, with live demos, an API reference read from source, and every page in Markdown for agents.
 
