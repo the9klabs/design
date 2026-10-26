@@ -120,7 +120,13 @@ describe('showcase emit and slot extraction', () => {
   });
 
   it('lists a slot rendered in both branches of a v-if once', () => {
-    expect(component('I9kFooter').slots).toEqual(['brand', 'default', 'social-icon', 'utilities']);
+    expect(component('I9kFooter').slots).toEqual([
+      'brand',
+      'default',
+      'extra',
+      'social-icon',
+      'utilities',
+    ]);
   });
 
   it('reports a bound slot name in dynamic slot syntax rather than as default', () => {

@@ -30,6 +30,8 @@ export type {
 export { formatI9kNinoMazeSeed, parseI9kNinoMazeSeed } from './utils/ninoMaze';
 export type { I9kCheckboxOption, I9kRadioOption } from './types/forms';
 export type { I9kIconName } from './types/icons';
+export type { I9kAskAiProvider, I9kAskAiProviderInfo } from './utils/askAi';
+export { askAiUrl, I9K_ASK_AI_PROVIDERS } from './utils/askAi';
 export { I9K_COUNTRY_DIAL_CODES } from './data/countries';
 export type {
   I9kToaster as I9kToasterStore,
@@ -48,6 +50,7 @@ export {
 export { default as I9kAnnouncementBar } from './components/I9kAnnouncementBar.vue';
 export { default as I9kArticleHeader } from './components/I9kArticleHeader.vue';
 export { default as I9kAsciiEmoji } from './components/I9kAsciiEmoji.vue';
+export { default as I9kAskAi } from './components/I9kAskAi.vue';
 export { default as I9kBlurredCircles } from './components/I9kBlurredCircles.vue';
 export { default as I9kBrandWordmark } from './components/I9kBrandWordmark.vue';
 export { default as I9kCollapsible } from './components/I9kCollapsible.vue';
