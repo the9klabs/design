@@ -32,10 +32,13 @@ other imports, so a component's stylesheet follows those of the components it re
 in the single stylesheet. `@9klabs/design/components/<Name>` is that module, and the package root
 re-exports the same files, so a component and shared state such as the toaster exist once
 whichever way they are imported. `package.json` marks only `**/*.css` as having side effects.
-`scripts/build-style-bundle.mjs` then writes `dist/index.css` (`@9klabs/design/style.css`):
+`scripts/build-style-bundle.mjs` (sharing `scripts/module-imports.mjs` with check-dist) then writes `dist/index.css` (`@9klabs/design/style.css`):
 `base.css` followed by every component stylesheet, in the order importing `dist/index.js` meets
-them, so `style.css` still means every style the package has. A consumer imports either
-`style.css`, or `base.css` with the components it uses. The library build leaves CSS unminified
+them, so `style.css` still means every style the package has. A bundled consumer loads
+`base.css` and lets each imported component (root or `components/*`) bring its own stylesheet;
+`style.css` is for use without a bundler, and beside imported components it repeats their rules
+(README, "One component at a time"). The showcase's install page, `llms.txt` and manifest
+(`styleImport`) name `base.css`. The library build leaves CSS unminified
 (`cssMinify: false`) so each file keeps its whole `@layer` order statement; consumers minify.
 `scripts/check-dist.mjs` runs last in `pnpm run build` and fails the build (and so `prepare`) when
 `dist/` loses that shape: a component without its module or stylesheet, a stylesheet a component

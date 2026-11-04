@@ -7,6 +7,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
+import { relativeImports } from './module-imports.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
@@ -56,14 +57,6 @@ function firstNode(css) {
   return postcss.parse(css).nodes.find((node) => node.type !== 'comment');
 }
 
-// The relative specifiers a built module imports, statically or as a side effect.
-function importsOf(code) {
-  const specifiers = [];
-  const pattern = /(?:^|[;\n}])\s*(?:import|export)\s*(?:[^'";]*?\sfrom\s*)?['"]([^'"]+)['"]/g;
-  for (const match of code.matchAll(pattern)) specifiers.push(match[1]);
-  return specifiers.filter((specifier) => specifier.startsWith('.'));
-}
-
 // Every file reachable from a module through relative imports: [jsFiles, cssFiles].
 function reachable(entry) {
   const js = new Set();
@@ -73,7 +66,7 @@ function reachable(entry) {
     const file = queue.pop();
     if (js.has(file)) continue;
     js.add(file);
-    for (const specifier of importsOf(read(file))) {
+    for (const specifier of relativeImports(read(file))) {
       const target = resolve(dirname(file), specifier);
       if (!existsSync(target)) {
         fail(`${rel(file)} imports ${specifier}, which does not exist`);
@@ -106,7 +99,9 @@ const indexJs = join(dist, 'index.js');
 if (!existsSync(indexJs)) {
   fail('dist/index.js is missing');
 } else {
-  const cssImports = importsOf(read(indexJs)).filter((specifier) => specifier.endsWith('.css'));
+  const cssImports = relativeImports(read(indexJs)).filter((specifier) =>
+    specifier.endsWith('.css'),
+  );
   if (cssImports.length > 0) fail(`dist/index.js imports CSS: ${cssImports.join(', ')}`);
 }
 

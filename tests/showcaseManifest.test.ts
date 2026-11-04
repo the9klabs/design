@@ -18,7 +18,7 @@ const manifest = buildManifest(components, '1.2.3');
 describe('showcase manifest', () => {
   it('names the package and its stylesheet entry point', () => {
     expect(manifest.package).toBe('@9klabs/design');
-    expect(manifest.styleImport).toBe('@9klabs/design/style.css');
+    expect(manifest.styleImport).toBe('@9klabs/design/base.css');
     expect(manifest.version).toBe('1.2.3');
   });
 
