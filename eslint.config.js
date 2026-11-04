@@ -43,6 +43,13 @@ export default tseslint.config(
     },
   },
   {
+    // The build's own Node scripts.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly' },
+    },
+  },
+  {
     files: ['tests/**/*.ts'],
     rules: {
       'vue/one-component-per-file': 'off',

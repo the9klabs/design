@@ -7,7 +7,7 @@ Canonical instruction file for this repository, shared by all coding agents
 
 ## Project Structure & Module Organization
 
-This package provides Vue 3 design-system components and shared CSS. Component source lives in `src/components/`; public exports are collected in `src/index.ts`. Keep design tokens and reusable primitives in `src/styles/`, icon data in `src/icons/`, reference data such as country calling codes in `src/data/`, and other static files in `src/assets/`. Storybook examples belong in `stories/`, with configuration under `.storybook/`. Vitest unit tests live in `tests/`. `dist/` and `storybook-static/` are generated outputs—do not edit or commit them.
+This package provides Vue 3 design-system components and shared CSS. Component source lives in `src/components/`; public exports are collected in `src/index.ts`. Keep design tokens and reusable primitives in `src/styles/`, icon data in `src/icons/`, reference data such as country calling codes in `src/data/`, and other static files in `src/assets/`. Storybook examples belong in `stories/`, with configuration under `.storybook/`. The library build's own plugins live in `build/` and its Node scripts in `scripts/`. Vitest unit tests live in `tests/`. `dist/` and `storybook-static/` are generated outputs—do not edit or commit them.
 
 The current projects using this design system are `9k.school` and `ismail9k.com`.
 
@@ -15,15 +15,35 @@ The current projects using this design system are `9k.school` and `ismail9k.com`
 
 ### Two style systems, one package
 
-The package ships **one global stylesheet** (`src/styles/index.css`, exported as
-`@9klabs/design/style.css`) and **per-component scoped CSS** compiled into the SFCs.
+The package ships **one shared stylesheet** (`src/styles/index.css`, built to `dist/base.css` and
+exported as `@9klabs/design/base.css`) and **per-component scoped CSS** compiled from the SFCs.
 The split is deliberate and load-bearing:
 
-- The global stylesheet supplies fonts, design tokens, theme application, branded element
-  defaults, accessibility utilities, and temporary website-compatibility selectors. It is the only
-  CSS a consumer imports.
+- The shared stylesheet supplies fonts, design tokens, theme application, branded element
+  defaults, accessibility utilities, and temporary website-compatibility selectors. It holds no
+  component rule.
 - Every visual component owns its own appearance in `<style scoped>` and must not rely on global
   classes for its look. `tests/I9kScopedStyles.test.ts` enforces this for migrated components.
+
+The library build (`vite.config.ts`) emits one module and one stylesheet per component
+(`preserveModules`, `cssCodeSplit`): `dist/components/I9kButton.js` imports
+`dist/components/I9kButton.css`, an import `build/inject-chunk-css.ts` adds after the module's
+other imports, so a component's stylesheet follows those of the components it renders, as it did
+in the single stylesheet. `@9klabs/design/components/<Name>` is that module, and the package root
+re-exports the same files, so a component and shared state such as the toaster exist once
+whichever way they are imported. `package.json` marks only `**/*.css` as having side effects.
+`scripts/build-style-bundle.mjs` (sharing `scripts/module-imports.mjs` with check-dist) then writes `dist/index.css` (`@9klabs/design/style.css`):
+`base.css` followed by every component stylesheet, in the order importing `dist/index.js` meets
+them, so `style.css` still means every style the package has. A bundled consumer loads
+`base.css` and lets each imported component (root or `components/*`) bring its own stylesheet;
+`style.css` is for use without a bundler, and beside imported components it repeats their rules
+(README, "One component at a time"). The showcase's install page, `llms.txt` and manifest
+(`styleImport`) name `base.css`. The library build leaves CSS unminified
+(`cssMinify: false`) so each file keeps its whole `@layer` order statement; consumers minify.
+`scripts/check-dist.mjs` runs last in `pnpm run build` and fails the build (and so `prepare`) when
+`dist/` loses that shape: a component without its module or stylesheet, a stylesheet a component
+renders that its module does not reach, a component rule in `base.css` or outside its layer, a
+part missing from or repeated in `index.css`, or an `exports` path that does not exist.
 
 ### Cascade layers
 
@@ -31,15 +51,26 @@ The split is deliberate and load-bearing:
 layer:
 
 ```
-normalize, fonts, tokens, theme, base, primitives, utilities
+normalize, fonts, tokens, theme, base, primitives, utilities, components
 ```
+
+`components` is filled only by the components: `build/postcss-components-layer.ts`, a PostCSS
+plugin in `vite.config.ts`, wraps every rule of a `.vue` style block in `@layer components`
+(after Vue has scoped it, so `[data-v-…]`, `:deep()` and nested `@media`, `@supports` and
+`@container` move in unchanged) and prepends the same order statement, so the order is the same
+whichever file the browser reads first. `@font-face` and `@keyframes` stay outside the block.
+Component rules therefore beat every shared layer, and any unlayered rule a consumer writes beats
+them. Storybook reads `vite.config.ts` and gets the layer too; the showcase compiles the SFCs
+through VitePress's own config, without it, so its components stay unlayered beside VitePress's
+unlayered theme. Change the order in `src/styles/index.css` and `LAYER_ORDER` together
+(`tests/componentsLayer.test.ts` holds them equal).
 
 Put new CSS in the layer that matches its job — `tokens.css` holds definitions only and must never
 produce visual output; `base.css` holds branded element defaults; `primitives.css` holds the
 legacy global classes being migrated away; `utilities.css` holds helpers such as `.sr-only`.
 `tests/normalizeStyles.test.ts` builds the real stylesheet with Vite and asserts both the layer
 order and which layer specific rules land in, so moving a rule between files is a test-visible
-change.
+change. `tests/componentsLayer.test.ts` pins what the plugin puts in `components` and leaves out.
 
 ### Token flow into components
 
@@ -224,7 +255,8 @@ Write tests with Vitest and mount Vue components with Vue Test Utils in the conf
 
 Some suites are not ordinary component tests and are slower because they invoke a real Vite build to
 inspect emitted CSS with PostCSS: `normalizeStyles.test.ts` (global cascade layers) and
-`I9kExistingComponentStyles.test.ts` (per-component scoped output). `I9kComponentContracts.test.ts`
+`I9kExistingComponentStyles.test.ts` (per-component scoped output, built without the
+`components` layer plugin). `I9kComponentContracts.test.ts`
 and `I9kScopedStyles.test.ts` assert on source text to pin the public export list, shared token
 values, and the scoped-style rule. Expect these to fail when you move CSS between files or rename a
 token, and update them deliberately rather than loosening the assertion.

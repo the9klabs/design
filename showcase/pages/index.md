@@ -28,7 +28,7 @@ features:
     details: Put dark or light on the html element. Theme tokens follow, and so does every component.
     link: /foundations/theming
   - title: One stylesheet, scoped components
-    details: Import @9klabs/design/style.css once for fonts, tokens and base styles. Each component carries its own scoped CSS.
+    details: Import @9klabs/design/base.css once for fonts, tokens and base styles. Each component brings its own scoped CSS.
     link: /getting-started/installation
   - title: Docs an agent can read
     details: Every page is also Markdown at its URL plus .md. llms.txt indexes them all, and each component ships a self-contained prompt.

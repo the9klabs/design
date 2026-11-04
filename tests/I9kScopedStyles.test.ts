@@ -24,6 +24,7 @@ const migratedComponents = [
   ['I9kProfileCard.vue', 'i9k-profile-card'],
   ['I9kAvatar.vue', 'i9k-avatar'],
   ['I9kBandanaAvatar.vue', 'i9k-bandana-avatar'],
+  ['I9kRevealImage.vue', 'i9k-reveal-image'],
   ['I9kProfileMenu.vue', 'i9k-profile-menu'],
   ['I9kTimelineCard.vue', 'i9k-timeline-card'],
   ['I9kBadge.vue', 'i9k-badge'],

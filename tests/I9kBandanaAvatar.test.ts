@@ -4,6 +4,7 @@ import { renderToString } from 'vue/server-renderer';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import I9kBandanaAvatar from '../src/components/I9kBandanaAvatar.vue';
+import I9kRevealImage from '../src/components/I9kRevealImage.vue';
 
 const props = { src: '/me.webp', alt: 'Abdelrahman Ismail', bandanaSrc: '/bandana.webp' };
 
@@ -61,6 +62,33 @@ describe('I9kBandanaAvatar', () => {
 
     const lazy = mount(I9kBandanaAvatar, { props: { ...props, loading: 'lazy' } });
     expect(lazy.findAll('img').map((img) => img.attributes('loading'))).toEqual(['lazy', 'lazy']);
+  });
+
+  it('loads a lazy photo through I9kRevealImage and keeps the bandana a plain image', () => {
+    const eager = mount(I9kBandanaAvatar, { props });
+    expect(eager.findComponent(I9kRevealImage).exists()).toBe(false);
+
+    const lazy = mount(I9kBandanaAvatar, { props: { ...props, loading: 'lazy', size: 'lg' } });
+    const photo = lazy.getComponent(I9kRevealImage);
+    expect(photo.props()).toMatchObject({ src: '/me.webp', alt: 'Abdelrahman Ismail' });
+    expect(photo.props('width')).toBe(photo.props('height'));
+    expect(photo.findAll('img')).toHaveLength(1);
+    expect(photo.find('[data-bandana]').exists()).toBe(false);
+    expect(lazy.get('[data-bandana]').attributes('loading')).toBe('lazy');
+  });
+
+  it('draws the bandana once a lazy photo and the bandana have both loaded', async () => {
+    const wrapper = mount(I9kBandanaAvatar, { props: { ...props, loading: 'lazy' } });
+    const [photo, bandana] = wrapper.findAll('img');
+
+    await bandana!.trigger('load');
+    await runFrames();
+    expect(isPlaying(wrapper)).toBe(false);
+
+    await photo!.trigger('load');
+    await runFrames();
+    await wrapper.vm.$nextTick();
+    expect(isPlaying(wrapper)).toBe(true);
   });
 
   it('draws the bandana once, when the photo and the bandana have both loaded', async () => {

@@ -178,7 +178,7 @@ export const llmsTxt = (sidebar: { title: string; pages: TwinSource[] }[]): stri
     '',
     '> Vue 3 components, design tokens and guidance for the 9k products. Every page of this site is also available as Markdown at its URL plus `.md`.',
     '',
-    'Install with `npm install @9klabs/design` and import `@9klabs/design/style.css` once at the app entry.',
+    'Install with `npm install @9klabs/design` and import `@9klabs/design/base.css` once at the app entry.',
     `The whole site in one file is ${absolute('/llms-full.txt')}, and every component's API as JSON is ${absolute('/components.json')}.`,
     '',
     '## Rules',

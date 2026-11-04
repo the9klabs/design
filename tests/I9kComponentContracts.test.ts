@@ -117,6 +117,12 @@ const bandanaAvatarExports = [
   "export { default as I9kBandanaAvatar } from './components/I9kBandanaAvatar.vue';",
 ] as const;
 
+const revealImageExports = [
+  "export type { I9kRevealImageState } from './utils/revealImage';",
+  "export { REVEAL_DURATION_MS, REVEAL_IF_WAITED_MS, REVEAL_ROOT_MARGIN } from './utils/revealImage';",
+  "export { default as I9kRevealImage } from './components/I9kRevealImage.vue';",
+] as const;
+
 const ninoExports = [
   `export type {
   I9kNinoAction,
@@ -211,6 +217,10 @@ describe('shared component contracts', () => {
   });
 
   it.each(bandanaAvatarExports)('exports %s', (statement) => {
+    expect(indexSource).toContain(statement);
+  });
+
+  it.each(revealImageExports)('exports %s', (statement) => {
     expect(indexSource).toContain(statement);
   });
 
