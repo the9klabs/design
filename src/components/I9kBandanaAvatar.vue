@@ -2,6 +2,11 @@
 import { onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 
 import type { I9kComponentSize } from '../types/components';
+import I9kRevealImage from './I9kRevealImage.vue';
+
+// The displayed diameter of each size, in CSS pixels: the lazy photo's width and height
+// attributes, which give its placeholder a square box before the photo arrives.
+const SIZE_PX: Record<I9kComponentSize, number> = { sm: 128, md: 176, lg: 224 };
 
 withDefaults(
   defineProps<{
@@ -12,13 +17,16 @@ withDefaults(
     /** The bandana drawn over the eyes: a wide image with a transparent background. */
     bandanaSrc: string;
     size?: I9kComponentSize;
-    /** 'lazy' for an avatar below the fold; the bandana then draws when the images arrive. */
+    /**
+     * 'lazy' for an avatar below the fold: the photo then loads as it comes near the view,
+     * through I9kRevealImage, and the bandana draws when both images have arrived.
+     */
     loading?: 'eager' | 'lazy';
   }>(),
   { size: 'md', loading: 'eager' },
 );
 
-const photo = useTemplateRef<HTMLImageElement>('photo');
+const clip = useTemplateRef<HTMLElement>('clip');
 const bandana = useTemplateRef<HTMLImageElement>('bandana');
 const isPlaying = ref(false);
 
@@ -71,10 +79,14 @@ function onBandanaLoad() {
 const hasLoaded = (image: HTMLImageElement | null) =>
   Boolean(image && image.complete && image.naturalWidth > 0);
 
+// The photo is this component's own <img> when eager, and I9kRevealImage's when
+// lazy; either way it is the clip's image that is not the bandana.
+const photoImage = () => clip.value?.querySelector<HTMLImageElement>('img:not([data-bandana])');
+
 // On a server-rendered page an image can finish before Vue hydrates, and its
 // load event is then never heard.
 onMounted(() => {
-  if (hasLoaded(photo.value)) photoLoaded = true;
+  if (hasLoaded(photoImage() ?? null)) photoLoaded = true;
   if (hasLoaded(bandana.value)) bandanaLoaded = true;
   playOnce();
 });
@@ -84,9 +96,18 @@ onBeforeUnmount(cancelReplay);
 
 <template>
   <span :class="['i9k-bandana-avatar', `i9k-bandana-avatar--${size}`]" @pointerenter="restart">
-    <span class="i9k-bandana-avatar__clip">
+    <span ref="clip" class="i9k-bandana-avatar__clip">
+      <I9kRevealImage
+        v-if="loading === 'lazy'"
+        class="i9k-bandana-avatar__photo"
+        :src="src"
+        :alt="alt"
+        :width="SIZE_PX[size]"
+        :height="SIZE_PX[size]"
+        @load="onPhotoLoad"
+      />
       <img
-        ref="photo"
+        v-else
         class="i9k-bandana-avatar__photo"
         :src="src"
         :alt="alt"

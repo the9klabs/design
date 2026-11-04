@@ -31,6 +31,8 @@ export type { I9kIconName } from './types/icons';
 export type { I9kAskAiProvider, I9kAskAiProviderInfo } from './utils/askAi';
 export { askAiUrl, I9K_ASK_AI_PROVIDERS } from './utils/askAi';
 export { I9K_COUNTRY_DIAL_CODES } from './data/countries';
+export type { I9kRevealImageState } from './utils/revealImage';
+export { REVEAL_DURATION_MS, REVEAL_IF_WAITED_MS, REVEAL_ROOT_MARGIN } from './utils/revealImage';
 export type {
   I9kToaster as I9kToasterStore,
   I9kToasterLabels,
@@ -71,6 +73,7 @@ export { default as I9kNinoMaze } from './components/I9kNinoMaze.vue';
 export { default as I9kProfileCard } from './components/I9kProfileCard.vue';
 export { default as I9kAvatar } from './components/I9kAvatar.vue';
 export { default as I9kBandanaAvatar } from './components/I9kBandanaAvatar.vue';
+export { default as I9kRevealImage } from './components/I9kRevealImage.vue';
 export { default as I9kSocialLinks } from './components/I9kSocialLinks.vue';
 export { default as I9kThemeSwitcher } from './components/I9kThemeSwitcher.vue';
 
