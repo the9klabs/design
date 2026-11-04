@@ -36,9 +36,8 @@ const boxes = computed(() =>
 );
 const activeIndex = computed(() => Math.min(digits.value.length, props.length - 1));
 
-function onInput(event: Event) {
-  const target = event.target as HTMLInputElement;
-  const next = target.value.replace(/\D/g, '').slice(0, props.length);
+function commit(target: HTMLInputElement, raw: string) {
+  const next = raw.replace(/\D/g, '').slice(0, props.length);
 
   // The input stays in step with the model even when the parent does not accept the value.
   if (target.value !== next) {
@@ -52,6 +51,25 @@ function onInput(event: Event) {
   if (changed && next.length === props.length) {
     emit('complete', next);
   }
+}
+
+function onInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+
+  commit(target, target.value);
+}
+
+// Browsers cut pasted text at maxlength before `input` fires, so "482 913" would lose its last
+// digit. Read the clipboard ourselves and strip it first.
+function onPaste(event: ClipboardEvent) {
+  const text = event.clipboardData?.getData('text');
+
+  if (text === undefined) {
+    return;
+  }
+
+  event.preventDefault();
+  commit(event.target as HTMLInputElement, text);
 }
 
 function onFocus(event: FocusEvent) {
@@ -96,6 +114,7 @@ function onBlur(event: FocusEvent) {
         :disabled="props.disabled"
         :aria-invalid="props.invalid ? 'true' : undefined"
         @input="onInput"
+        @paste="onPaste"
         @focus="onFocus"
         @blur="onBlur"
       />

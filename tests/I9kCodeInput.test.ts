@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
 import I9kCodeInput from '../src/components/I9kCodeInput.vue';
@@ -7,7 +7,25 @@ function mountInput(props: Record<string, unknown> = {}) {
   return mount(I9kCodeInput, { props: { modelValue: '', label: 'Sign-in code', ...props } });
 }
 
+function paste(wrapper: VueWrapper, text: string) {
+  const event = new Event('paste', { bubbles: true, cancelable: true });
+
+  Object.defineProperty(event, 'clipboardData', { value: { getData: () => text } });
+  wrapper.get('input').element.dispatchEvent(event);
+
+  return event;
+}
+
 describe('I9kCodeInput', () => {
+  it.each(['482 913', 'Your code is 482-913.'])('keeps every digit of a real paste: %s', (text) => {
+    const wrapper = mountInput();
+    const event = paste(wrapper, text);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(wrapper.emitted('update:modelValue')).toEqual([['482913']]);
+    expect(wrapper.emitted('complete')).toEqual([['482913']]);
+  });
+
   it('keeps only digits from a paste', async () => {
     const wrapper = mountInput();
 
@@ -61,12 +79,11 @@ describe('I9kCodeInput', () => {
 
   it('has one labelled textbox', () => {
     const wrapper = mountInput();
-    const inputs = wrapper.findAll('input');
-    const label = wrapper.get('label');
+    const input = wrapper.get('input');
+    const label = wrapper.get(`label[for="${input.attributes('id')}"]`);
 
-    expect(inputs).toHaveLength(1);
+    expect(wrapper.findAll('input, textarea, select')).toHaveLength(1);
     expect(label.text()).toBe('Sign-in code');
-    expect(label.attributes('for')).toBe(inputs[0]!.attributes('id'));
   });
 
   it('autocomplete is one-time-code', () => {
