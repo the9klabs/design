@@ -1,5 +1,3 @@
-import './styles/index.css';
-
 export type { I9kComponentSize, I9kIconButtonVariant, I9kTone } from './types/components';
 export type { I9kBadgeVariant } from './types/components';
 export type { I9kGlowPosition } from './types/components';

@@ -36,6 +36,41 @@ primitive CSS in `@9klabs/design/style.css`. The
 [components index](https://design.the9klabs.com/components) lists them all by purpose. It is
 built from the docs registry, which a test keeps in step with `src/index.ts`.
 
+### One component at a time
+
+Each component is also built to its own module, which imports its own stylesheet (and, through
+its imports, the stylesheets of the components it renders). An app that wants a page to download
+only the components it renders imports them one by one and loads the shared stylesheet instead
+of the whole one:
+
+```ts
+import '@9klabs/design/base.css';
+import I9kButton from '@9klabs/design/components/I9kButton';
+```
+
+| Import                             | Holds                                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `@9klabs/design/base.css`          | Normalize, fonts, tokens, theme, branded element defaults, legacy primitives and utilities: no component rule |
+| `@9klabs/design/style.css`         | `base.css` followed by every component's stylesheet: every style the package has                              |
+| `@9klabs/design/components/<Name>` | The component alone, its styles included                                                                      |
+
+`package.json` marks only `.css` files as having side effects, so a bundler drops the modules (and
+the stylesheets) of components a page never imports, whether they are imported one by one or by
+name from the package root. Root imports keep working unchanged; with them, load `style.css`.
+
+### Cascade layers
+
+Every stylesheet the package ships opens with the same order statement:
+
+```css
+@layer normalize, fonts, tokens, theme, base, primitives, utilities, components;
+```
+
+Component rules sit in the `components` layer, the last of the package's layers, so they win over
+every shared rule whichever file the browser reads first. Any rule an app writes outside a layer
+wins over all of them, so an app's overrides of a component need no extra specificity. (Font faces
+and keyframes stay outside the layer: a layer changes nothing for them.)
+
 ## Component sizes and styles
 
 Visual components use the shared `sm`, `md`, and `lg` size scale and default to `md`:
