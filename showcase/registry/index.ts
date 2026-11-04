@@ -44,6 +44,7 @@ import { I9kPhoneInputEntry } from './I9kPhoneInput';
 import { I9kProfileCardEntry } from './I9kProfileCard';
 import { I9kProfileMenuEntry } from './I9kProfileMenu';
 import { I9kRadioGroupEntry } from './I9kRadioGroup';
+import { I9kRevealImageEntry } from './I9kRevealImage';
 import { I9kSectionEntry } from './I9kSection';
 import { I9kSectionHeadingEntry } from './I9kSectionHeading';
 import { I9kSelectEntry } from './I9kSelect';
@@ -80,6 +81,7 @@ export const entries: ShowcaseEntry[] = [
   I9kProfileCardEntry,
   I9kAvatarEntry,
   I9kBandanaAvatarEntry,
+  I9kRevealImageEntry,
   I9kCollapsibleEntry,
   I9kSectionEntry,
   I9kFaqListEntry,
