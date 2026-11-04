@@ -102,6 +102,8 @@ describe('normalized styles', () => {
     expect(parentLayer(rootRule)).toBe('normalize');
   });
 
+  // `components` is declared last and filled only by the component stylesheets, which repeat
+  // the same order statement (build/postcss-components-layer.ts).
   it('declares the complete shared cascade order', () => {
     const layers = stylesheet.nodes
       .filter((node): node is AtRule => node.type === 'atrule' && node.name === 'layer')
@@ -115,6 +117,7 @@ describe('normalized styles', () => {
       'base',
       'primitives',
       'utilities',
+      'components',
     ]);
   });
 

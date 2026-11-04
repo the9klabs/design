@@ -19,25 +19,33 @@ npm install @9klabs/design
 
 ## Import the stylesheet once
 
-Import the stylesheet at your application entry, before anything else renders:
+Import the shared stylesheet at your application entry, before anything else renders:
 
 ```ts
 // main.ts
-import '@9klabs/design/style.css';
+import '@9klabs/design/base.css';
 ```
 
-It is the only CSS the library needs. It carries the design tokens, the light and dark themes,
-branded element defaults and accessibility utilities. Every component brings its own scoped styles,
-so nothing else has to be imported per component.
+It carries the design tokens, the light and dark themes, branded element defaults and
+accessibility utilities. Every component module imports its own scoped styles, whether you import
+it from the package root or on its own from `@9klabs/design/components/<Name>`, so a page
+downloads only the styles of the components it renders.
 
-The stylesheet declares its cascade layers up front, in this order:
+`@9klabs/design/style.css` is the whole sheet, the shared stylesheet followed by every component's,
+for a page that uses the package without a bundler. Don't load it beside imported components: it
+repeats their rules, and a child's own rule can then beat its parent's `:deep()` rule on a
+specificity tie.
+
+Every stylesheet declares the package's cascade layers up front, in this order:
 
 ```css
-@layer normalize, fonts, tokens, theme, base, primitives, utilities;
+@layer normalize, fonts, tokens, theme, base, primitives, utilities, components;
 ```
 
-Your own CSS, which is not in a layer, always wins over all of them. Override a token or restyle an
-element without fighting specificity.
+Component rules sit in `components`, the last layer. Your own CSS, which is not in a layer, always
+wins over all of them. Override a token or restyle an element without fighting specificity, and
+note that an unlayered element rule (a reset such as `button { … }`) wins over a component's own
+rule too.
 
 ## Load the brand fonts
 
@@ -50,7 +58,7 @@ Choose one of the following:
 - **Bundled copies.** Import them next to the stylesheet:
 
   ```ts
-  import '@9klabs/design/style.css';
+  import '@9klabs/design/base.css';
   import '@9klabs/design/font-faces.css';
   ```
 

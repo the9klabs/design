@@ -16,8 +16,11 @@ npm install @9klabs/design
 Import the shared CSS once in your application entry point:
 
 ```ts
-import '@9klabs/design/style.css';
+import '@9klabs/design/base.css';
 ```
+
+Each component brings its own styles when it is imported, so a bundled app loads `base.css` and
+nothing more; see [One component at a time](#one-component-at-a-time).
 
 Then use components directly:
 
@@ -32,9 +35,50 @@ The package is framework-agnostic within Vue 3. `I9kButton` uses a normal anchor
 ## Exports
 
 Every component and type is exported from the package root, alongside the design tokens and
-primitive CSS in `@9klabs/design/style.css`. The
+primitive CSS in `@9klabs/design/base.css`. The
 [components index](https://design.the9klabs.com/components) lists them all by purpose. It is
 built from the docs registry, which a test keeps in step with `src/index.ts`.
+
+### One component at a time
+
+Each component is also built to its own module, which imports its own stylesheet (and, through
+its imports, the stylesheets of the components it renders). An app that wants a page to download
+only the components it renders imports them one by one and loads only the shared stylesheet:
+
+```ts
+import '@9klabs/design/base.css';
+import I9kButton from '@9klabs/design/components/I9kButton';
+```
+
+| Import                             | Holds                                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `@9klabs/design/base.css`          | Normalize, fonts, tokens, theme, branded element defaults, legacy primitives and utilities: no component rule |
+| `@9klabs/design/style.css`         | `base.css` followed by every component's stylesheet: every style the package has, for use without a bundler   |
+| `@9klabs/design/components/<Name>` | The component alone, its styles included                                                                      |
+
+`package.json` marks only `.css` files as having side effects, so a bundler drops the modules (and
+the stylesheets) of components a page never imports, whether they are imported one by one or by
+name from the package root.
+
+**In a bundled app, load `base.css`, not `style.css`**, whether components are imported from the
+package root or from `components/*`: either way each component module brings its own stylesheet.
+`style.css` is the whole sheet, for a page that uses the package without a bundler or without its
+JavaScript. Loaded beside imported components it duplicates their rules in the same layer, and
+when a child's own stylesheet then lands after the `style.css` copy, the child's rule can beat its
+parent's `:deep()` rule on a specificity tie.
+
+### Cascade layers
+
+Every stylesheet the package ships opens with the same order statement:
+
+```css
+@layer normalize, fonts, tokens, theme, base, primitives, utilities, components;
+```
+
+Component rules sit in the `components` layer, the last of the package's layers, so they win over
+every shared rule whichever file the browser reads first. Any rule an app writes outside a layer
+wins over all of them, so an app's overrides of a component need no extra specificity. (Font faces
+and keyframes stay outside the layer: a layer changes nothing for them.)
 
 ## Component sizes and styles
 
@@ -209,10 +253,10 @@ contract.
 
 ## Typography
 
-The package ships the ismail9k brand fonts through its CSS entry point, so consumers only need:
+The package ships the ismail9k brand fonts through its shared stylesheet, so consumers only need:
 
 ```ts
-import '@9klabs/design/style.css';
+import '@9klabs/design/base.css';
 ```
 
 - **English UI and display:** IBM Plex Sans, exposed as `--font-sans`.

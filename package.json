@@ -12,11 +12,19 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./components/*": {
+      "types": "./dist/components/*.vue.d.ts",
+      "import": "./dist/components/*.js"
+    },
+    "./base.css": "./dist/base.css",
     "./style.css": "./dist/index.css",
     "./font-faces.css": "./src/styles/font-faces.css"
   },
@@ -24,7 +32,7 @@
     "vue": "^3.5.0"
   },
   "scripts": {
-    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly --outDir dist",
+    "build": "vite build && node scripts/build-style-bundle.mjs && vue-tsc --declaration --emitDeclarationOnly --outDir dist && node scripts/check-dist.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "vue-tsc --noEmit && vue-tsc --noEmit --project tsconfig.storybook.json && vue-tsc --noEmit --project tsconfig.test.json",

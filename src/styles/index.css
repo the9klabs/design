@@ -1,4 +1,4 @@
-@layer normalize, fonts, tokens, theme, base, primitives, utilities;
+@layer normalize, fonts, tokens, theme, base, primitives, utilities, components;
 
 @import 'normalize.css' layer(normalize);
 @import './fonts.css' layer(fonts);
