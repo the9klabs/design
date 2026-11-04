@@ -19,7 +19,10 @@ const props = {
 class FakeObserver {
   static instances: FakeObserver[] = [];
   readonly targets: Element[] = [];
-  readonly disconnect = vi.fn();
+  disconnected = false;
+  readonly disconnect = vi.fn(() => {
+    this.disconnected = true;
+  });
   constructor(
     readonly callback: IntersectionObserverCallback,
     readonly options?: IntersectionObserverInit,
@@ -33,7 +36,13 @@ class FakeObserver {
   takeRecords() {
     return [];
   }
+  // A report sent after disconnect() means the component stopped observing too late.
   report(near: boolean) {
+    if (this.disconnected) throw new Error('reported to a disconnected IntersectionObserver');
+    this.deliver(near);
+  }
+  // A report the browser had already queued when disconnect() was called.
+  deliver(near: boolean) {
     const entries = this.targets.map(
       (target) => ({ target, isIntersecting: near }) as IntersectionObserverEntry,
     );
@@ -246,8 +255,10 @@ describe('I9kRevealImage in the browser', () => {
     const wrapper = mount(I9kRevealImage, { props });
     await loadAfter(wrapper, 40);
     expect(state(wrapper)).toBe('shown');
+    expect(observer().disconnected).toBe(true);
 
-    await report(false);
+    observer().deliver(false);
+    await nextTick();
 
     expect(state(wrapper)).toBe('shown');
     expect(img(wrapper).attributes('src')).toBe('/cover.webp');
@@ -257,8 +268,10 @@ describe('I9kRevealImage in the browser', () => {
     const wrapper = mount(I9kRevealImage, { props });
     await img(wrapper).trigger('error');
     expect(state(wrapper)).toBe('failed');
+    expect(observer().disconnected).toBe(true);
 
-    await report(true);
+    observer().deliver(true);
+    await nextTick();
 
     expect(state(wrapper)).toBe('failed');
   });
@@ -299,6 +312,81 @@ describe('I9kRevealImage in the browser', () => {
     expect(watcher.disconnect).toHaveBeenCalled();
     expect(cancelFrame).toHaveBeenCalled();
     expect(frames).toHaveLength(0);
+  });
+
+  it('stops observing when it unmounts while the image waits', async () => {
+    const wrapper = mount(I9kRevealImage, { props });
+    await report(false);
+    expect(state(wrapper)).toBe('waiting');
+    const watcher = observer();
+    expect(watcher.disconnected).toBe(false);
+
+    wrapper.unmount();
+
+    expect(watcher.disconnect).toHaveBeenCalled();
+    expect(() => watcher.report(true)).toThrow(/disconnected/);
+  });
+
+  it('never takes the sources away again once the image was requested', async () => {
+    const wrapper = mount(I9kRevealImage, { props });
+    await report(false);
+    await report(true);
+    const element = img(wrapper).element;
+    const removals = new MutationObserver(() => {});
+    removals.observe(element, { attributeFilter: ['src', 'srcset', 'sizes'] });
+
+    // A far report the browser had queued before the observer was disconnected.
+    observer().deliver(false);
+    await nextTick();
+
+    expect(state(wrapper)).toBe('loading');
+    expect(removals.takeRecords()).toHaveLength(0);
+    expect(img(wrapper).attributes('src')).toBe('/cover.webp');
+    expect(img(wrapper).attributes('srcset')).toBe(props.srcset);
+    expect(img(wrapper).attributes('sizes')).toBe(props.sizes);
+    removals.disconnect();
+  });
+
+  it('asks for the image at once once it decides to load it', async () => {
+    const wrapper = mount(I9kRevealImage, { props });
+    expect(img(wrapper).attributes('loading')).toBe('lazy');
+    await report(false);
+    expect(img(wrapper).attributes('loading')).toBe('lazy');
+
+    await report(true);
+
+    expect(img(wrapper).attributes('loading')).toBe('eager');
+  });
+
+  it('asks for the image at once where there is no IntersectionObserver', async () => {
+    vi.stubGlobal('IntersectionObserver', undefined);
+    const wrapper = mount(I9kRevealImage, { props });
+    await nextTick();
+
+    expect(img(wrapper).attributes('loading')).toBe('eager');
+  });
+
+  it('keeps an image that showed when a later source fails', async () => {
+    const wrapper = mount(I9kRevealImage, { props });
+    await report(true);
+    await loadAfter(wrapper, 10);
+    expect(state(wrapper)).toBe('shown');
+
+    await img(wrapper).trigger('error');
+
+    expect(state(wrapper)).toBe('shown');
+  });
+
+  it('keeps revealing an image when a later source fails', async () => {
+    const wrapper = mount(I9kRevealImage, { props });
+    await report(true);
+    await loadAfter(wrapper, 300);
+    expect(state(wrapper)).toBe('revealing');
+
+    await img(wrapper).trigger('error');
+    await runFrames(REVEAL_DURATION_MS + 100);
+
+    expect(state(wrapper)).toBe('shown');
   });
 
   it('passes the alternative text through, an empty one included', () => {

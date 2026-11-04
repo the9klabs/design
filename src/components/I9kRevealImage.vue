@@ -51,6 +51,13 @@ const state = ref<I9kRevealImageState>('native');
 // While the image waits, none of its sources is bound, so the browser cannot start it.
 const bound = computed(() => state.value !== 'waiting');
 
+// The browser's own lazy loading decides only until the component does: once it has asked for
+// the image, the fetch starts then, so the wait it times is the visitor's, not their scrolling.
+// The server and hydration render `native`, so the server's HTML stays `loading="lazy"`.
+const loadingMode = computed(() =>
+  state.value === 'native' || state.value === 'waiting' ? 'lazy' : 'eager',
+);
+
 let observer: IntersectionObserver | undefined;
 let frame = 0;
 let mountedAt = 0;
@@ -138,8 +145,9 @@ function onLoad(event: Event) {
 
 function onError(event: Event) {
   emit('error', event);
-  // A waiting image has no source, so an error then is only its source being taken away.
-  if (props.eager || state.value === 'waiting') return;
+  // A waiting image has no source, so an error then is only its source being taken away; and
+  // an image that has loaded stays, even when a later srcset candidate fails.
+  if (props.eager || ['waiting', 'revealing', 'shown'].includes(state.value)) return;
   if (frame) cancelAnimationFrame(frame);
   frame = 0;
   moveTo('failed');
@@ -208,13 +216,13 @@ onBeforeUnmount(() => {
     <img
       ref="image"
       class="i9k-reveal-image__image"
+      :loading="loadingMode"
       :sizes.attr="bound ? sizes : undefined"
       :srcset.attr="bound ? srcset : undefined"
       :src.attr="bound ? src : undefined"
       :width="width"
       :height="height"
       :alt="alt"
-      loading="lazy"
       decoding="async"
       @load="onLoad"
       @error="onError"

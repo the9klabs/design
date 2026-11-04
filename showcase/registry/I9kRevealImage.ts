@@ -25,7 +25,7 @@ Emits: load and error, each with the image's native event.
 
 Slots: none.
 
-Behavior: the server renders a wrapper, a placeholder (aria-hidden) and <img loading="lazy" decoding="async"> with every attribute, so without JavaScript the browser's own lazy loading still loads it. Once mounted, the component watches the wrapper with an IntersectionObserver whose margin is about a third of a screen (REVEAL_ROOT_MARGIN). If the first report finds the image far away, its src, srcset and sizes are taken off until it comes near. An image that takes at least REVEAL_IF_WAITED_MS from its request to its load reveals through a canvas of 16 by 8 squares over REVEAL_DURATION_MS; a faster one just appears. Under prefers-reduced-motion the mark stands still and the image appears without the reveal. An image that fails keeps the mark, standing still. The root's data-state names the state: native, waiting, loading, revealing, shown or failed.
+Behavior: the server renders a wrapper, a placeholder (aria-hidden) and <img loading="lazy" decoding="async"> with every attribute, so without JavaScript the browser's own lazy loading still loads it. Once mounted, the component watches the wrapper with an IntersectionObserver whose margin is about a third of a screen (REVEAL_ROOT_MARGIN). If the first report finds the image far away, its src, srcset and sizes are taken off until it comes near, and once the component asks for the image it switches the <img> to loading="eager", so the fetch starts then. An image that takes at least REVEAL_IF_WAITED_MS from its request to its load reveals through a canvas of 16 by 8 squares over REVEAL_DURATION_MS; a faster one just appears. Under prefers-reduced-motion the mark stands still and the image appears without the reveal. An image that fails keeps the mark, standing still. The root's data-state names the state: native, waiting, loading, revealing, shown or failed.
 
 The placeholder's fill is the theme's sunken surface (--surface-sunken-color), overridable with --i9k-reveal-image-fill on the root; the mark keeps its own orange and green. --i9k-reveal-image-mark-size sets the mark's width.
 
@@ -38,6 +38,7 @@ Usage:
     'A class or other attribute lands on the wrapper when lazy and on the <img> when `eager`, because each is the root. Style the image through the wrapper (the <img> fills it with object-fit: cover).',
     'The wrapper is a block that takes its width from its container and its height from width and height. Give it an explicit height only when the container sets the shape, as I9kBandanaAvatar does.',
     'An image already in the browser cache appears at once, with no placeholder and no reveal, on purpose.',
+    'Give an SVG its own width and height (or a viewBox with them in the file). An SVG with no intrinsic size reports naturalWidth 0 in Firefox, so a decoded one reads as broken and shows the failed mark.',
     'Changing src after mount does not restart the placeholder: key the component on the image when one instance shows different images.',
   ],
   demos: [
