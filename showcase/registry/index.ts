@@ -54,6 +54,7 @@ import { I9kSocialLinksEntry } from './I9kSocialLinks';
 import { I9kStatEntry } from './I9kStat';
 import { I9kTabsEntry } from './I9kTabs';
 import { I9kTextEntry } from './I9kText';
+import { I9kCodeInputEntry } from './I9kCodeInput';
 import { I9kTextareaEntry } from './I9kTextarea';
 import { I9kThemeSwitcherEntry } from './I9kThemeSwitcher';
 import { I9kTimelineCardEntry } from './I9kTimelineCard';
@@ -99,6 +100,7 @@ export const entries: ShowcaseEntry[] = [
   I9kFieldEntry,
   I9kCheckboxGroupEntry,
   I9kInputEntry,
+  I9kCodeInputEntry,
   I9kTextareaEntry,
   I9kSelectEntry,
   I9kPhoneInputEntry,
