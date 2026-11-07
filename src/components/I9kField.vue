@@ -103,7 +103,20 @@ if (isDevelopment) {
       <slot name="label">{{ label }}</slot
       ><span v-if="required" aria-hidden="true"> *</span>
     </label>
+    <div v-if="slots.action" class="i9k-field__row">
+      <div class="i9k-field__control">
+        <slot
+          :control-id="resolvedControlId"
+          :described-by="describedBy"
+          :invalid="Boolean(error)"
+          :required="required"
+          :size="size"
+        />
+      </div>
+      <div class="i9k-field__action"><slot name="action" /></div>
+    </div>
     <slot
+      v-else
       :control-id="resolvedControlId"
       :described-by="describedBy"
       :invalid="Boolean(error)"
@@ -134,6 +147,29 @@ if (isDevelopment) {
 .i9k-field--lg {
   --i9k-field-gap: var(--spacing-4);
   --i9k-field-label-size: var(--control-font-size-lg);
+}
+
+/* An action beside the control (an Apply or Search button): one row, one
+   height, so it lines up with the control rather than with the field's
+   margin; the hint and error below span both. */
+.i9k-field__row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-3);
+}
+
+.i9k-field__control {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.i9k-field__action {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: var(--spacing-3);
 }
 
 .i9k-field__label {

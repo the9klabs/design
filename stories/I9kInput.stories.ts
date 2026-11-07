@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite';
 
+import I9kButton from '../src/components/I9kButton.vue';
 import I9kField from '../src/components/I9kField.vue';
 import I9kInput from '../src/components/I9kInput.vue';
 
@@ -70,5 +71,26 @@ export const FieldSizeInheritance: Story = {
     components: { I9kField, I9kInput },
     template:
       '<div><I9kField label="Inherited large" size="lg"><I9kInput model-value="" /></I9kField><I9kField label="Overridden small" size="lg"><I9kInput model-value="" ui-size="sm" /></I9kField></div>',
+  }),
+};
+
+export const WithAction: Story = {
+  render: () => ({
+    components: { I9kButton, I9kField, I9kInput },
+    template: `<div lang="ar" dir="rtl" style="display: grid; gap: 1rem; max-width: 28rem">
+  <I9kInput model-value="" label="كود الخصم" dir="ltr">
+    <template #action><I9kButton type="submit">تطبيق</I9kButton></template>
+  </I9kInput>
+  <I9kInput model-value="NOPE" label="كود الخصم" dir="ltr" error="الكود ده مش صالح">
+    <template #action><I9kButton type="submit">تطبيق</I9kButton></template>
+  </I9kInput>
+  <I9kField label="رقم الطلب" hint="الرقم اللي في رسالة التأكيد" size="sm">
+    <I9kInput model-value="" />
+    <template #action>
+      <I9kButton type="submit" size="sm">بحث</I9kButton>
+      <I9kButton type="button" size="sm">أحدث الطلبات</I9kButton>
+    </template>
+  </I9kField>
+</div>`,
   }),
 };

@@ -163,4 +163,23 @@ describe('I9kInput', () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('controlId'));
     warn.mockRestore();
   });
+
+  it('draws an action beside the input, with the hint and error below both', () => {
+    const wrapper = mount(I9kInput, {
+      props: { modelValue: '', label: 'Coupon code', error: 'Unknown code' },
+      slots: { action: () => h('button', { type: 'submit' }, 'Apply') },
+    });
+    const row = wrapper.get('.i9k-field__row');
+
+    expect(row.find('input').exists()).toBe(true);
+    expect(row.get('.i9k-field__action button').text()).toBe('Apply');
+    expect(row.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.get('[role="alert"]').text()).toBe('Unknown code');
+  });
+
+  it('renders no action container without an action', () => {
+    const wrapper = mount(I9kInput, { props: { modelValue: '', label: 'Email' } });
+
+    expect(wrapper.find('.i9k-field__action').exists()).toBe(false);
+  });
 });

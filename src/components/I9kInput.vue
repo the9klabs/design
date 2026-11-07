@@ -38,6 +38,14 @@ const props = withDefaults(
 
 defineEmits<{ 'update:modelValue': [value: string] }>();
 
+defineSlots<{
+  /**
+   * Controls that act on the input, such as an Apply button: drawn beside it, the same height,
+   * with the hint and error below both. Inside an I9kField, give the field the action instead.
+   */
+  action?: () => unknown;
+}>();
+
 const attrs = useAttrs();
 const field = useI9kField();
 const localId = useId();
@@ -114,17 +122,20 @@ if (isDevelopment) {
     <label class="field__label i9k-field__label" :for="resolvedId">
       {{ props.label }}<span v-if="required" aria-hidden="true"> *</span>
     </label>
-    <input
-      v-bind="nativeAttrs"
-      :id="resolvedId"
-      :class="['field__input', 'i9k-input', `i9k-input--${resolvedSize}`]"
-      :type="props.type"
-      :value="props.modelValue"
-      :required="required"
-      :aria-invalid="invalid"
-      :aria-describedby="describedBy"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-    />
+    <div class="i9k-field__row">
+      <input
+        v-bind="nativeAttrs"
+        :id="resolvedId"
+        :class="['field__input', 'i9k-input', `i9k-input--${resolvedSize}`]"
+        :type="props.type"
+        :value="props.modelValue"
+        :required="required"
+        :aria-invalid="invalid"
+        :aria-describedby="describedBy"
+        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      />
+      <div v-if="$slots.action" class="i9k-field__action"><slot name="action" /></div>
+    </div>
     <p v-if="props.hint && !props.error" :id="standaloneHintId" class="field__hint i9k-field__hint">
       {{ props.hint }}
     </p>
@@ -145,6 +156,27 @@ if (isDevelopment) {
   flex-direction: column;
   gap: var(--spacing-2);
   margin-block-end: var(--spacing-8);
+}
+
+/* The input and its action, if any, share one row and one height, so a
+   button lines up with the input rather than with the field's margin; the
+   hint and error below span both. */
+.i9k-field__row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-3);
+}
+
+.i9k-field__row > .i9k-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.i9k-field__action {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: var(--spacing-3);
 }
 
 .i9k-field__label {
