@@ -101,4 +101,30 @@ describe('I9kField', () => {
       warn.mockRestore();
     }
   });
+
+  it('draws an action beside its control, with the hint below both', () => {
+    const wrapper = mount(I9kField, {
+      props: { label: 'Search', hint: 'An order reference', controlId: 'reference' },
+      slots: {
+        default: () => h('input', { id: 'reference' }),
+        action: () => h('button', { type: 'submit' }, 'Find'),
+      },
+    });
+    const row = wrapper.get('.i9k-field__row');
+
+    expect(row.find('.i9k-field__control input#reference').exists()).toBe(true);
+    expect(row.get('.i9k-field__action button').text()).toBe('Find');
+    expect(row.find('#reference-hint').exists()).toBe(false);
+    expect(wrapper.find('#reference-hint').exists()).toBe(true);
+  });
+
+  it('renders its control without a row when there is no action', () => {
+    const wrapper = mount(I9kField, {
+      props: { label: 'Search', controlId: 'reference' },
+      slots: { default: () => h('input', { id: 'reference' }) },
+    });
+
+    expect(wrapper.find('.i9k-field__row').exists()).toBe(false);
+    expect(wrapper.find('input#reference').exists()).toBe(true);
+  });
 });

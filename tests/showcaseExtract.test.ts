@@ -137,8 +137,12 @@ describe('showcase emit and slot extraction', () => {
     expect(component('I9kGrid').slots).toEqual(['default']);
   });
 
+  it('reports a named slot rendered inside a nested element', () => {
+    expect(component('I9kInput').slots).toEqual(['action']);
+  });
+
   it('reports no slots for a component that renders none', () => {
-    expect(component('I9kInput').slots).toEqual([]);
+    expect(component('I9kTextarea').slots).toEqual([]);
   });
 
   it('never returns an empty emits list for a component that calls defineEmits', () => {

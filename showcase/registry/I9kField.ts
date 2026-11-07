@@ -22,6 +22,7 @@ Emits: none.
 Slots:
 - label — overrides the label prop's content.
 - default — scoped slot exposing { controlId, describedBy, invalid, required, size }; the nested control reads these.
+- action — controls that act on the field's control, such as a Search button: drawn beside it, stretched to its height, with the hint and error below both.
 
 IMPORTANT: nest exactly one form control in the default slot. I9kInput, I9kTextarea, and I9kSelect read this context automatically via useI9kField() — inside I9kField, omit their own label/hint/error/uiSize props, since I9kField owns and renders those. I9kRadioGroup does NOT consume this context (it has its own legend/hint/error/size props) — do not wrap it in I9kField.
 
