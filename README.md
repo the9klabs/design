@@ -264,6 +264,8 @@ import '@9klabs/design/base.css';
 - **Arabic UI and body:** Thmanyah Sans, exposed as `--font-arabic-sans`.
 - **Arabic display treatments:** Thmanyah Serif Display, exposed as `--font-arabic-display`.
 
+While a Thmanyah file is still downloading, Arabic text is drawn in a size-matched stand-in: the device's own Arabic font (Noto Naskh Arabic on Android, Geeza Pro on Apple devices, Arial on Windows) scaled to set text as wide as Thmanyah, so the page does not jump when the brand font arrives. The stand-ins have no `0` glyph, so size Arabic text with `em` rather than `ch`.
+
 Arabic text automatically uses Thmanyah Sans through `:lang(ar)`. Arabic headings use Thmanyah Serif Display. Use `.i9k-root` on an app shell to explicitly apply IBM Plex Sans, and `.i9k-arabic` / `.i9k-arabic-display` when language metadata is unavailable.
 
 ## Development

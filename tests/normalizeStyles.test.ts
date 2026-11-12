@@ -193,4 +193,33 @@ describe('normalized styles', () => {
 
     expect(parentLayer(arabicDisplay)).toBe('fonts');
   });
+  // fonts.css: each Arabic stack names, after Thmanyah, the size-matched stand-ins drawn while
+  // the brand font downloads. A name without its face would be skipped silently.
+  it('backs every Arabic font stand-in with a scaled local face', () => {
+    const faces = new Map<string, Record<string, string>>();
+    stylesheet.walkAtRules('font-face', (face) => {
+      const declarations: Record<string, string> = {};
+      face.walkDecls((decl) => {
+        declarations[decl.prop] = decl.value;
+      });
+      faces.set(declarations['font-family']!.replace(/['"]/g, ''), declarations);
+    });
+
+    for (const token of ['--font-arabic-sans', '--font-arabic-display']) {
+      const stack = findRule(stylesheet, ':root', token)!
+        .nodes.find((node) => node.type === 'decl' && node.prop === token)!
+        .toString();
+      const standIns = [...stack.matchAll(/["']([^"']+ Fallback [^"']+)["']/g)].map(
+        (match) => match[1]!,
+      );
+
+      expect(standIns.length, token).toBeGreaterThan(0);
+      for (const name of standIns) {
+        const face = faces.get(name);
+        expect(face, name).toBeDefined();
+        expect(face!.src, name).toMatch(/^local\(/);
+        expect(face!['size-adjust'], name).toMatch(/%$/);
+      }
+    }
+  });
 });
