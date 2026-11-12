@@ -31,8 +31,13 @@
     'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial,
     sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
   --font-serif: 'IBM Plex Serif', Georgia, Cambria, 'Times New Roman', Times, serif;
-  --font-arabic-sans: 'Thmanyah Sans', sans-serif;
-  --font-arabic-display: 'Thmanyah Serif Display', serif;
+  /* The Fallback families are the size-matched stand-ins in fonts.css. */
+  --font-arabic-sans:
+    'Thmanyah Sans', 'Thmanyah Sans Fallback Naskh', 'Thmanyah Sans Fallback Geeza',
+    'Thmanyah Sans Fallback Arial', sans-serif;
+  --font-arabic-display:
+    'Thmanyah Serif Display', 'Thmanyah Serif Display Fallback Naskh',
+    'Thmanyah Serif Display Fallback Geeza', 'Thmanyah Serif Display Fallback Arial', serif;
 
   --text-size-1: 0.875rem;
   --text-size-2: 1rem;

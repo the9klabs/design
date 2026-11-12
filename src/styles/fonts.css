@@ -3,6 +3,114 @@
    which resolves these families from the CSS variables below), or import
    '@9klabs/design/font-faces.css' to use the bundled copies. */
 
+/* Size-matched stand-ins for the Thmanyah faces, so Arabic text keeps its layout
+   when the brand font arrives. Until a Thmanyah file has downloaded, the browser
+   draws Arabic in the device's own Arabic font, which sets the same words wider or
+   narrower; lines then break elsewhere and the page jumps when Thmanyah swaps in
+   (on a slow phone line, about three seconds after the first paint).
+
+   Each face below is a font already on the device, scaled with `size-adjust` so
+   it sets Arabic text as wide as Thmanyah does, and given Thmanyah's vertical
+   metrics (1000 above and 250 below the baseline, no line gap, at 1000 units per
+   em, divided by the same scale). The scales were measured in Chromium by setting
+   9k.school's Arabic copy (its landing, course and about pages, Arabic letters
+   and spaces only) in each font at one size and dividing Thmanyah's width by the
+   stand-in's:
+
+     Android  Noto Naskh Arabic (its UI cut on the device)
+     Apple    Geeza Pro
+     Windows  Arial, which also carries Arabic letters
+
+   A face whose `local()` font is missing is skipped, so each device uses the first
+   one it has; a device with none falls through to the generic family, as before.
+   `unicode-range` keeps Latin letters and digits on the generic family. A stand-in
+   cannot match Thmanyah line for line, only on average, so a long line can still
+   break one word differently. None has a "0", so a `ch` length on Arabic text
+   reads 0.5em until Thmanyah arrives (0.66em after): give Arabic text an `em`
+   width instead. */
+
+@font-face {
+  font-family: 'Thmanyah Sans Fallback Naskh';
+  src:
+    local('Noto Naskh Arabic UI'), local('NotoNaskhArabicUI-Regular'), local('Noto Naskh Arabic'),
+    local('NotoNaskhArabic-Regular');
+  font-weight: 400;
+  font-style: normal;
+  size-adjust: 109.28%;
+  ascent-override: 91.51%;
+  descent-override: 22.88%;
+  line-gap-override: 0%;
+  unicode-range:
+    U+0020, U+00A0, U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans Fallback Geeza';
+  src: local('Geeza Pro'), local('GeezaPro');
+  font-weight: 400;
+  font-style: normal;
+  size-adjust: 109.77%;
+  ascent-override: 91.1%;
+  descent-override: 22.77%;
+  line-gap-override: 0%;
+  unicode-range:
+    U+0020, U+00A0, U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Thmanyah Sans Fallback Arial';
+  src: local('Arial'), local('ArialMT');
+  font-weight: 400;
+  font-style: normal;
+  size-adjust: 119.08%;
+  ascent-override: 83.98%;
+  descent-override: 20.99%;
+  line-gap-override: 0%;
+  unicode-range:
+    U+0020, U+00A0, U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display Fallback Naskh';
+  src:
+    local('Noto Naskh Arabic UI Bold'), local('NotoNaskhArabicUI-Bold'),
+    local('Noto Naskh Arabic Bold'), local('NotoNaskhArabic-Bold');
+  font-weight: 700;
+  font-style: normal;
+  size-adjust: 100.4%;
+  ascent-override: 99.6%;
+  descent-override: 24.9%;
+  line-gap-override: 0%;
+  unicode-range:
+    U+0020, U+00A0, U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display Fallback Geeza';
+  src: local('Geeza Pro Bold'), local('GeezaPro-Bold');
+  font-weight: 700;
+  font-style: normal;
+  size-adjust: 89.79%;
+  ascent-override: 111.37%;
+  descent-override: 27.84%;
+  line-gap-override: 0%;
+  unicode-range:
+    U+0020, U+00A0, U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: 'Thmanyah Serif Display Fallback Arial';
+  src: local('Arial Bold'), local('Arial-BoldMT');
+  font-weight: 700;
+  font-style: normal;
+  size-adjust: 111.42%;
+  ascent-override: 89.75%;
+  descent-override: 22.44%;
+  line-gap-override: 0%;
+  unicode-range:
+    U+0020, U+00A0, U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF;
+}
+
 :lang(ar),
 .i9k-arabic {
   font-family: var(--font-arabic-sans);
