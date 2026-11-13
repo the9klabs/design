@@ -613,3 +613,31 @@
     transition: none;
   }
 }
+
+/* Pixel accents: a small, game-like mark of progress or achievement on top of
+   the calm language. Only for progress and levels, achievements, numbers and
+   identifiers; never panels, buttons, inputs, navigation, headings or body
+   text (showcase: Foundations, Pixel accents). */
+.i9k-pixel-corners {
+  clip-path: polygon(
+    0 var(--pixel-size),
+    var(--pixel-size) var(--pixel-size),
+    var(--pixel-size) 0,
+    calc(100% - var(--pixel-size)) 0,
+    calc(100% - var(--pixel-size)) var(--pixel-size),
+    100% var(--pixel-size),
+    100% calc(100% - var(--pixel-size)),
+    calc(100% - var(--pixel-size)) calc(100% - var(--pixel-size)),
+    calc(100% - var(--pixel-size)) 100%,
+    var(--pixel-size) 100%,
+    var(--pixel-size) calc(100% - var(--pixel-size)),
+    0 calc(100% - var(--pixel-size))
+  );
+}
+
+/* Numbers and identifiers: scores, counts, amounts, dates, references, codes.
+   Never on Arabic text. Direction is the caller's (wrap mixed runs in <bdi>). */
+.i9k-numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

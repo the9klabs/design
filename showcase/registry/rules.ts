@@ -8,4 +8,5 @@ export const RULES: string[] = [
   'Components emit legacy classes alongside their `i9k-` ones while the website migration is in progress. Do not remove a legacy selector or prop until its migration ledger row is complete.',
   'Import the shared stylesheet once, at the application entry: `@9klabs/design/base.css`. Each component imports its own styles; in a bundled app never add `@9klabs/design/style.css` beside it, which repeats every component rule.',
   'Any visual change needs checking in light and dark themes and in both LTR and RTL directions.',
+  'Pixel accents (notched pixel blocks, `.i9k-pixel-corners`, `.i9k-numeric`, `--font-mono`) are only for progress and levels, achievements, numbers and identifiers, and an identity mark without a photo. Never use them for panels, cards, buttons, inputs, navigation, headings or body text, and never set Arabic text in `--font-mono`.',
 ];
