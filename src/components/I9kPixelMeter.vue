@@ -195,8 +195,12 @@ const text = computed(() => props.valueText?.trim() || undefined);
   }
 }
 
-/* The continuous fill is cut into segments one pixel unit apart. */
+/* The continuous fill is cut into segments one pixel unit apart. Without a
+   viewBox the SVG is 300px wide by default, which it would keep as its
+   minimum and push the meter past a narrow container; a percentage width
+   makes it shrink to the room it has. */
 .i9k-pixel-meter__track {
+  inline-size: 100%;
   mask-image: repeating-linear-gradient(
     to right,
     #000 0 calc(var(--pixel-size) * 2),
