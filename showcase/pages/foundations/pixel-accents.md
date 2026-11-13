@@ -39,6 +39,19 @@ the calm language, so an accent keeps meaning something.
 </I9kCluster>
 ```
 
+## Components
+
+`I9kPixelMeter` draws progress and levels in pixel blocks, and `I9kPixelAvatar` is an identity
+mark drawn from a seed.
+
+```vue demo
+<div style="display: grid; gap: var(--spacing-6)">
+  <I9kPixelMeter :value="2" label="Tech level" value-text="Vibe Coder" blink><span>Vibe Coder</span><template #end>2 / 4</template></I9kPixelMeter>
+  <I9kPixelMeter :value="21" :max="100" :segments="false" tone="primary" label="Course progress"><template #end>21%</template></I9kPixelMeter>
+  <I9kCluster><I9kPixelAvatar seed="user_1" /><I9kPixelAvatar seed="user_2" /><I9kPixelAvatar seed="user_3" /></I9kCluster>
+</div>
+```
+
 ## Arabic and right to left
 
 The monospace stack has no Arabic letters, and a browser falls back to whatever Arabic face it

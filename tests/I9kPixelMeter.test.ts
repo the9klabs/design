@@ -91,10 +91,17 @@ describe('I9kPixelMeter', () => {
   });
 
   it('carries no style attribute, so a strict Content-Security-Policy keeps it whole', () => {
-    for (const props of [
+    const cases: {
+      value: number;
+      label: string;
+      max?: number;
+      segments?: boolean;
+      blink?: boolean;
+    }[] = [
       { value: 2, label: 'Level', blink: true },
       { value: 37, max: 100, label: 'Progress', segments: false },
-    ]) {
+    ];
+    for (const props of cases) {
       const wrapper = mount(I9kPixelMeter, { props });
       expect(wrapper.findAll('[style]')).toHaveLength(0);
     }
