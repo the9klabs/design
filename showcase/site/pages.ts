@@ -28,6 +28,7 @@ export const GUIDE_GROUPS = [
       '/foundations/sizes',
       '/foundations/theming',
       '/foundations/rtl-and-arabic',
+      '/foundations/pixel-accents',
       '/foundations/layout',
     ],
   },

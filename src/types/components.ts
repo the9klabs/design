@@ -22,6 +22,9 @@ export type I9kToastVariant = 'info' | 'success' | 'warning' | 'error';
 
 export type I9kTone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';
 
+/** A pixel accent's colour: the accent for a level or an achievement, primary for progress. */
+export type I9kPixelMeterTone = 'accent' | 'primary';
+
 /**
  * Nino's expressions. Exported as a runtime array as well as a type so a
  * consumer can iterate the set (a picker, a story, a test) without keeping a
