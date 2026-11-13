@@ -29,6 +29,7 @@ import { I9kIconButtonEntry } from './I9kIconButton';
 import { I9kInputEntry } from './I9kInput';
 import { I9kLanguageSwitcherEntry } from './I9kLanguageSwitcher';
 import { I9kLevelMeterEntry } from './I9kLevelMeter';
+import { I9kPixelMeterEntry } from './I9kPixelMeter';
 import { I9kStickerEntry } from './I9kSticker';
 import { I9kLinkCardEntry } from './I9kLinkCard';
 import { I9kModalEntry } from './I9kModal';
@@ -76,6 +77,7 @@ export const entries: ShowcaseEntry[] = [
   I9kBadgeEntry,
   I9kStatEntry,
   I9kLevelMeterEntry,
+  I9kPixelMeterEntry,
   I9kStickerEntry,
   I9kLinkCardEntry,
   I9kTimelineCardEntry,

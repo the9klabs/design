@@ -23,13 +23,13 @@ the calm language, so an accent keeps meaning something.
 
 ## The pieces
 
-| Piece                 | What it is                                                                 |
-| --------------------- | -------------------------------------------------------------------------- |
-| `--pixel-size`        | The one pixel unit (4px): the notch depth and the gap between blocks.      |
-| `--pixel-track-color` | An empty block, per theme.                                                 |
-| `--font-mono`         | The monospace stack for numbers and identifiers.                           |
-| `.i9k-pixel-corners`  | Notched pixel corners on any element, from `--pixel-size`.                 |
-| `.i9k-numeric`        | `--font-mono` with tabular figures, so digits line up in a column.         |
+| Piece                 | What it is                                                            |
+| --------------------- | --------------------------------------------------------------------- |
+| `--pixel-size`        | The one pixel unit (4px): the notch depth and the gap between blocks. |
+| `--pixel-track-color` | An empty block, per theme.                                            |
+| `--font-mono`         | The monospace stack for numbers and identifiers.                      |
+| `.i9k-pixel-corners`  | Notched pixel corners on any element, from `--pixel-size`.            |
+| `.i9k-numeric`        | `--font-mono` with tabular figures, so digits line up in a column.    |
 
 ```vue demo
 <I9kCluster>
