@@ -125,9 +125,14 @@ function onPointerLeave(event: PointerEvent) {
   mask-type: alpha;
 }
 
+/* The sheen is three times the sticker and drawn past its edges (the art's
+   overflow is visible), and a mask hides it without taking it out of hit
+   testing, so it would catch the pointer well beyond the sticker and over its
+   neighbours. Only the sticker's own box answers the pointer. */
 .i9k-sticker__foil {
   mix-blend-mode: multiply;
   opacity: 0.7;
+  pointer-events: none;
 }
 
 .i9k-sticker__sheen {
