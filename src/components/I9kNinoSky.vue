@@ -7,9 +7,11 @@ import {
   DRAG_THRESHOLD,
   RETURN_MS,
   SKY_GRID,
+  SKY_TILE_HEIGHT,
+  SKY_TILE_STARS,
+  SKY_TILE_WIDTH,
   boopExpression,
   clampPoint,
-  createSkyStars,
   createSparkles,
   driftAt,
   easeOutCubic,
@@ -21,12 +23,12 @@ import {
   releaseVelocity,
   starAlpha,
   stepBody,
+  tilePeriodFactor,
   type NinoBody,
   type NinoBounds,
   type Point,
   type PointerSample,
   type SkyDot,
-  type SkyStar,
   type Sparkle,
 } from '../composables/i9kNinoSky';
 import type { I9kNinoExposed, I9kNinoExpression, I9kNinoLook } from '../types/components';
@@ -95,7 +97,6 @@ let motionTime = 0;
 let lastTick: number | undefined;
 let skyWidth = 0;
 let skyHeight = 0;
-let stars: SkyStar[] = [];
 let planets: SkyDot[] = [];
 let sparkles: LiveSparkle[] = [];
 let reducedMotion = false;
@@ -147,7 +148,6 @@ function measure() {
   const ratio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
   target.width = Math.round(skyWidth * ratio);
   target.height = Math.round(skyHeight * ratio);
-  stars = createSkyStars(skyWidth, skyHeight);
 
   // Planets sit by the start and end edges, which swap on an Arabic page.
   const rtl = isRtl();
@@ -177,14 +177,25 @@ function draw(now: number) {
   context.fillStyle = color('--i9k-nino-sky-planet');
   for (const dot of planets) context.fillRect(dot.x, dot.y, SKY_GRID / 2, SKY_GRID / 2);
 
-  // A still sky draws every star at a fixed brightness instead of twinkling.
-  const still = !motionAllowed();
-  for (const star of stars) {
-    const alpha = still ? 0.6 : starAlpha(star, now);
-    context.globalAlpha = star.tone === 'faint' ? alpha * 0.45 : alpha;
-    context.fillStyle = tones[star.tone];
-    const size = star.tone === 'faint' ? SKY_GRID / 2 : (SKY_GRID * 3) / 4;
-    context.fillRect(star.x, star.y, size, size);
+  // The star tile repeats from the top-left corner. A still sky holds its
+  // first frame, which is also what the server paints.
+  const time = motionAllowed() ? now : 0;
+  for (let row = 0; row * SKY_TILE_HEIGHT < skyHeight; row += 1) {
+    for (let column = 0; column * SKY_TILE_WIDTH < skyWidth; column += 1) {
+      const left = column * SKY_TILE_WIDTH;
+      const top = row * SKY_TILE_HEIGHT;
+      const scale = tilePeriodFactor(column, row);
+      for (const star of SKY_TILE_STARS) {
+        const x = left + star.x;
+        const y = top + star.y;
+        if (x >= skyWidth || y >= skyHeight) continue;
+        const alpha = starAlpha(star, time, scale);
+        context.globalAlpha = star.tone === 'faint' ? alpha * 0.45 : alpha;
+        context.fillStyle = tones[star.tone];
+        const size = star.tone === 'faint' ? SKY_GRID / 2 : (SKY_GRID * 3) / 4;
+        context.fillRect(x, y, size, size);
+      }
+    }
   }
 
   sparkles = sparkles.filter((sparkle) => now - sparkle.born < SPARKLE_MS);

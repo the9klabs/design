@@ -7,10 +7,12 @@ import {
   HOME_DECAY_MS,
   MAX_THROW_SPEED,
   SKY_GRID,
-  SKY_MAX_STARS,
+  SKY_TILE_HEIGHT,
+  SKY_TILE_STARS,
+  SKY_TILE_WIDTH,
   boopExpression,
   clampPoint,
-  createSkyStars,
+  createSkyTile,
   createSparkles,
   driftAt,
   easeOutCubic,
@@ -21,38 +23,36 @@ import {
   releaseVelocity,
   starAlpha,
   stepBody,
+  tilePeriodFactor,
   type NinoBody,
 } from '../src/composables/i9kNinoSky';
 
-describe('createSkyStars', () => {
-  it('draws the same sky for the same box and seed', () => {
-    expect(createSkyStars(800, 288, 9)).toEqual(createSkyStars(800, 288, 9));
+describe('createSkyTile', () => {
+  it('draws the same tile for the same seed', () => {
+    expect(createSkyTile(9)).toEqual(createSkyTile(9));
+    expect(SKY_TILE_STARS).toEqual(createSkyTile());
   });
 
-  it('gives about one star per 900 px² and never more than the cap', () => {
-    expect(createSkyStars(300, 300)).toHaveLength(100);
-    expect(createSkyStars(4000, 400)).toHaveLength(SKY_MAX_STARS);
+  it('gives one star per 900 px² of tile', () => {
+    expect(createSkyTile()).toHaveLength(Math.floor((SKY_TILE_WIDTH * SKY_TILE_HEIGHT) / 900));
+    expect(createSkyTile()).toHaveLength(512);
   });
 
-  it('returns no stars for an empty box', () => {
-    expect(createSkyStars(0, 288)).toEqual([]);
-    expect(createSkyStars(800, -1)).toEqual([]);
-  });
-
-  it('keeps every star inside the box, on the pixel grid', () => {
-    for (const star of createSkyStars(801, 290)) {
+  it('keeps every star inside the tile, on the pixel grid', () => {
+    for (const star of createSkyTile()) {
       expect(star.x % SKY_GRID).toBe(0);
       expect(star.y % SKY_GRID).toBe(0);
       expect(star.x).toBeGreaterThanOrEqual(0);
-      expect(star.x + SKY_GRID).toBeLessThanOrEqual(801);
-      expect(star.y + SKY_GRID).toBeLessThanOrEqual(290);
+      expect(star.y).toBeGreaterThanOrEqual(0);
+      expect(star.x + SKY_GRID).toBeLessThanOrEqual(SKY_TILE_WIDTH);
+      expect(star.y + SKY_GRID).toBeLessThanOrEqual(SKY_TILE_HEIGHT);
       expect(star.period).toBeGreaterThanOrEqual(2000);
       expect(star.period).toBeLessThanOrEqual(6000);
     }
   });
 
   it('makes most stars faint and a few warm or cool', () => {
-    const stars = createSkyStars(4000, 400);
+    const stars = createSkyTile();
     const share = (tone: string) =>
       stars.filter((star) => star.tone === tone).length / stars.length;
     expect(share('faint')).toBeGreaterThan(0.7);
@@ -63,14 +63,33 @@ describe('createSkyStars', () => {
   });
 });
 
+describe('tilePeriodFactor', () => {
+  it('leaves the first tile alone and slows the others a little, each unlike its neighbour', () => {
+    expect(tilePeriodFactor(0, 0)).toBe(1);
+    for (let column = 0; column < 6; column += 1) {
+      for (let row = 0; row < 3; row += 1) {
+        expect(tilePeriodFactor(column, row)).toBeGreaterThanOrEqual(1);
+        expect(tilePeriodFactor(column, row)).toBeLessThanOrEqual(1.3);
+        expect(tilePeriodFactor(column + 1, row)).not.toBe(tilePeriodFactor(column, row));
+      }
+    }
+  });
+});
+
 describe('starAlpha', () => {
   it('stays visible and never exceeds full opacity', () => {
-    const [star] = createSkyStars(300, 300);
+    const [star] = SKY_TILE_STARS;
     for (let time = 0; time < 12000; time += 250) {
       const alpha = starAlpha(star, time);
       expect(alpha).toBeGreaterThanOrEqual(0.15);
       expect(alpha).toBeLessThanOrEqual(1);
     }
+  });
+
+  it('starts every tile at the same brightness and lets them drift apart', () => {
+    const [star] = SKY_TILE_STARS;
+    expect(starAlpha(star, 0, 1.2)).toBe(starAlpha(star, 0));
+    expect(starAlpha(star, 1500, 1.2)).not.toBe(starAlpha(star, 1500));
   });
 });
 

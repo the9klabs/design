@@ -2,9 +2,15 @@ import type { I9kNinoExpression, I9kNinoLook } from '../types/components';
 
 /** Everything in the sky sits on a 4 CSS px grid: the dotted-pixel look. */
 export const SKY_GRID = 4;
-export const SKY_MAX_STARS = 400;
 /** About one star per this many CSS px² of sky. */
 export const SKY_AREA_PER_STAR = 900;
+/**
+ * The star field is one tile repeated from the sky's top-left corner, so where
+ * a star sits never depends on the size of the box. That lets the server paint
+ * the same stars the canvas later draws.
+ */
+export const SKY_TILE_WIDTH = 960;
+export const SKY_TILE_HEIGHT = 480;
 
 export type SkyTone = 'faint' | 'warm' | 'cool';
 
@@ -35,12 +41,10 @@ export function createRandom(seed: number): () => number {
   };
 }
 
-export function createSkyStars(width: number, height: number, seed = 9): SkyStar[] {
-  const columns = Math.floor(width / SKY_GRID);
-  const rows = Math.floor(height / SKY_GRID);
-  if (columns < 1 || rows < 1) return [];
-
-  const count = Math.min(SKY_MAX_STARS, Math.floor((width * height) / SKY_AREA_PER_STAR));
+export function createSkyTile(seed = 9): SkyStar[] {
+  const columns = SKY_TILE_WIDTH / SKY_GRID;
+  const rows = SKY_TILE_HEIGHT / SKY_GRID;
+  const count = Math.floor((SKY_TILE_WIDTH * SKY_TILE_HEIGHT) / SKY_AREA_PER_STAR);
   const random = createRandom(seed);
   const stars: SkyStar[] = [];
   for (let index = 0; index < count; index += 1) {
@@ -53,8 +57,23 @@ export function createSkyStars(width: number, height: number, seed = 9): SkyStar
   return stars;
 }
 
-export function starAlpha(star: SkyStar, timeMs: number): number {
-  const wave = 0.5 + 0.5 * Math.sin(2 * Math.PI * (timeMs / star.period + star.phase));
+export const SKY_TILE_STARS: readonly SkyStar[] = createSkyTile();
+
+/**
+ * How much slower one copy of the tile twinkles than the first, so repeated
+ * tiles start in step (the server paints time 0) and drift apart after.
+ */
+export function tilePeriodFactor(column: number, row: number): number {
+  if (column === 0 && row === 0) return 1;
+  // Seven steps of 0.05 between 1 and 1.3; the pairing walks columns by 3 so
+  // neighbours on a row never share a step.
+  const step = (((column * 3 + row * 5) % 7) + 7) % 7;
+  return 1 + step * 0.05;
+}
+
+export function starAlpha(star: SkyStar, timeMs: number, periodScale = 1): number {
+  const wave =
+    0.5 + 0.5 * Math.sin(2 * Math.PI * (timeMs / (star.period * periodScale) + star.phase));
   return 0.15 + 0.85 * wave;
 }
 

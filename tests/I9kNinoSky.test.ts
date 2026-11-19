@@ -5,7 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createSSRApp, h, nextTick } from 'vue';
 
 import I9kNinoSky from '../src/components/I9kNinoSky.vue';
-import { DIZZY_FACE_MS } from '../src/composables/i9kNinoSky';
+import {
+  DIZZY_FACE_MS,
+  SKY_TILE_STARS,
+  SKY_TILE_WIDTH,
+  starAlpha,
+} from '../src/composables/i9kNinoSky';
 import { NINO_BEAT } from '../src/data/nino';
 
 function stubMotion(reduce: boolean) {
@@ -30,6 +35,39 @@ afterEach(() => {
 });
 
 const nino = (wrapper: ReturnType<typeof mount>) => wrapper.get('svg.i9k-nino');
+
+interface Drawn {
+  x: number;
+  y: number;
+  size: number;
+  alpha: number;
+}
+
+/** A 2D context that records every square it fills, with the alpha it was filled at. */
+function recordDrawing(width: number, height: number) {
+  const drawn: Drawn[] = [];
+  const context = {
+    setTransform: vi.fn(),
+    clearRect: () => drawn.splice(0),
+    fillRect(x: number, y: number, size: number) {
+      drawn.push({ x, y, size, alpha: context.globalAlpha });
+    },
+    globalAlpha: 1,
+    fillStyle: '',
+  };
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+    context as unknown as CanvasRenderingContext2D,
+  );
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(width);
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(height);
+  return drawn;
+}
+
+/** The tile's first star that a sky of this height shows. */
+const visibleStar = (height: number) => SKY_TILE_STARS.find((star) => star.y < height)!;
+
+const at = (drawn: Drawn[], x: number, y: number) =>
+  drawn.filter((square) => square.x === x && square.y === y);
 
 describe('I9kNinoSky', () => {
   it('names the boop button and keeps the sky and Nino out of the accessibility tree', () => {
@@ -192,6 +230,33 @@ describe('I9kNinoSky', () => {
     wrapper.unmount();
 
     expect(fillRect).toHaveBeenCalled();
+  });
+
+  it('tiles the stars across a very wide sky', () => {
+    const drawn = recordDrawing(3000, 288);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi', animated: false } });
+    const first = visibleStar(288);
+
+    for (const column of [0, 1, 2]) {
+      expect(at(drawn, first.x + column * SKY_TILE_WIDTH, first.y)).not.toHaveLength(0);
+    }
+    expect(drawn.some((square) => square.x >= 2 * SKY_TILE_WIDTH)).toBe(true);
+    wrapper.unmount();
+  });
+
+  it.each([
+    ['animated is false', false, false],
+    ['the visitor prefers reduced motion', true, true],
+  ])('freezes a still sky at its first frame when %s', (_, reduce, animated) => {
+    stubMotion(reduce);
+    const drawn = recordDrawing(800, 288);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi', animated } });
+    const first = visibleStar(288);
+    const expected = starAlpha(first, 0) * (first.tone === 'faint' ? 0.45 : 1);
+
+    const [square] = at(drawn, first.x, first.y);
+    expect(square.alpha).toBeCloseTo(expected, 6);
+    wrapper.unmount();
   });
 
   // A strict Content-Security-Policy (`style-src 'self'`) drops inline style
