@@ -399,6 +399,14 @@ describe('I9kNinoSky', () => {
     wrapper.unmount();
   });
 
+  it('centres the server-painted planets on whole pixels, as the canvas does', () => {
+    const source = readFileSync('src/components/I9kNinoSky.vue', 'utf8');
+
+    for (const share of ['14%', '32%', '84%', '72%', '86%', '16%']) {
+      expect(source).toContain(`round(${share}, 1px)`);
+    }
+  });
+
   it('swaps the server-painted planets’ sides on an Arabic page', () => {
     const source = readFileSync('src/components/I9kNinoSky.vue', 'utf8');
 

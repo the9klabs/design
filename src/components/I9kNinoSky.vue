@@ -828,7 +828,9 @@ onBeforeUnmount(() => {
 }
 
 /* Physical sides on purpose, like the canvas: it measures from the left edge
-   and swaps the planets on an Arabic page. */
+   and swaps the planets on an Arabic page. Each centre is rounded to a whole
+   pixel, as the canvas rounds its own, so the two layers line up exactly; a
+   browser without round() keeps the plain percentage, a fraction of a pixel off. */
 .i9k-nino-sky__planet {
   position: absolute;
   display: block;
@@ -838,20 +840,26 @@ onBeforeUnmount(() => {
 
 .i9k-nino-sky__planet--crescent {
   top: 32%;
+  top: round(32%, 1px);
   left: 14%;
+  left: round(14%, 1px);
 }
 
 .i9k-nino-sky__planet--crescent:dir(rtl) {
   left: 86%;
+  left: round(86%, 1px);
 }
 
 .i9k-nino-sky__planet--ringed {
   top: 72%;
+  top: round(72%, 1px);
   left: 84%;
+  left: round(84%, 1px);
 }
 
 .i9k-nino-sky__planet--ringed:dir(rtl) {
   left: 16%;
+  left: round(16%, 1px);
 }
 
 /* Centred by `translate`, so the drift the script writes to `transform`
