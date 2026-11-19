@@ -7,6 +7,7 @@ import {
   DRAG_THRESHOLD,
   RETURN_MS,
   SKY_GRID,
+  SKY_PLANET_RADII,
   SKY_TILE_HEIGHT,
   SKY_TILE_STARS,
   SKY_TILE_WIDTH,
@@ -31,7 +32,12 @@ import {
   type SkyDot,
   type Sparkle,
 } from '../composables/i9kNinoSky';
-import type { I9kNinoExposed, I9kNinoExpression, I9kNinoLook } from '../types/components';
+import type {
+  I9kComponentSize,
+  I9kNinoExposed,
+  I9kNinoExpression,
+  I9kNinoLook,
+} from '../types/components';
 
 const props = withDefaults(
   defineProps<{
@@ -41,7 +47,7 @@ const props = withDefaults(
      * is the scene's one name.
      */
     boopLabel: string;
-    height?: 'sm' | 'md' | 'lg';
+    height?: I9kComponentSize;
     /**
      * Motion is on by default. Setting this false stops the drift, the twinkle,
      * the spin and the sparkles, beside the prefers-reduced-motion media query,
@@ -152,9 +158,13 @@ function measure() {
   // Planets sit by the start and end edges, which swap on an Arabic page.
   const rtl = isRtl();
   const fromStart = (share: number) => (rtl ? skyWidth * (1 - share) : skyWidth * share);
+  // Sized by the height preset, not the measured box, to match the server's planets.
+  const radii = SKY_PLANET_RADII[props.height];
+  const around = (dots: SkyDot[], cx: number, cy: number) =>
+    dots.map((dot) => ({ x: dot.x + Math.round(cx), y: dot.y + Math.round(cy) }));
   planets = [
-    ...planetDots('crescent', fromStart(0.14), skyHeight * 0.32, Math.min(48, skyHeight * 0.18)),
-    ...planetDots('ringed', fromStart(0.84), skyHeight * 0.72, Math.min(36, skyHeight * 0.14)),
+    ...around(planetDots('crescent', radii.crescent), fromStart(0.14), skyHeight * 0.32),
+    ...around(planetDots('ringed', radii.ringed), fromStart(0.84), skyHeight * 0.72),
   ];
 }
 

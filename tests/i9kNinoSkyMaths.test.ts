@@ -7,6 +7,7 @@ import {
   HOME_DECAY_MS,
   MAX_THROW_SPEED,
   SKY_GRID,
+  SKY_PLANET_RADII,
   SKY_TILE_HEIGHT,
   SKY_TILE_STARS,
   SKY_TILE_WIDTH,
@@ -20,6 +21,7 @@ import {
   isSettled,
   lookToward,
   planetDots,
+  planetReach,
   releaseVelocity,
   starAlpha,
   stepBody,
@@ -93,14 +95,42 @@ describe('starAlpha', () => {
   });
 });
 
+describe('SKY_PLANET_RADII', () => {
+  it('keeps today’s planet sizes at each preset height', () => {
+    expect(SKY_PLANET_RADII).toEqual({
+      sm: { crescent: 34.56, ringed: 26.88 },
+      md: { crescent: 48, ringed: 36 },
+      lg: { crescent: 48, ringed: 36 },
+    });
+  });
+});
+
 describe('planetDots', () => {
-  it.each(['crescent', 'ringed'] as const)('draws a %s as dots on the pixel grid', (kind) => {
-    const dots = planetDots(kind, 100, 100, 40);
-    expect(dots.length).toBeGreaterThan(20);
-    for (const dot of dots) {
-      expect(dot.x % SKY_GRID).toBe(0);
-      expect(dot.y % SKY_GRID).toBe(0);
-    }
+  const cases = (['sm', 'md', 'lg'] as const).flatMap((height) =>
+    (['crescent', 'ringed'] as const).map((kind) => [kind, height] as const),
+  );
+
+  it.each(cases)(
+    'draws a %s (%s) as dots around its own centre, on the pixel grid',
+    (kind, height) => {
+      const radius = SKY_PLANET_RADII[height][kind];
+      const dots = planetDots(kind, radius);
+      const reach = planetReach(kind, radius);
+      expect(dots.length).toBeGreaterThan(20);
+      for (const dot of dots) {
+        expect(Math.abs(dot.x % SKY_GRID)).toBe(0);
+        expect(Math.abs(dot.y % SKY_GRID)).toBe(0);
+        expect(dot.x).toBeGreaterThanOrEqual(-reach);
+        expect(dot.y).toBeGreaterThanOrEqual(-reach);
+        expect(dot.x + SKY_GRID / 2).toBeLessThanOrEqual(reach);
+        expect(dot.y + SKY_GRID / 2).toBeLessThanOrEqual(reach);
+      }
+      expect(planetDots(kind, radius)).toEqual(dots);
+    },
+  );
+
+  it('wraps the ringed planet’s ring in its reach', () => {
+    expect(planetReach('ringed', 36)).toBeGreaterThan(planetReach('crescent', 36));
   });
 });
 

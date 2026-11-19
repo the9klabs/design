@@ -7,8 +7,10 @@ import { createSSRApp, h, nextTick } from 'vue';
 import I9kNinoSky from '../src/components/I9kNinoSky.vue';
 import {
   DIZZY_FACE_MS,
+  SKY_PLANET_RADII,
   SKY_TILE_STARS,
   SKY_TILE_WIDTH,
+  planetDots,
   starAlpha,
 } from '../src/composables/i9kNinoSky';
 import { NINO_BEAT } from '../src/data/nino';
@@ -256,6 +258,55 @@ describe('I9kNinoSky', () => {
 
     const [square] = at(drawn, first.x, first.y);
     expect(square.alpha).toBeCloseTo(expected, 6);
+    wrapper.unmount();
+  });
+
+  /** The planet squares a sky would draw: every dot shifted to its planet's centre. */
+  function expectedPlanets(width: number, height: number, rtl: boolean) {
+    const start = (share: number) => Math.round(width * (rtl ? 1 - share : share));
+    const { crescent, ringed } = SKY_PLANET_RADII.md;
+    const shift = (dots: { x: number; y: number }[], cx: number, cy: number) =>
+      dots.map((dot) => `${dot.x + cx},${dot.y + cy}`);
+    return [
+      ...shift(planetDots('crescent', crescent), start(0.14), Math.round(height * 0.32)),
+      ...shift(planetDots('ringed', ringed), start(0.84), Math.round(height * 0.72)),
+    ].sort();
+  }
+
+  const planetSquares = (drawn: Drawn[]) =>
+    drawn
+      .filter((square) => square.alpha === 0.34)
+      .map((square) => `${square.x},${square.y}`)
+      .sort();
+
+  it('sizes the planets by height, not by the measured box', () => {
+    const drawn = recordDrawing(1000, 500);
+    const wrapper = mount(I9kNinoSky, {
+      props: { boopLabel: 'Hi', height: 'md', animated: false },
+    });
+
+    expect(planetSquares(drawn)).toEqual(expectedPlanets(1000, 500, false));
+    wrapper.unmount();
+  });
+
+  it('swaps the planets’ sides on an Arabic page', () => {
+    const drawn = recordDrawing(1000, 500);
+    const real = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) => {
+      const style = real(element, pseudo);
+      return new Proxy(style, {
+        get: (target, key) => {
+          if (key === 'direction') return 'rtl';
+          const value = Reflect.get(target, key);
+          return typeof value === 'function' ? value.bind(target) : value;
+        },
+      });
+    });
+    const wrapper = mount(I9kNinoSky, {
+      props: { boopLabel: 'Hi', height: 'md', animated: false },
+    });
+
+    expect(planetSquares(drawn)).toEqual(expectedPlanets(1000, 500, true));
     wrapper.unmount();
   });
 

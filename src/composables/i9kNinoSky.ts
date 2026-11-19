@@ -1,4 +1,4 @@
-import type { I9kNinoExpression, I9kNinoLook } from '../types/components';
+import type { I9kComponentSize, I9kNinoExpression, I9kNinoLook } from '../types/components';
 
 /** Everything in the sky sits on a 4 CSS px grid: the dotted-pixel look. */
 export const SKY_GRID = 4;
@@ -77,36 +77,45 @@ export function starAlpha(star: SkyStar, timeMs: number, periodScale = 1): numbe
   return 0.15 + 0.85 * wave;
 }
 
-function snap(value: number): number {
-  return Math.round(value / SKY_GRID) * SKY_GRID;
+/**
+ * Planet radii per sky height. They are fixed rather than measured, so the
+ * server paints the planets at the size the canvas draws them; the values keep
+ * the sizes each preset height had when they were measured.
+ */
+export const SKY_PLANET_RADII: Record<I9kComponentSize, { crescent: number; ringed: number }> = {
+  sm: { crescent: 34.56, ringed: 26.88 },
+  md: { crescent: 48, ringed: 36 },
+  lg: { crescent: 48, ringed: 36 },
+};
+
+export type SkyPlanet = 'crescent' | 'ringed';
+
+/** Half the size of a box, centred on the planet, that holds every one of its dots. */
+export function planetReach(kind: SkyPlanet, radius: number): number {
+  return Math.ceil(kind === 'ringed' ? radius * 1.9 : radius) + SKY_GRID;
 }
 
 /**
- * A planet as halftone dots: one small dot per grid cell inside its disc, so it
- * reads as dotted, never solid. The crescent is the disc minus a second disc
- * shifted toward its centre; the ringed planet adds a flat ellipse of dots.
+ * A planet as halftone dots around its own centre (0, 0): one small dot per
+ * grid cell inside its disc, so it reads as dotted, never solid. The crescent
+ * is the disc minus a second disc shifted toward its centre; the ringed planet
+ * adds a flat ellipse of dots.
  */
-export function planetDots(
-  kind: 'crescent' | 'ringed',
-  cx: number,
-  cy: number,
-  radius: number,
-): SkyDot[] {
+export function planetDots(kind: SkyPlanet, radius: number): SkyDot[] {
   const dots: SkyDot[] = [];
   const step = SKY_GRID;
   const reach = kind === 'ringed' ? radius * 1.9 : radius;
-  for (let y = snap(cy - reach); y <= cy + reach; y += step) {
-    for (let x = snap(cx - reach); x <= cx + reach; x += step) {
-      const dx = x - cx;
-      const dy = y - cy;
-      const inDisc = dx * dx + dy * dy <= radius * radius;
+  const first = Math.ceil(-reach / step) * step;
+  for (let y = first; y <= reach; y += step) {
+    for (let x = first; x <= reach; x += step) {
+      const inDisc = x * x + y * y <= radius * radius;
       if (kind === 'crescent') {
-        const sx = dx - radius * 0.45;
-        const sy = dy + radius * 0.15;
+        const sx = x - radius * 0.45;
+        const sy = y + radius * 0.15;
         if (inDisc && sx * sx + sy * sy > radius * radius * 0.8) dots.push({ x, y });
       } else {
-        const ring = (dx / (radius * 1.9)) ** 2 + (dy / (radius * 0.45)) ** 2;
-        const onRing = ring <= 1 && ring >= 0.6 && !(dy < 0 && inDisc);
+        const ring = (x / (radius * 1.9)) ** 2 + (y / (radius * 0.45)) ** 2;
+        const onRing = ring <= 1 && ring >= 0.6 && !(y < 0 && inDisc);
         if (inDisc || onRing) dots.push({ x, y });
       }
     }
