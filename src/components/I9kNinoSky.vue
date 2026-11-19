@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue';
 
 import I9kNino from './I9kNino.vue';
 import {
@@ -7,9 +7,12 @@ import {
   DRAG_THRESHOLD,
   RETURN_MS,
   SKY_GRID,
+  SKY_PLANET_RADII,
+  SKY_TILE_HEIGHT,
+  SKY_TILE_STARS,
+  SKY_TILE_WIDTH,
   boopExpression,
   clampPoint,
-  createSkyStars,
   createSparkles,
   driftAt,
   easeOutCubic,
@@ -17,19 +20,28 @@ import {
   isSettled,
   lookToward,
   planetDots,
+  planetReach,
   recentSamples,
   releaseVelocity,
+  skyDotsPath,
+  skyStarSize,
+  skyTilePaths,
   starAlpha,
   stepBody,
+  tilePeriodFactor,
   type NinoBody,
   type NinoBounds,
   type Point,
   type PointerSample,
   type SkyDot,
-  type SkyStar,
   type Sparkle,
 } from '../composables/i9kNinoSky';
-import type { I9kNinoExposed, I9kNinoExpression, I9kNinoLook } from '../types/components';
+import type {
+  I9kComponentSize,
+  I9kNinoExposed,
+  I9kNinoExpression,
+  I9kNinoLook,
+} from '../types/components';
 
 const props = withDefaults(
   defineProps<{
@@ -39,7 +51,7 @@ const props = withDefaults(
      * is the scene's one name.
      */
     boopLabel: string;
-    height?: 'sm' | 'md' | 'lg';
+    height?: I9kComponentSize;
     /**
      * Motion is on by default. Setting this false stops the drift, the twinkle,
      * the spin and the sparkles, beside the prefers-reduced-motion media query,
@@ -73,11 +85,36 @@ const expression = ref<I9kNinoExpression>('idle');
 const look = ref<I9kNinoLook>('center');
 const spinning = ref(false);
 
+/** True once the canvas has drawn the sky; until then the server's sky shows. */
+const drawn = ref(false);
+
 const classes = computed(() => [
   'i9k-nino-sky',
   `i9k-nino-sky--${props.height}`,
   ...(props.animated ? ['i9k-nino-sky--animated'] : []),
+  ...(drawn.value ? ['i9k-nino-sky--drawn'] : []),
 ]);
+
+// The sky the server paints: the star tile as a repeating pattern and the two
+// planets, the same pixels the canvas draws on its first frame.
+const patternId = `i9k-nino-sky-stars-${useId()}`;
+const starGroups = (['faint', 'warm', 'cool'] as const).map((tone) => ({
+  tone,
+  size: skyStarSize(tone),
+  paths: skyTilePaths(SKY_TILE_STARS).filter((path) => path.tone === tone),
+}));
+const restPlanets = computed(() =>
+  (['crescent', 'ringed'] as const).map((kind) => {
+    const radius = SKY_PLANET_RADII[props.height][kind];
+    const reach = planetReach(kind, radius);
+    return {
+      kind,
+      size: reach * 2,
+      viewBox: `${-reach} ${-reach} ${reach * 2} ${reach * 2}`,
+      d: skyDotsPath(planetDots(kind, radius)),
+    };
+  }),
+);
 
 interface LiveSparkle extends Sparkle {
   born: number;
@@ -95,7 +132,6 @@ let motionTime = 0;
 let lastTick: number | undefined;
 let skyWidth = 0;
 let skyHeight = 0;
-let stars: SkyStar[] = [];
 let planets: SkyDot[] = [];
 let sparkles: LiveSparkle[] = [];
 let reducedMotion = false;
@@ -147,21 +183,24 @@ function measure() {
   const ratio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
   target.width = Math.round(skyWidth * ratio);
   target.height = Math.round(skyHeight * ratio);
-  stars = createSkyStars(skyWidth, skyHeight);
 
   // Planets sit by the start and end edges, which swap on an Arabic page.
   const rtl = isRtl();
   const fromStart = (share: number) => (rtl ? skyWidth * (1 - share) : skyWidth * share);
+  // Sized by the height preset, not the measured box, to match the server's planets.
+  const radii = SKY_PLANET_RADII[props.height];
+  const around = (dots: SkyDot[], cx: number, cy: number) =>
+    dots.map((dot) => ({ x: dot.x + Math.round(cx), y: dot.y + Math.round(cy) }));
   planets = [
-    ...planetDots('crescent', fromStart(0.14), skyHeight * 0.32, Math.min(48, skyHeight * 0.18)),
-    ...planetDots('ringed', fromStart(0.84), skyHeight * 0.72, Math.min(36, skyHeight * 0.14)),
+    ...around(planetDots('crescent', radii.crescent), fromStart(0.14), skyHeight * 0.32),
+    ...around(planetDots('ringed', radii.ringed), fromStart(0.84), skyHeight * 0.72),
   ];
 }
 
 function draw(now: number) {
   const target = canvas.value;
   const context = target?.getContext('2d');
-  if (!target || !context || skyWidth === 0) return;
+  if (!target || !context || skyWidth === 0 || context.isContextLost?.()) return;
 
   const ratio = target.width / skyWidth;
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -177,14 +216,25 @@ function draw(now: number) {
   context.fillStyle = color('--i9k-nino-sky-planet');
   for (const dot of planets) context.fillRect(dot.x, dot.y, SKY_GRID / 2, SKY_GRID / 2);
 
-  // A still sky draws every star at a fixed brightness instead of twinkling.
-  const still = !motionAllowed();
-  for (const star of stars) {
-    const alpha = still ? 0.6 : starAlpha(star, now);
-    context.globalAlpha = star.tone === 'faint' ? alpha * 0.45 : alpha;
-    context.fillStyle = tones[star.tone];
-    const size = star.tone === 'faint' ? SKY_GRID / 2 : (SKY_GRID * 3) / 4;
-    context.fillRect(star.x, star.y, size, size);
+  // The star tile repeats from the top-left corner. A still sky holds its
+  // first frame, which is also what the server paints.
+  const time = motionAllowed() ? now : 0;
+  for (let row = 0; row * SKY_TILE_HEIGHT < skyHeight; row += 1) {
+    for (let column = 0; column * SKY_TILE_WIDTH < skyWidth; column += 1) {
+      const left = column * SKY_TILE_WIDTH;
+      const top = row * SKY_TILE_HEIGHT;
+      const scale = tilePeriodFactor(column, row);
+      for (const star of SKY_TILE_STARS) {
+        const x = left + star.x;
+        const y = top + star.y;
+        if (x >= skyWidth || y >= skyHeight) continue;
+        const alpha = starAlpha(star, time, scale);
+        context.globalAlpha = star.tone === 'faint' ? alpha * 0.45 : alpha;
+        context.fillStyle = tones[star.tone];
+        const size = skyStarSize(star.tone);
+        context.fillRect(x, y, size, size);
+      }
+    }
   }
 
   sparkles = sparkles.filter((sparkle) => now - sparkle.born < SPARKLE_MS);
@@ -197,6 +247,7 @@ function draw(now: number) {
     context.fillRect(x, y, SKY_GRID, SKY_GRID);
   }
   context.globalAlpha = 1;
+  drawn.value = true;
 }
 
 function place(now: number) {
@@ -595,11 +646,26 @@ onMounted(() => {
     });
   }
   document.addEventListener('visibilitychange', onVisibility);
+  canvas.value?.addEventListener('contextlost', onContextLost);
+  canvas.value?.addEventListener('contextrestored', onContextRestored);
   refresh();
 });
 
+// A lost 2D context leaves the canvas blank, so the server's sky shows again
+// until the browser restores the context and the canvas draws once more.
+function onContextLost() {
+  drawn.value = false;
+}
+
+function onContextRestored() {
+  measure();
+  draw(motionTime);
+}
+
 onBeforeUnmount(() => {
   mounted = false;
+  canvas.value?.removeEventListener('contextlost', onContextLost);
+  canvas.value?.removeEventListener('contextrestored', onContextRestored);
   stop();
   clearTimeout(boopTimer);
   clearTimeout(lookTimer);
@@ -618,7 +684,53 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="root" :class="classes" @pointermove="onPointerMove">
-    <canvas ref="canvas" class="i9k-nino-sky__canvas" aria-hidden="true" />
+    <div class="i9k-nino-sky__backdrop" aria-hidden="true">
+      <div class="i9k-nino-sky__rest">
+        <svg class="i9k-nino-sky__stars" width="100%" height="100%" shape-rendering="crispEdges">
+          <defs>
+            <pattern
+              :id="patternId"
+              patternUnits="userSpaceOnUse"
+              :width="SKY_TILE_WIDTH"
+              :height="SKY_TILE_HEIGHT"
+            >
+              <g
+                v-for="group in starGroups"
+                :key="group.tone"
+                :class="`i9k-nino-sky__star--${group.tone}`"
+                :stroke-width="group.size"
+              >
+                <path
+                  v-for="path in group.paths"
+                  :key="path.opacity"
+                  :stroke-opacity="path.opacity"
+                  :d="path.d"
+                />
+              </g>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" :fill="`url(#${patternId})`" />
+        </svg>
+        <svg
+          v-for="planet in restPlanets"
+          :key="planet.kind"
+          :class="`i9k-nino-sky__planet i9k-nino-sky__planet--${planet.kind}`"
+          :width="planet.size"
+          :height="planet.size"
+          :viewBox="planet.viewBox"
+          shape-rendering="crispEdges"
+        >
+          <path
+            class="i9k-nino-sky__planet-dots"
+            stroke-width="2"
+            stroke-dasharray="2 2"
+            stroke-opacity="0.34"
+            :d="planet.d"
+          />
+        </svg>
+      </div>
+      <canvas ref="canvas" class="i9k-nino-sky__canvas" aria-hidden="true" />
+    </div>
     <div
       ref="flight"
       class="i9k-nino-sky__flight"
@@ -673,16 +785,96 @@ onBeforeUnmount(() => {
   --i9k-nino-sky-height: 24rem;
 }
 
+/* The stars and planets fade in from the top edge, so the sky has no line
+   where it begins. The mask covers both the server's sky and the canvas. */
+.i9k-nino-sky__backdrop {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
+  mask-image: linear-gradient(to bottom, transparent, #000 45%);
+}
+
 .i9k-nino-sky__canvas {
   position: absolute;
   inset: 0;
   display: block;
   inline-size: 100%;
   block-size: 100%;
-  /* The stars and planets fade in from the top edge, so the sky has no line
-     where it begins. */
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 45%);
-  mask-image: linear-gradient(to bottom, transparent, #000 45%);
+}
+
+/* The sky as the server paints it, before the canvas has drawn: the star tile
+   repeats from the top-left corner, as on the canvas, and the planets sit at
+   the canvas's centres. The canvas paints the same pixels, so once it has
+   drawn this layer hides without a visible change. */
+.i9k-nino-sky__rest {
+  position: absolute;
+  inset: 0;
+}
+
+.i9k-nino-sky--drawn .i9k-nino-sky__rest {
+  visibility: hidden;
+}
+
+.i9k-nino-sky__stars {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.i9k-nino-sky__stars g,
+.i9k-nino-sky__planet-dots {
+  fill: none;
+}
+
+.i9k-nino-sky__star--faint {
+  stroke: var(--i9k-nino-sky-star);
+}
+
+.i9k-nino-sky__star--warm {
+  stroke: var(--i9k-nino-sky-warm);
+}
+
+.i9k-nino-sky__star--cool {
+  stroke: var(--i9k-nino-sky-cool);
+}
+
+.i9k-nino-sky__planet-dots {
+  stroke: var(--i9k-nino-sky-planet);
+}
+
+/* Physical sides on purpose, like the canvas: it measures from the left edge
+   and swaps the planets on an Arabic page. Each centre is rounded to a whole
+   pixel, as the canvas rounds its own, so the two layers line up exactly; a
+   browser without round() keeps the plain percentage, a fraction of a pixel off. */
+.i9k-nino-sky__planet {
+  position: absolute;
+  display: block;
+  translate: -50% -50%;
+  overflow: visible;
+}
+
+.i9k-nino-sky__planet--crescent {
+  top: 32%;
+  top: round(32%, 1px);
+  left: 14%;
+  left: round(14%, 1px);
+}
+
+.i9k-nino-sky__planet--crescent:dir(rtl) {
+  left: 86%;
+  left: round(86%, 1px);
+}
+
+.i9k-nino-sky__planet--ringed {
+  top: 72%;
+  top: round(72%, 1px);
+  left: 84%;
+  left: round(84%, 1px);
+}
+
+.i9k-nino-sky__planet--ringed:dir(rtl) {
+  left: 16%;
+  left: round(16%, 1px);
 }
 
 /* Centred by `translate`, so the drift the script writes to `transform`

@@ -11,3 +11,4 @@ showcase-dist/
 # VitePress dev cache and build scratch for the docs site.
 showcase/.vitepress/cache/
 showcase/.vitepress/.temp/
+.superpowers/

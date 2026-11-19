@@ -1,10 +1,16 @@
-import type { I9kNinoExpression, I9kNinoLook } from '../types/components';
+import type { I9kComponentSize, I9kNinoExpression, I9kNinoLook } from '../types/components';
 
 /** Everything in the sky sits on a 4 CSS px grid: the dotted-pixel look. */
 export const SKY_GRID = 4;
-export const SKY_MAX_STARS = 400;
 /** About one star per this many CSS px² of sky. */
 export const SKY_AREA_PER_STAR = 900;
+/**
+ * The star field is one tile repeated from the sky's top-left corner, so where
+ * a star sits never depends on the size of the box. That lets the server paint
+ * the same stars the canvas later draws.
+ */
+export const SKY_TILE_WIDTH = 960;
+export const SKY_TILE_HEIGHT = 480;
 
 export type SkyTone = 'faint' | 'warm' | 'cool';
 
@@ -35,12 +41,10 @@ export function createRandom(seed: number): () => number {
   };
 }
 
-export function createSkyStars(width: number, height: number, seed = 9): SkyStar[] {
-  const columns = Math.floor(width / SKY_GRID);
-  const rows = Math.floor(height / SKY_GRID);
-  if (columns < 1 || rows < 1) return [];
-
-  const count = Math.min(SKY_MAX_STARS, Math.floor((width * height) / SKY_AREA_PER_STAR));
+export function createSkyTile(seed = 9): SkyStar[] {
+  const columns = SKY_TILE_WIDTH / SKY_GRID;
+  const rows = SKY_TILE_HEIGHT / SKY_GRID;
+  const count = Math.floor((SKY_TILE_WIDTH * SKY_TILE_HEIGHT) / SKY_AREA_PER_STAR);
   const random = createRandom(seed);
   const stars: SkyStar[] = [];
   for (let index = 0; index < count; index += 1) {
@@ -53,41 +57,128 @@ export function createSkyStars(width: number, height: number, seed = 9): SkyStar
   return stars;
 }
 
-export function starAlpha(star: SkyStar, timeMs: number): number {
-  const wave = 0.5 + 0.5 * Math.sin(2 * Math.PI * (timeMs / star.period + star.phase));
-  return 0.15 + 0.85 * wave;
+export const SKY_TILE_STARS: readonly SkyStar[] = createSkyTile();
+
+/**
+ * How much slower one copy of the tile twinkles than the first, so repeated
+ * tiles start in step (the server paints time 0) and drift apart after.
+ */
+export function tilePeriodFactor(column: number, row: number): number {
+  if (column === 0 && row === 0) return 1;
+  // Seven steps of 0.05 between 1 and 1.3; the pairing walks columns by 3 so
+  // neighbours on a row never share a step.
+  const step = (((column * 3 + row * 5) % 7) + 7) % 7;
+  return 1 + step * 0.05;
 }
 
-function snap(value: number): number {
-  return Math.round(value / SKY_GRID) * SKY_GRID;
+/** A star's side in CSS px: faint stars are the smaller dot. */
+export function skyStarSize(tone: SkyTone): number {
+  return tone === 'faint' ? SKY_GRID / 2 : (SKY_GRID * 3) / 4;
+}
+
+export interface SkyPath {
+  tone: SkyTone;
+  opacity: number;
+  /** One stroked line per square: `M x y h size` drawn `size` thick is a size × size square at (x, y - size / 2). */
+  d: string;
 }
 
 /**
- * A planet as halftone dots: one small dot per grid cell inside its disc, so it
- * reads as dotted, never solid. The crescent is the disc minus a second disc
- * shifted toward its centre; the ringed planet adds a flat ellipse of dots.
+ * The tile's stars as a few SVG paths, one per tone and brightness, for the
+ * sky the server paints. Each star sits at its first-frame brightness (time 0,
+ * what the canvas draws first), rounded to the nearest 1 / steps so the stars
+ * fall into a handful of paths.
  */
-export function planetDots(
-  kind: 'crescent' | 'ringed',
-  cx: number,
-  cy: number,
-  radius: number,
-): SkyDot[] {
+export function skyTilePaths(stars: readonly SkyStar[], steps = 16): SkyPath[] {
+  const groups = new Map<string, SkyPath>();
+  for (const star of stars) {
+    const alpha = starAlpha(star, 0) * (star.tone === 'faint' ? 0.45 : 1);
+    const opacity = Math.round(alpha * steps) / steps;
+    const key = `${star.tone}:${opacity}`;
+    const path = groups.get(key) ?? { tone: star.tone, opacity, d: '' };
+    const size = skyStarSize(star.tone);
+    path.d += `M${star.x} ${star.y + size / 2}h${size}`;
+    groups.set(key, path);
+  }
+  return [...groups.values()];
+}
+
+/**
+ * A planet's dots as one SVG path: each row of neighbouring dots becomes a
+ * single line, which the caller strokes 2px thick and dashes 2 on, 2 off, so it
+ * paints the same 2px dots on the 4px grid in far fewer bytes.
+ */
+export function skyDotsPath(dots: readonly SkyDot[]): string {
+  const size = SKY_GRID / 2;
+  const rows = new Map<number, number[]>();
+  for (const dot of dots) rows.set(dot.y, [...(rows.get(dot.y) ?? []), dot.x]);
+  let d = '';
+  for (const [y, xs] of [...rows].sort(([a], [b]) => a - b)) {
+    xs.sort((a, b) => a - b);
+    let start = xs[0];
+    let end = start;
+    const flush = () => {
+      d += `M${start} ${y + size / 2}h${end - start + size}`;
+    };
+    for (const x of xs.slice(1)) {
+      if (x === end + SKY_GRID) {
+        end = x;
+      } else {
+        flush();
+        start = x;
+        end = x;
+      }
+    }
+    flush();
+  }
+  return d;
+}
+
+export function starAlpha(star: SkyStar, timeMs: number, periodScale = 1): number {
+  const wave =
+    0.5 + 0.5 * Math.sin(2 * Math.PI * (timeMs / (star.period * periodScale) + star.phase));
+  return 0.15 + 0.85 * wave;
+}
+
+/**
+ * Planet radii per sky height. They are fixed rather than measured, so the
+ * server paints the planets at the size the canvas draws them; the values keep
+ * the sizes each preset height had when they were measured.
+ */
+export const SKY_PLANET_RADII: Record<I9kComponentSize, { crescent: number; ringed: number }> = {
+  sm: { crescent: 34.56, ringed: 26.88 },
+  md: { crescent: 48, ringed: 36 },
+  lg: { crescent: 48, ringed: 36 },
+};
+
+export type SkyPlanet = 'crescent' | 'ringed';
+
+/** Half the size of a box, centred on the planet, that holds every one of its dots. */
+export function planetReach(kind: SkyPlanet, radius: number): number {
+  return Math.ceil(kind === 'ringed' ? radius * 1.9 : radius) + SKY_GRID;
+}
+
+/**
+ * A planet as halftone dots around its own centre (0, 0): one small dot per
+ * grid cell inside its disc, so it reads as dotted, never solid. The crescent
+ * is the disc minus a second disc shifted toward its centre; the ringed planet
+ * adds a flat ellipse of dots.
+ */
+export function planetDots(kind: SkyPlanet, radius: number): SkyDot[] {
   const dots: SkyDot[] = [];
   const step = SKY_GRID;
   const reach = kind === 'ringed' ? radius * 1.9 : radius;
-  for (let y = snap(cy - reach); y <= cy + reach; y += step) {
-    for (let x = snap(cx - reach); x <= cx + reach; x += step) {
-      const dx = x - cx;
-      const dy = y - cy;
-      const inDisc = dx * dx + dy * dy <= radius * radius;
+  const first = Math.ceil(-reach / step) * step;
+  for (let y = first; y <= reach; y += step) {
+    for (let x = first; x <= reach; x += step) {
+      const inDisc = x * x + y * y <= radius * radius;
       if (kind === 'crescent') {
-        const sx = dx - radius * 0.45;
-        const sy = dy + radius * 0.15;
+        const sx = x - radius * 0.45;
+        const sy = y + radius * 0.15;
         if (inDisc && sx * sx + sy * sy > radius * radius * 0.8) dots.push({ x, y });
       } else {
-        const ring = (dx / (radius * 1.9)) ** 2 + (dy / (radius * 0.45)) ** 2;
-        const onRing = ring <= 1 && ring >= 0.6 && !(dy < 0 && inDisc);
+        const ring = (x / (radius * 1.9)) ** 2 + (y / (radius * 0.45)) ** 2;
+        const onRing = ring <= 1 && ring >= 0.6 && !(y < 0 && inDisc);
         if (inDisc || onRing) dots.push({ x, y });
       }
     }

@@ -7,10 +7,13 @@ import {
   HOME_DECAY_MS,
   MAX_THROW_SPEED,
   SKY_GRID,
-  SKY_MAX_STARS,
+  SKY_PLANET_RADII,
+  SKY_TILE_HEIGHT,
+  SKY_TILE_STARS,
+  SKY_TILE_WIDTH,
   boopExpression,
   clampPoint,
-  createSkyStars,
+  createSkyTile,
   createSparkles,
   driftAt,
   easeOutCubic,
@@ -18,41 +21,43 @@ import {
   isSettled,
   lookToward,
   planetDots,
+  planetReach,
+  skyDotsPath,
+  skyStarSize,
+  skyTilePaths,
   releaseVelocity,
   starAlpha,
   stepBody,
+  tilePeriodFactor,
   type NinoBody,
 } from '../src/composables/i9kNinoSky';
 
-describe('createSkyStars', () => {
-  it('draws the same sky for the same box and seed', () => {
-    expect(createSkyStars(800, 288, 9)).toEqual(createSkyStars(800, 288, 9));
+describe('createSkyTile', () => {
+  it('draws the same tile for the same seed', () => {
+    expect(createSkyTile(9)).toEqual(createSkyTile(9));
+    expect(SKY_TILE_STARS).toEqual(createSkyTile());
   });
 
-  it('gives about one star per 900 px² and never more than the cap', () => {
-    expect(createSkyStars(300, 300)).toHaveLength(100);
-    expect(createSkyStars(4000, 400)).toHaveLength(SKY_MAX_STARS);
+  it('gives one star per 900 px² of tile', () => {
+    expect(createSkyTile()).toHaveLength(Math.floor((SKY_TILE_WIDTH * SKY_TILE_HEIGHT) / 900));
+    expect(createSkyTile()).toHaveLength(512);
   });
 
-  it('returns no stars for an empty box', () => {
-    expect(createSkyStars(0, 288)).toEqual([]);
-    expect(createSkyStars(800, -1)).toEqual([]);
-  });
-
-  it('keeps every star inside the box, on the pixel grid', () => {
-    for (const star of createSkyStars(801, 290)) {
+  it('keeps every star inside the tile, on the pixel grid', () => {
+    for (const star of createSkyTile()) {
       expect(star.x % SKY_GRID).toBe(0);
       expect(star.y % SKY_GRID).toBe(0);
       expect(star.x).toBeGreaterThanOrEqual(0);
-      expect(star.x + SKY_GRID).toBeLessThanOrEqual(801);
-      expect(star.y + SKY_GRID).toBeLessThanOrEqual(290);
+      expect(star.y).toBeGreaterThanOrEqual(0);
+      expect(star.x + SKY_GRID).toBeLessThanOrEqual(SKY_TILE_WIDTH);
+      expect(star.y + SKY_GRID).toBeLessThanOrEqual(SKY_TILE_HEIGHT);
       expect(star.period).toBeGreaterThanOrEqual(2000);
       expect(star.period).toBeLessThanOrEqual(6000);
     }
   });
 
   it('makes most stars faint and a few warm or cool', () => {
-    const stars = createSkyStars(4000, 400);
+    const stars = createSkyTile();
     const share = (tone: string) =>
       stars.filter((star) => star.tone === tone).length / stars.length;
     expect(share('faint')).toBeGreaterThan(0.7);
@@ -63,25 +68,126 @@ describe('createSkyStars', () => {
   });
 });
 
+describe('tilePeriodFactor', () => {
+  it('leaves the first tile alone and slows the others a little, each unlike its neighbour', () => {
+    expect(tilePeriodFactor(0, 0)).toBe(1);
+    for (let column = 0; column < 6; column += 1) {
+      for (let row = 0; row < 3; row += 1) {
+        expect(tilePeriodFactor(column, row)).toBeGreaterThanOrEqual(1);
+        expect(tilePeriodFactor(column, row)).toBeLessThanOrEqual(1.3);
+        expect(tilePeriodFactor(column + 1, row)).not.toBe(tilePeriodFactor(column, row));
+      }
+    }
+  });
+});
+
 describe('starAlpha', () => {
   it('stays visible and never exceeds full opacity', () => {
-    const [star] = createSkyStars(300, 300);
+    const [star] = SKY_TILE_STARS;
     for (let time = 0; time < 12000; time += 250) {
       const alpha = starAlpha(star, time);
       expect(alpha).toBeGreaterThanOrEqual(0.15);
       expect(alpha).toBeLessThanOrEqual(1);
     }
   });
+
+  it('starts every tile at the same brightness and lets them drift apart', () => {
+    const [star] = SKY_TILE_STARS;
+    expect(starAlpha(star, 0, 1.2)).toBe(starAlpha(star, 0));
+    expect(starAlpha(star, 1500, 1.2)).not.toBe(starAlpha(star, 1500));
+  });
+});
+
+describe('skyTilePaths', () => {
+  const paths = skyTilePaths(SKY_TILE_STARS);
+  const starts = (d: string) =>
+    [...d.matchAll(/M(-?[\d.]+)[ ,](-?[\d.]+)/g)].map(([, x, y]) => [Number(x), Number(y)]);
+
+  it('draws every star exactly once, as a square of its own size at its own place', () => {
+    const drawn = paths.flatMap((path) =>
+      starts(path.d).map(([x, y]) => `${path.tone}:${x},${y - skyStarSize(path.tone) / 2}`),
+    );
+    const expected = SKY_TILE_STARS.map((star) => `${star.tone}:${star.x},${star.y}`);
+    expect(drawn.sort()).toEqual(expected.sort());
+  });
+
+  it('paints each star at its first-frame brightness, to the nearest sixteenth', () => {
+    for (const path of paths) {
+      expect(Math.round(path.opacity * 16)).toBeCloseTo(path.opacity * 16, 9);
+    }
+    for (const star of SKY_TILE_STARS) {
+      const first = starAlpha(star, 0) * (star.tone === 'faint' ? 0.45 : 1);
+      const start = `${star.x},${star.y + skyStarSize(star.tone) / 2}`;
+      const holders = paths.filter(
+        (path) => path.tone === star.tone && starts(path.d).some(([x, y]) => `${x},${y}` === start),
+      );
+      expect(holders.some((path) => Math.abs(path.opacity - first) <= 1 / 32 + 1e-9)).toBe(true);
+    }
+  });
+
+  it('groups the stars into a few paths', () => {
+    expect(paths.length).toBeLessThanOrEqual(3 * 17);
+  });
+});
+
+describe('skyDotsPath', () => {
+  /** Expands each `M x y h length` run, dashed 2 on / 2 off, back into its 2px dots. */
+  const dotsOf = (d: string) =>
+    [...d.matchAll(/M(-?[\d.]+)[ ,](-?[\d.]+)h([\d.]+)/g)].flatMap(([, x, y, length]) =>
+      Array.from({ length: (Number(length) + 2) / 4 }, (_, index) => ({
+        x: Number(x) + index * SKY_GRID,
+        y: Number(y) - 1,
+      })),
+    );
+  const key = (dot: { x: number; y: number }) => `${dot.x},${dot.y}`;
+
+  it.each(['crescent', 'ringed'] as const)(
+    'covers exactly the %s’s dots, a row at a time',
+    (kind) => {
+      const dots = planetDots(kind, SKY_PLANET_RADII.md[kind]);
+      const d = skyDotsPath(dots);
+      expect(dotsOf(d).map(key).sort()).toEqual(dots.map(key).sort());
+      expect(d.match(/M/g)!.length).toBeLessThan(dots.length / 2);
+    },
+  );
+});
+
+describe('SKY_PLANET_RADII', () => {
+  it('keeps today’s planet sizes at each preset height', () => {
+    expect(SKY_PLANET_RADII).toEqual({
+      sm: { crescent: 34.56, ringed: 26.88 },
+      md: { crescent: 48, ringed: 36 },
+      lg: { crescent: 48, ringed: 36 },
+    });
+  });
 });
 
 describe('planetDots', () => {
-  it.each(['crescent', 'ringed'] as const)('draws a %s as dots on the pixel grid', (kind) => {
-    const dots = planetDots(kind, 100, 100, 40);
-    expect(dots.length).toBeGreaterThan(20);
-    for (const dot of dots) {
-      expect(dot.x % SKY_GRID).toBe(0);
-      expect(dot.y % SKY_GRID).toBe(0);
-    }
+  const cases = (['sm', 'md', 'lg'] as const).flatMap((height) =>
+    (['crescent', 'ringed'] as const).map((kind) => [kind, height] as const),
+  );
+
+  it.each(cases)(
+    'draws a %s (%s) as dots around its own centre, on the pixel grid',
+    (kind, height) => {
+      const radius = SKY_PLANET_RADII[height][kind];
+      const dots = planetDots(kind, radius);
+      const reach = planetReach(kind, radius);
+      expect(dots.length).toBeGreaterThan(20);
+      for (const dot of dots) {
+        expect(Math.abs(dot.x % SKY_GRID)).toBe(0);
+        expect(Math.abs(dot.y % SKY_GRID)).toBe(0);
+        expect(dot.x).toBeGreaterThanOrEqual(-reach);
+        expect(dot.y).toBeGreaterThanOrEqual(-reach);
+        expect(dot.x + SKY_GRID / 2).toBeLessThanOrEqual(reach);
+        expect(dot.y + SKY_GRID / 2).toBeLessThanOrEqual(reach);
+      }
+      expect(planetDots(kind, radius)).toEqual(dots);
+    },
+  );
+
+  it('wraps the ringed planet’s ring in its reach', () => {
+    expect(planetReach('ringed', 36)).toBeGreaterThan(planetReach('crescent', 36));
   });
 });
 

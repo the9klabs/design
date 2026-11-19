@@ -1,12 +1,21 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { renderToString } from '@vue/server-renderer';
 import { computeAccessibleName } from 'dom-accessibility-api';
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createSSRApp, h, nextTick } from 'vue';
 
 import I9kNinoSky from '../src/components/I9kNinoSky.vue';
-import { DIZZY_FACE_MS } from '../src/composables/i9kNinoSky';
+import {
+  DIZZY_FACE_MS,
+  SKY_PLANET_RADII,
+  SKY_TILE_STARS,
+  SKY_TILE_WIDTH,
+  planetDots,
+  starAlpha,
+} from '../src/composables/i9kNinoSky';
 import { NINO_BEAT } from '../src/data/nino';
+import { I9kNinoSkyEntry } from '../showcase/registry/I9kNinoSky';
 
 function stubMotion(reduce: boolean) {
   vi.stubGlobal('matchMedia', (query: string) => ({
@@ -30,6 +39,39 @@ afterEach(() => {
 });
 
 const nino = (wrapper: ReturnType<typeof mount>) => wrapper.get('svg.i9k-nino');
+
+interface Drawn {
+  x: number;
+  y: number;
+  size: number;
+  alpha: number;
+}
+
+/** A 2D context that records every square it fills, with the alpha it was filled at. */
+function recordDrawing(width: number, height: number) {
+  const drawn: Drawn[] = [];
+  const context = {
+    setTransform: vi.fn(),
+    clearRect: () => drawn.splice(0),
+    fillRect(x: number, y: number, size: number) {
+      drawn.push({ x, y, size, alpha: context.globalAlpha });
+    },
+    globalAlpha: 1,
+    fillStyle: '',
+  };
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+    context as unknown as CanvasRenderingContext2D,
+  );
+  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(width);
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(height);
+  return drawn;
+}
+
+/** The tile's first star that a sky of this height shows. */
+const visibleStar = (height: number) => SKY_TILE_STARS.find((star) => star.y < height)!;
+
+const at = (drawn: Drawn[], x: number, y: number) =>
+  drawn.filter((square) => square.x === x && square.y === y);
 
 describe('I9kNinoSky', () => {
   it('names the boop button and keeps the sky and Nino out of the accessibility tree', () => {
@@ -194,6 +236,82 @@ describe('I9kNinoSky', () => {
     expect(fillRect).toHaveBeenCalled();
   });
 
+  it('tiles the stars across a very wide sky', () => {
+    const drawn = recordDrawing(3000, 288);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi', animated: false } });
+    const first = visibleStar(288);
+
+    for (const column of [0, 1, 2]) {
+      expect(at(drawn, first.x + column * SKY_TILE_WIDTH, first.y)).not.toHaveLength(0);
+    }
+    expect(drawn.some((square) => square.x >= 2 * SKY_TILE_WIDTH)).toBe(true);
+    wrapper.unmount();
+  });
+
+  it.each([
+    ['animated is false', false, false],
+    ['the visitor prefers reduced motion', true, true],
+  ])('freezes a still sky at its first frame when %s', (_, reduce, animated) => {
+    stubMotion(reduce);
+    const drawn = recordDrawing(800, 288);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi', animated } });
+    const first = visibleStar(288);
+    const expected = starAlpha(first, 0) * (first.tone === 'faint' ? 0.45 : 1);
+
+    const [square] = at(drawn, first.x, first.y);
+    expect(square.alpha).toBeCloseTo(expected, 6);
+    wrapper.unmount();
+  });
+
+  /** The planet squares a sky would draw: every dot shifted to its planet's centre. */
+  function expectedPlanets(width: number, height: number, rtl: boolean) {
+    const start = (share: number) => Math.round(width * (rtl ? 1 - share : share));
+    const { crescent, ringed } = SKY_PLANET_RADII.md;
+    const shift = (dots: { x: number; y: number }[], cx: number, cy: number) =>
+      dots.map((dot) => `${dot.x + cx},${dot.y + cy}`);
+    return [
+      ...shift(planetDots('crescent', crescent), start(0.14), Math.round(height * 0.32)),
+      ...shift(planetDots('ringed', ringed), start(0.84), Math.round(height * 0.72)),
+    ].sort();
+  }
+
+  const planetSquares = (drawn: Drawn[]) =>
+    drawn
+      .filter((square) => square.alpha === 0.34)
+      .map((square) => `${square.x},${square.y}`)
+      .sort();
+
+  it('sizes the planets by height, not by the measured box', () => {
+    const drawn = recordDrawing(1000, 500);
+    const wrapper = mount(I9kNinoSky, {
+      props: { boopLabel: 'Hi', height: 'md', animated: false },
+    });
+
+    expect(planetSquares(drawn)).toEqual(expectedPlanets(1000, 500, false));
+    wrapper.unmount();
+  });
+
+  it('swaps the planets’ sides on an Arabic page', () => {
+    const drawn = recordDrawing(1000, 500);
+    const real = window.getComputedStyle.bind(window);
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((element, pseudo) => {
+      const style = real(element, pseudo);
+      return new Proxy(style, {
+        get: (target, key) => {
+          if (key === 'direction') return 'rtl';
+          const value = Reflect.get(target, key);
+          return typeof value === 'function' ? value.bind(target) : value;
+        },
+      });
+    });
+    const wrapper = mount(I9kNinoSky, {
+      props: { boopLabel: 'Hi', height: 'md', animated: false },
+    });
+
+    expect(planetSquares(drawn)).toEqual(expectedPlanets(1000, 500, true));
+    wrapper.unmount();
+  });
+
   // A strict Content-Security-Policy (`style-src 'self'`) drops inline style
   // attributes, so nothing the server renders may carry one.
   it.each(['sm', 'md', 'lg'] as const)(
@@ -207,6 +325,119 @@ describe('I9kNinoSky', () => {
       expect(html).not.toMatch(/\sstyle=/);
     },
   );
+
+  const serverSky = (...heights: ('sm' | 'md' | 'lg')[]) =>
+    renderToString(
+      createSSRApp({
+        render: () => heights.map((height) => h(I9kNinoSky, { boopLabel: 'Hi', height })),
+      }),
+    );
+
+  it.each(['sm', 'md', 'lg'] as const)('paints the %s sky itself on the server', async (height) => {
+    const html = await serverSky(height);
+
+    expect(html).toContain('<pattern');
+    expect(html).toMatch(/fill="url\(#[^"]+\)"/);
+    expect(html).toContain('i9k-nino-sky__planet--crescent');
+    expect(html).toContain('i9k-nino-sky__planet--ringed');
+  });
+
+  it('keeps the server-painted sky under 10 KB', async () => {
+    const html = await serverSky('md');
+    const start = html.indexOf('<div class="i9k-nino-sky__rest"');
+    const rest = html.slice(start, html.indexOf('</div>', start) + '</div>'.length);
+
+    expect(start).toBeGreaterThan(-1);
+    expect(rest.length).toBeLessThan(10_000);
+  });
+
+  it('gives two skies on one page their own star patterns', async () => {
+    const html = await serverSky('sm', 'md');
+    const ids = [...html.matchAll(/<pattern[^>]* id="([^"]+)"/g)].map(([, id]) => id);
+    const fills = [...html.matchAll(/fill="url\(#([^"]+)\)"/g)].map(([, id]) => id);
+
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    expect(fills).toEqual(ids);
+  });
+
+  it('hydrates the server sky without a mismatch', async () => {
+    const render = () => h(I9kNinoSky, { boopLabel: 'Hi', height: 'md' });
+    const container = document.createElement('div');
+    container.innerHTML = await renderToString(createSSRApp({ render }));
+    document.body.append(container);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const app = createSSRApp({ render });
+    app.mount(container);
+    await nextTick();
+
+    const logged = [...warn.mock.calls, ...error.mock.calls].flat().join(' ');
+    expect(logged).not.toMatch(/hydration/i);
+    app.unmount();
+    container.remove();
+  });
+
+  it('hands the sky over to the canvas once it has drawn', async () => {
+    recordDrawing(800, 288);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi' } });
+    expect(wrapper.classes()).not.toContain('i9k-nino-sky--drawn');
+
+    // An animated sky draws on its first animation frame.
+    vi.advanceTimersByTime(100);
+    await nextTick();
+
+    expect(wrapper.classes()).toContain('i9k-nino-sky--drawn');
+    wrapper.unmount();
+  });
+
+  it('brings the server sky back while the canvas has lost its context', async () => {
+    const drawn = recordDrawing(800, 288);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi', animated: false } });
+    await nextTick();
+    expect(wrapper.classes()).toContain('i9k-nino-sky--drawn');
+    const canvas = wrapper.get('canvas').element;
+
+    canvas.dispatchEvent(new Event('contextlost'));
+    await nextTick();
+    expect(wrapper.classes()).not.toContain('i9k-nino-sky--drawn');
+
+    drawn.splice(0);
+    canvas.dispatchEvent(new Event('contextrestored'));
+    await nextTick();
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(wrapper.classes()).toContain('i9k-nino-sky--drawn');
+    wrapper.unmount();
+  });
+
+  it('tells agents the sky is painted on the server first', () => {
+    expect(I9kNinoSkyEntry.agentPrompt).toMatch(/server/i);
+    expect(I9kNinoSkyEntry.agentPrompt).not.toMatch(/the sky is a transparent <canvas>/);
+  });
+
+  it('keeps the server sky when there is no canvas to draw on', async () => {
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi' } });
+    await nextTick();
+
+    expect(wrapper.classes()).not.toContain('i9k-nino-sky--drawn');
+    wrapper.unmount();
+  });
+
+  it('centres the server-painted planets on whole pixels, as the canvas does', () => {
+    const source = readFileSync('src/components/I9kNinoSky.vue', 'utf8');
+
+    for (const share of ['14%', '32%', '84%', '72%', '86%', '16%']) {
+      expect(source).toContain(`round(${share}, 1px)`);
+    }
+  });
+
+  it('swaps the server-painted planets’ sides on an Arabic page', () => {
+    const source = readFileSync('src/components/I9kNinoSky.vue', 'utf8');
+
+    expect(source).toMatch(/\.i9k-nino-sky__planet--crescent:dir\(rtl\)\s*\{/);
+    expect(source).toMatch(/\.i9k-nino-sky__planet--ringed:dir\(rtl\)\s*\{/);
+  });
 });
 
 /** A pointer event as jsdom can build one: a MouseEvent carrying the pointer fields. */
