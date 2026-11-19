@@ -29,6 +29,8 @@ Usage, as a full-width band after the footer:
   gotchas: [
     'It has no background of its own and follows the page theme: light stars on a dark page, dark dots on a light one, fading in from its top edge. Put it on the page’s own background, not inside a card.',
     'Put it outside I9kContainer: the sky is a full-bleed band, and the container would cut it to the page column.',
+    'It renders fully on the server: the stars and planets are in the first paint, before hydration, so it needs no `<ClientOnly>`. The canvas takes over once it has drawn, painting the same pixels. Without JavaScript the sky stays, still.',
+    'The stars are one tile repeated from the top-left corner and the planets are sized by `height`. Overriding `--i9k-nino-sky-height` shows more or less of the star field; it does not resize the planets.',
     'It adds one tab stop (the boop button) with a visible focus ring.',
     'It makes no sound and tracks nothing; listen to `boop` if your page wants to.',
     'While airborne, Nino is `position: fixed` with z-index 300, so he flies over the page. An ancestor with a transform, filter, perspective, `contain: paint` or `will-change: transform` becomes his containing block and bounds him to itself instead of the window, so keep the sky out of one.',

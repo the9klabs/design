@@ -35,6 +35,7 @@
 ### Task 0: Branch and housekeeping
 
 **Files:**
+
 - Modify: `.gitignore`
 
 - [ ] **Step 1:** `git switch -c feat/nino-sky-first-paint`
@@ -44,11 +45,13 @@
 ### Task 1: The star field becomes one repeating tile
 
 **Files:**
+
 - Modify: `src/composables/i9kNinoSky.ts` (star constants, `createSkyStars`, `starAlpha`)
 - Modify: `src/components/I9kNinoSky.vue` (`measure`, `draw`)
 - Test: `tests/i9kNinoSkyMaths.test.ts`, `tests/I9kNinoSky.test.ts`
 
 **Interfaces:**
+
 - Produces (in `i9kNinoSky.ts`):
   - `export const SKY_TILE_WIDTH = 960;` `export const SKY_TILE_HEIGHT = 480;`
   - `export function createSkyTile(seed = 9): SkyStar[]` — stars with `0 ≤ x < 960`, `0 ≤ y < 480`, on the 4px grid, `Math.floor(960 * 480 / SKY_AREA_PER_STAR)` = 512 of them, same tone split, `period` and `phase` as today.
@@ -82,11 +85,12 @@ describe('createSkyTile', () => {
 describe('tilePeriodFactor', () => {
   it('leaves the first tile alone and slows the others a little, each differently from its neighbour', () => {
     expect(tilePeriodFactor(0, 0)).toBe(1);
-    for (let c = 0; c < 6; c++) for (let r = 0; r < 3; r++) {
-      expect(tilePeriodFactor(c, r)).toBeGreaterThanOrEqual(1);
-      expect(tilePeriodFactor(c, r)).toBeLessThanOrEqual(1.3);
-      expect(tilePeriodFactor(c + 1, r)).not.toBe(tilePeriodFactor(c, r));
-    }
+    for (let c = 0; c < 6; c++)
+      for (let r = 0; r < 3; r++) {
+        expect(tilePeriodFactor(c, r)).toBeGreaterThanOrEqual(1);
+        expect(tilePeriodFactor(c, r)).toBeLessThanOrEqual(1.3);
+        expect(tilePeriodFactor(c + 1, r)).not.toBe(tilePeriodFactor(c, r));
+      }
   });
 });
 
@@ -113,11 +117,13 @@ it('starts every tile at the same brightness and lets them drift apart', () => {
 ### Task 2: Planets get fixed radii and relative dots
 
 **Files:**
+
 - Modify: `src/composables/i9kNinoSky.ts` (`planetDots`, new radii)
 - Modify: `src/components/I9kNinoSky.vue` (`measure`, `draw`)
 - Test: `tests/i9kNinoSkyMaths.test.ts`, `tests/I9kNinoSky.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from Task 1.
 - Produces:
   - `export type SkyHeight = 'sm' | 'md' | 'lg';` (use it for the component's `height` prop too)
@@ -140,11 +146,13 @@ it('starts every tile at the same brightness and lets them drift apart', () => {
 ### Task 3: The server-rendered rest layer and the hand-over
 
 **Files:**
+
 - Modify: `src/composables/i9kNinoSky.ts` (path builder)
 - Modify: `src/components/I9kNinoSky.vue` (template, hand-over flag, scoped CSS)
 - Test: `tests/i9kNinoSkyMaths.test.ts`, `tests/I9kNinoSky.test.ts`
 
 **Interfaces:**
+
 - Consumes: `SKY_TILE_STARS`, `SKY_TILE_WIDTH`, `SKY_TILE_HEIGHT`, `starAlpha` (Task 1); `SKY_PLANET_RADII`, `planetDots`, `planetReach` (Task 2).
 - Produces:
   - `export interface SkyPath { tone: SkyTone; opacity: number; d: string }`
@@ -176,6 +184,7 @@ it('starts every tile at the same brightness and lets them drift apart', () => {
 ### Task 4: Docs, full check, visual proof
 
 **Files:**
+
 - Modify: `showcase/registry/I9kNinoSky.ts` (summary and gotchas)
 
 - [ ] **Step 1:** In the registry entry, add a gotcha: the sky is fully server-rendered (stars as a repeating tile, planets sized by `height`), so it paints before hydration and needs no `ClientOnly`; and note that overriding `--i9k-nino-sky-height` changes how much of the star field shows, not planet sizes.

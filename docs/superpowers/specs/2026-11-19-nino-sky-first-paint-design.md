@@ -34,11 +34,11 @@ sky**, and that the canvas taking over is invisible.
 
 ## Approaches
 
-| | Approach | Trade-off |
-|---|---|---|
-| **A (chosen)** | Server-render the same sky as SVG; the canvas takes over once it has drawn | Seamless and keeps the canvas, but the star layout must stop depending on the measured size |
-| B | CSS radial-gradient dot pattern as a background | Cheapest; no planets, doesn't match the canvas, so the hand-over shows |
-| C | Stars live in SVG permanently, twinkling with CSS; canvas keeps only sparkles | No hand-over at all, but up to hundreds of animated nodes and a rewrite of a working component |
+|                | Approach                                                                      | Trade-off                                                                                      |
+| -------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **A (chosen)** | Server-render the same sky as SVG; the canvas takes over once it has drawn    | Seamless and keeps the canvas, but the star layout must stop depending on the measured size    |
+| B              | CSS radial-gradient dot pattern as a background                               | Cheapest; no planets, doesn't match the canvas, so the hand-over shows                         |
+| C              | Stars live in SVG permanently, twinkling with CSS; canvas keeps only sparkles | No hand-over at all, but up to hundreds of animated nodes and a rewrite of a working component |
 
 The user picked A.
 
@@ -53,7 +53,7 @@ The server cannot measure the box, so the star layout must not depend on it. Rep
   `SKY_GRID`). Stars are generated once for the tile from the existing seeded `createRandom`, at the
   existing density (`SKY_AREA_PER_STAR`), on the 4px grid.
 - The sky is that tile repeated from the box's physical top-left, in both directions, and clipped
-  by the box. Width and height no longer change *where* stars are, only how much of the field is
+  by the box. Width and height no longer change _where_ stars are, only how much of the field is
   visible.
 - `SKY_MAX_STARS` (a whole-sky cap) is replaced by the per-tile count. Wide screens get the same
   density as narrow ones instead of a thinner sky; this is an intended, visible change.
@@ -70,10 +70,10 @@ Planet radii are computed from the measured height today: the crescent uses
 `height` variant that keeps today's sizes at the default rem values (heights 192 / 288 / 384px):
 
 | `height` | Crescent radius | Ringed radius |
-|---|---|---|
-| `sm` | 34.56 | 26.88 |
-| `md` | 48 | 36 |
-| `lg` | 48 | 36 |
+| -------- | --------------- | ------------- |
+| `sm`     | 34.56           | 26.88         |
+| `md`     | 48              | 36            |
+| `lg`     | 48              | 36            |
 
 Both sites use only `sm` and `md` and never override `--i9k-nino-sky-height`, so fixed sizes are
 safe for current consumers. `planetDots`
