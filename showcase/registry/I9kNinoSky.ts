@@ -16,6 +16,7 @@ Props:
 
 Emits:
 - boop: [expression] — fired on every click, tap, Enter or Space, with the face Nino just took.
+- dizzy: [] — fired when Nino comes back to the sky dizzy, after being dropped or thrown above it.
 
 Slots: none.
 
@@ -32,7 +33,7 @@ Usage, as a full-width band after the footer:
     'It renders fully on the server: the stars and planets are in the first paint, before hydration, so it needs no `<ClientOnly>`. The canvas takes over once it has drawn, painting the same pixels. Without JavaScript the sky stays, still.',
     'The stars are one tile repeated from the top-left corner and the planets are sized by `height`. Overriding `--i9k-nino-sky-height` shows more or less of the star field; it does not resize the planets.',
     'It adds one tab stop (the boop button) with a visible focus ring.',
-    'It makes no sound and tracks nothing; listen to `boop` if your page wants to.',
+    'It makes no sound and tracks nothing; listen to `boop` or `dizzy` if your page wants to.',
     'While airborne, Nino is `position: fixed` with z-index 300, so he flies over the page. An ancestor with a transform, filter, perspective, `contain: paint` or `will-change: transform` becomes his containing block and bounds him to itself instead of the window, so keep the sky out of one.',
     'The Nino button sets `touch-action: none`: a swipe that starts on him drags him instead of scrolling the page. Swipes elsewhere in the sky still scroll.',
   ],
