@@ -71,6 +71,69 @@ export function tilePeriodFactor(column: number, row: number): number {
   return 1 + step * 0.05;
 }
 
+/** A star's side in CSS px: faint stars are the smaller dot. */
+export function skyStarSize(tone: SkyTone): number {
+  return tone === 'faint' ? SKY_GRID / 2 : (SKY_GRID * 3) / 4;
+}
+
+export interface SkyPath {
+  tone: SkyTone;
+  opacity: number;
+  /** One stroked line per square: `M x y h size` drawn `size` thick is a size × size square at (x, y - size / 2). */
+  d: string;
+}
+
+/**
+ * The tile's stars as a few SVG paths, one per tone and brightness, for the
+ * sky the server paints. Each star sits at its first-frame brightness (time 0,
+ * what the canvas draws first), rounded to the nearest 1 / steps so the stars
+ * fall into a handful of paths.
+ */
+export function skyTilePaths(stars: readonly SkyStar[], steps = 16): SkyPath[] {
+  const groups = new Map<string, SkyPath>();
+  for (const star of stars) {
+    const alpha = starAlpha(star, 0) * (star.tone === 'faint' ? 0.45 : 1);
+    const opacity = Math.round(alpha * steps) / steps;
+    const key = `${star.tone}:${opacity}`;
+    const path = groups.get(key) ?? { tone: star.tone, opacity, d: '' };
+    const size = skyStarSize(star.tone);
+    path.d += `M${star.x} ${star.y + size / 2}h${size}`;
+    groups.set(key, path);
+  }
+  return [...groups.values()];
+}
+
+/**
+ * A planet's dots as one SVG path: each row of neighbouring dots becomes a
+ * single line, which the caller strokes 2px thick and dashes 2 on, 2 off, so it
+ * paints the same 2px dots on the 4px grid in far fewer bytes.
+ */
+export function skyDotsPath(dots: readonly SkyDot[]): string {
+  const size = SKY_GRID / 2;
+  const rows = new Map<number, number[]>();
+  for (const dot of dots) rows.set(dot.y, [...(rows.get(dot.y) ?? []), dot.x]);
+  let d = '';
+  for (const [y, xs] of [...rows].sort(([a], [b]) => a - b)) {
+    xs.sort((a, b) => a - b);
+    let start = xs[0];
+    let end = start;
+    const flush = () => {
+      d += `M${start} ${y + size / 2}h${end - start + size}`;
+    };
+    for (const x of xs.slice(1)) {
+      if (x === end + SKY_GRID) {
+        end = x;
+      } else {
+        flush();
+        start = x;
+        end = x;
+      }
+    }
+    flush();
+  }
+  return d;
+}
+
 export function starAlpha(star: SkyStar, timeMs: number, periodScale = 1): number {
   const wave =
     0.5 + 0.5 * Math.sin(2 * Math.PI * (timeMs / (star.period * periodScale) + star.phase));
