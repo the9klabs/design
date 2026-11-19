@@ -19,7 +19,7 @@ Emits:
 
 Slots: none.
 
-Behavior: the sky is a transparent <canvas> (aria-hidden) drawn on a 4px grid in the page theme's colours, fading in from its top edge; Nino is the real I9kNino inside a <button>. One animation loop, capped at 30 frames a second, runs only while the sky is on screen and the tab is visible, and never under reduced motion. Nothing the server renders carries a style attribute, so it works under a strict style-src CSP.
+Behavior: the server renders the whole sky as SVG (a repeating star tile and two planets), so it is there on first paint without JavaScript; once hydrated, a transparent <canvas> (aria-hidden) draws the same pixels on a 4px grid in the page theme's colours, fading in from its top edge, takes over, and hides the SVG (it reappears if the canvas loses its context); Nino is the real I9kNino inside a <button>. One animation loop, capped at 30 frames a second, runs only while the sky is on screen and the tab is visible, and never under reduced motion. Nothing the server renders carries a style attribute, so it works under a strict style-src CSP.
 
 Drag and throw: pressing Nino and moving more than 4px picks him up; he follows the pointer anywhere in the window and is thrown with the pointer's speed when let go. In flight he floats (no gravity), slows down, and bounces off the window's edges. Coming to rest inside the sky, he drifts home; above it, he swoops straight back and plays I9kNino's dizzy expression and action. With animated false or reduced motion he can still be dragged, but there is no throw. A drag never boops; Enter and Space always do.
 

@@ -15,6 +15,7 @@ import {
   starAlpha,
 } from '../src/composables/i9kNinoSky';
 import { NINO_BEAT } from '../src/data/nino';
+import { I9kNinoSkyEntry } from '../showcase/registry/I9kNinoSky';
 
 function stubMotion(reduce: boolean) {
   vi.stubGlobal('matchMedia', (query: string) => ({
@@ -389,6 +390,30 @@ describe('I9kNinoSky', () => {
 
     expect(wrapper.classes()).toContain('i9k-nino-sky--drawn');
     wrapper.unmount();
+  });
+
+  it('brings the server sky back while the canvas has lost its context', async () => {
+    const drawn = recordDrawing(800, 288);
+    const wrapper = mount(I9kNinoSky, { props: { boopLabel: 'Hi', animated: false } });
+    await nextTick();
+    expect(wrapper.classes()).toContain('i9k-nino-sky--drawn');
+    const canvas = wrapper.get('canvas').element;
+
+    canvas.dispatchEvent(new Event('contextlost'));
+    await nextTick();
+    expect(wrapper.classes()).not.toContain('i9k-nino-sky--drawn');
+
+    drawn.splice(0);
+    canvas.dispatchEvent(new Event('contextrestored'));
+    await nextTick();
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(wrapper.classes()).toContain('i9k-nino-sky--drawn');
+    wrapper.unmount();
+  });
+
+  it('tells agents the sky is painted on the server first', () => {
+    expect(I9kNinoSkyEntry.agentPrompt).toMatch(/server/i);
+    expect(I9kNinoSkyEntry.agentPrompt).not.toMatch(/the sky is a transparent <canvas>/);
   });
 
   it('keeps the server sky when there is no canvas to draw on', async () => {

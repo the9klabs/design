@@ -200,7 +200,7 @@ function measure() {
 function draw(now: number) {
   const target = canvas.value;
   const context = target?.getContext('2d');
-  if (!target || !context || skyWidth === 0) return;
+  if (!target || !context || skyWidth === 0 || context.isContextLost?.()) return;
 
   const ratio = target.width / skyWidth;
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -646,11 +646,26 @@ onMounted(() => {
     });
   }
   document.addEventListener('visibilitychange', onVisibility);
+  canvas.value?.addEventListener('contextlost', onContextLost);
+  canvas.value?.addEventListener('contextrestored', onContextRestored);
   refresh();
 });
 
+// A lost 2D context leaves the canvas blank, so the server's sky shows again
+// until the browser restores the context and the canvas draws once more.
+function onContextLost() {
+  drawn.value = false;
+}
+
+function onContextRestored() {
+  measure();
+  draw(motionTime);
+}
+
 onBeforeUnmount(() => {
   mounted = false;
+  canvas.value?.removeEventListener('contextlost', onContextLost);
+  canvas.value?.removeEventListener('contextrestored', onContextRestored);
   stop();
   clearTimeout(boopTimer);
   clearTimeout(lookTimer);
