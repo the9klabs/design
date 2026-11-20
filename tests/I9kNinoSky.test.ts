@@ -588,6 +588,7 @@ describe('I9kNinoSky drag', () => {
     expect(isAirborne(wrapper)).toBe(false);
     expect(flightOf(wrapper).style.transform).toBe('');
     expect(nino(wrapper).classes()).toContain('i9k-nino--dizzy');
+    expect(wrapper.emitted('dizzy')).toEqual([[]]);
 
     await vi.advanceTimersByTimeAsync(DIZZY_FACE_MS);
     expect(nino(wrapper).classes()).toContain('i9k-nino--idle');
@@ -603,6 +604,7 @@ describe('I9kNinoSky drag', () => {
 
     expect(isAirborne(wrapper)).toBe(false);
     expect(nino(wrapper).classes()).toContain('i9k-nino--idle');
+    expect(wrapper.emitted('dizzy')).toBeUndefined();
   });
 
   it('ignores a right-click and a second finger', async () => {

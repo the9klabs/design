@@ -63,7 +63,11 @@ const props = withDefaults(
   { height: 'md', animated: true },
 );
 
-const emit = defineEmits<{ boop: [expression: I9kNinoExpression] }>();
+const emit = defineEmits<{
+  boop: [expression: I9kNinoExpression];
+  /** Nino came back to the sky dizzy, after being dropped or thrown above it. */
+  dizzy: [];
+}>();
 
 const BOOP_SETTLE_MS = 1500;
 const LOOK_SETTLE_MS = 2000;
@@ -406,6 +410,7 @@ function getDizzy() {
   clearTimeout(dizzyTimer);
   expression.value = 'dizzy';
   void ninoFigure.value?.play('dizzy');
+  emit('dizzy');
   dizzyTimer = setTimeout(() => {
     dizzyTimer = undefined;
     expression.value = 'idle';
